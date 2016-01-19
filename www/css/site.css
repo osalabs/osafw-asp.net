@@ -1,0 +1,226 @@
+body{
+    padding-top: 0px;
+    padding-bottom: 0px;
+
+}
+
+.main-container {
+    background-color: #fff;
+/*
+    padding-top: 20px;
+    padding-bottom: 20px;
+*/
+}
+.site-navbar {
+/*    margin-bottom: 0px; */
+}
+
+.site-footer {
+    margin-top:20px;
+}
+
+@media print {
+     .hide-print {
+        display: none;
+    }
+
+    a:link:after,
+    a:visited:after {
+        content: "";
+    }
+}
+/************ fw
+*/
+
+table.list {background-color: #fff}
+table.list tr.list-header th {background-color:#f5f5f5;}
+tr.even td {background-color:#eeeeee}
+tr.odd td {background-color:#ffffff}
+tr.hover td {background-color:#CCCCFF !important; cursor: pointer;}
+table.list .sortable {
+    color: #0088cc;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.sortable.active-sort{
+    background-color: #ffffcc !important;
+}
+.btn-fileinput {
+    overflow: hidden;
+    position: relative;
+}
+    .btn-fileinput input {
+        cursor: pointer;
+        position: absolute;
+        right: 0;
+        top: 0;
+        font-size: 200px;
+        opacity: 0;
+        filter: alpha(opacity=0);
+        opacity: 0;
+        outline: none;
+        background: white;
+        min-width: 100%;
+        min-height: 100%;
+    }
+
+.field-multi-value {
+    height:200px;
+    overflow:auto;
+    border:1px solid #ccc;
+    padding:5px;
+}
+.fdate-combo .form-control {
+    width: 100px;
+    display: inline;
+}
+/*
+.datepicker .form-control {
+    width: 100px;
+}
+*/
+
+.pagination .active a {font-weight:bold}
+
+form .required:before {
+    content: "*";
+    color:#ff0000;
+    font-family: Menlo, Monaco, "Courier New", monospace;
+}
+
+.a_visited a:visited {
+    color: #800080;
+}
+
+.nobold {
+    font-weight:normal;
+}
+.nowrap {
+    white-space: nowrap;
+}
+
+.ico-wait {
+    display: inline-block;
+    background: url(../img/loading.gif) no-repeat;
+    width: 16px;
+    height: 16px;
+}
+
+.modal-overflowed {
+    max-height: 450px;
+    overflow: auto;
+}
+.text-nooverflow {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.twitter-typeahead {
+ width:100%
+}
+.pagination select {
+    display: inline-block;
+    width: auto;
+    vertical-align: top;
+}
+
+.sidebar-nav {
+ box-shadow: 1px 1px 7px #eee;
+ padding: 10px;
+ border-radius: 4px;
+}
+.sidebar-nav .nav > li > a {
+ padding: 5px 10px;
+}
+
+.btn-std {
+    margin-bottom: 20px;
+}
+
+/* jGrowl*/
+div.jGrowl div.hint_green{
+ background-color:#090;
+ color:#fff;
+}
+
+div.jGrowl div.hint_error{
+ background-color:#900;
+ color:#fff;
+}
+
+div.jGrowl div.jGrowl-notification
+, div.jGrowl div.jGrowl-closer {
+    border-radius: 4px;
+}
+
+    div.jGrowl div.jGrowl-notification div.jGrowl-close {
+        font-size: 1.2em;
+    }
+
+
+#sharer {
+    position: absolute;
+    background: #fff;
+    width: 235px;
+    height: 36px;
+}
+#sharer:after {
+    left: 100%;
+    top: 15%;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    margin-top: 0px;
+    pointer-events: none;
+    /*
+    border-color: rgba(255, 255, 255, 0);
+    border-left-color: #ffffff;
+    border-width: 30px;
+    */
+
+    border-bottom: 18px solid rgba(255, 255, 255, 0);
+    border-left: 12px solid #ffffff;
+    border-top: 0 solid rgba(255, 255, 255, 0);
+}
+    #sharer a {
+        display: inline-block;
+        padding: 9px 14px;
+        line-height: 18px;
+        border-bottom: none;
+    }
+    #sharer a i {
+        opacity: 0.5;
+    }
+    #sharer a:hover i{
+        opacity: 1;
+    }
+.ico-share {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    background-image: url('../images/v2015/ico-share.png');
+    background-repeat: no-repeat;
+}
+    .ico-facebook {
+        background-position: 6px 0px;
+    }
+    .ico-pinterest {
+        background-position: -43px 0px;
+    }
+    .ico-twitter {
+        background-position: -99px 0px;
+    }
+    .ico-linkedin {
+        background-position: -149px 0px;
+    }
+    .ico-mail {
+        background-position: -198px 0px;
+    }
+
+/*** end of fw ***/
+
+/*** site specific ***/
+
