@@ -1,0 +1,193 @@
+<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+ <input type="hidden" name="XSS" value="<~session[XSS]>">
+
+  <fieldset>
+    <~/common/form/msg>
+
+    <~/common/form/group_id>
+
+    <div class="form-group <~/common/error if="ERR[parent_id]">">
+      <label class="control-label col-md-3" for="parent_id">`Parent`</label>
+      <div class="col-md-3">
+        <select id="parent_id" name="item[parent_id]" class="form-control">
+          <option value="0"></option>
+          <~select_options_parent_id noescape>
+        </select>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[demo_dicts_id]">">
+      <label class="control-label col-md-3" for="demo_dicts_id">`DemoDicts`</label>
+      <div class="col-md-3">
+        <select id="demo_dicts_id" name="item[demo_dicts_id]" class="form-control">
+          <option value="0"></option>
+          <~select_options_demo_dicts_id noescape>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[iname]">">
+      <label class="control-label col-md-3 required" for="iname">`Title`</label>
+      <div class="col-md-9">
+        <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required>
+        <~err_iname_EXISTS ifeq="ERR[iname]" value="EXISTS" inline><p class="help-block">`Such title already exists in our database`</p></~err_iname_EXISTS>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[idesc]">">
+      <label class="control-label col-md-3" for="idesc">`Description`</label>
+      <div class="col-md-9">
+        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control"><~i[idesc]></textarea>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[idesc2]">">
+      <label class="control-label col-md-3" for="idesc2">`Wysisyg editor`</label>
+      <div class="col-md-9">
+        <textarea id="idesc2" name="item[idesc2]" rows="10" class="form-control fw-html-editor"><~i[idesc2]></textarea>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[idesc3]">">
+      <label class="control-label col-md-3" for="idesc3">`Wysisyg editor short`</label>
+      <div class="col-md-9">
+        <textarea id="idesc3" name="item[idesc3]" rows="10" class="form-control fw-html-editor-short"><~i[idesc3]></textarea>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[email]">">
+      <label class="control-label col-md-3 required" for="email">`Email` (unique field)</label>
+      <div class="col-md-9">
+        <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="text" class="form-control" required>
+        <~err_email_EXISTS ifeq="ERR[email]" value="EXISTS" inline><p class="help-block">`Such email already exists in our database`</p></~err_email_EXISTS>
+        <~err_email_WRONG ifeq="ERR[email]" value="WRONG" inline><p class="help-block">`Invalid Email`</p></~err_email_WRONG>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[fint]">">
+      <label class="control-label col-md-3" for="fint">`fint`</label>
+      <div class="col-md-2">
+        <input id="fint" name="item[fint]" maxlength="13" value="<~i[fint]>" type="text" class="form-control">
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[ffloat]">">
+      <label class="control-label col-md-3" for="ffloat">`ffloat`</label>
+      <div class="col-md-3">
+        <input id="ffloat" name="item[ffloat]" maxlength="13" value="<~i[ffloat]>" type="text" class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[dict_link_auto_id]">">
+      <label class="control-label col-md-3" for="dict_link_auto_id">DemoDicts Autocomplete</label>
+      <div class="col-md-9">
+          <input id="dict_link_auto_id" name="item[dict_link_auto_id_iname]" maxlength="255" value="<~dict_link_auto_id_iname>" type="text" class="form-control" autocomplete="off" placeholder="start typing to select..." data-autocomplete="<~../url>/(AjaxAutocomplete)?q=%QUERY">
+          <p class="help-block">will add new items to DemoDicts</p>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[dict_link_multi]">">
+      <label class="control-label col-md-3" for="dict_link_multi">DemoDicts Multi</label>
+      <div class="col-md-9">
+        <div class="field-multi-value">
+             <~multi_datarow repeat inline>
+               <div class="checkbox"><label><input type="checkbox" name="dict_link_multi[<~id>]" value="1" <~/common/checked if="is_checked">> <~iname></label></div>
+             </~multi_datarow>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[fcombo]">">
+      <label class="control-label col-md-3" for="fcombo">Combo</label>
+      <div class="col-md-3">
+        <select id="fcombo" name="item[fcombo]" class="form-control">
+          <option value="0">- select -</option>
+          <~/common/sel/fcombo.sel select="i[fcombo]">
+        </select>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[fradio]">">
+      <label class="control-label col-md-3" for="fradio">Radio</label>
+      <div class="col-md-9">
+        <div class="radio">
+            <~/common/sel/fcombo.sel radio="i[fradio]" name="item[fradio]">
+        </div>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[fyesno]">">
+      <label class="control-label col-md-3" for="fyesno">Yes or No</label>
+      <div class="col-md-9">
+        <~/common/sel/yn.sel radio="i[fyesno]" name="item[fyesno]" delim="radio-inline">
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[is_checkbox]">">
+      <label class="control-label col-md-3" for="is_checkbox">Checkbox</label>
+      <div class="col-md-9">
+        <div class="checkbox">
+            <label><input type="checkbox" name="item[is_checkbox]" value="1" <~/common/checked if="i[is_checkbox]">> Yes</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[fdate_combo]">">
+      <label class="control-label col-md-3" for="fdate_combo">Date combo</label>
+      <div class="col-md-9 fdate-combo">
+        <select id="fdate_combo" name="item[fdate_combo_day]" class="form-control">
+          <option value="">- day -</option>
+          <~/common/sel/date_day.sel select="fdate_combo_day">
+        </select>
+        <select name="item[fdate_combo_mon]" class="form-control">
+          <option value="">- month -</option>
+          <~/common/sel/date_mon.sel select="fdate_combo_mon">
+        </select>
+        <select name="item[fdate_combo_year]" class="form-control">
+          <option value="">- year -</option>
+          <~/common/sel/date_year.sel select="fdate_combo_year">
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[fdate_pop]">">
+      <label class="control-label col-md-3" for="fdate_pop">Date popup</label>
+      <div class="col-md-3">
+        <div class="input-group date">
+          <input id="fdate_pop" name="item[fdate_pop]" maxlength="10" value="<~i[fdate_pop] date>" type="text" class="form-control">
+          <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[fdatetime]">">
+      <label class="control-label col-md-3" for="fdatetime">Date and Time</label>
+      <div class="col-md-4">
+        <input id="fdatetime" name="item[fdatetime]" maxlength="32" value="<~i[fdatetime]>" type="text" placeholder="M/D/YYYY HH:MM:SS" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <p class="help-block">M/D/YYYY HH:MM:SS [AM|PM]</p>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[ftime]">">
+      <label class="control-label col-md-3" for="ftime">Time</label>
+      <div class="col-md-2">
+        <input id="ftime" name="item[ftime_str]" maxlength="5" value="<~i[ftime_str]>" type="text" placeholder="HH:MM" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <p class="help-block">HH:MM</p>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[att_id]">">
+      <label class="control-label col-md-3" for="att_id">`Image`</label>
+      <div class="col-md-3">
+        <input id="att_id" name="item[att_id]" value="<~i[att_id]>" type="hidden">
+        <p><button type="button" class="btn btn-default on-select-att" data-att-category="general">Select/Upload image</button></p>
+        <p><button type="button" class="btn btn-default on-remove-att" <~/common/display_none unless="att_id_url_s">>Remove image</button></p>
+      </div>
+      <div class="col-md-6">
+        <div class="img"><img src="<~att_id_url_s>" <~/common/display_none unless="att_id_url_s">></div>
+      </div>
+    </div>
+
+    <~/common/form/group_status>
+    <~/common/form/actions_std>
+
+  </fieldset>
+</form>

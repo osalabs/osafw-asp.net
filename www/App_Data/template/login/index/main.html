@@ -1,0 +1,43 @@
+<div id="fb-root"></div>
+
+<form class="form-horizontal" method="post" action="<~ROOT_URL>/Login">
+  <input type="hidden" name="err_ctr" value="<~GLOBAL[err_ctr]>" >
+
+  <fieldset>
+    <legend><~title></legend>
+
+<~/common/form/msg>
+    <~err_REGISTER if="ERR[REGISTER]" inline>
+    <div class="alert alert-warning">
+      Please enter your Email and Password. If you don't have them yet - <a href='<~/signup/url>?item[email]=<~i[login]>'>Sign Up here</a>
+    </div>
+    </~err_REGISTER>
+
+    <div class="form-group">
+      <label class="control-label col-md-3" for="login">`Your Email`</label>
+      <div class="col-md-9">
+        <input id="login" name="item[login]" maxlength="128" value="<~i[login]>" type="text" class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-md-3" for="input01">`Password`</label>
+      <div class="col-md-9">
+        <input id="pwd" type="text" name="item[pwd]" maxlength="32" value="" class="form-control" style="display:none">
+        <input id="pwdh" type="password" name="item[pwdh]" maxlength="32" value="" class="form-control">
+
+        <label class="checkbox-inline"><input type="checkbox" id="chpwd" name="item[chpwd]" value="1" onclick="pwd_hideshow()" <~/common/checked if="i[chpwd]">>`show characters`</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-offset-3 col-md-9">
+            <button type="submit" class="btn btn-primary">`Log Me In`</button>
+
+            <a class="btn btn-link" href="<~/password/url>">`Forgotten Password`</a>
+            <a class="btn btn-link" href="<~/signup/url>">`Sign Up`</a>
+        </div>
+    </div>
+
+  </fieldset>
+</form>

@@ -1,0 +1,16 @@
+<~pager_block if="pager" inline>
+  <ul class="pagination pagination-centered">
+    <!--li><a href="#">&larr;</a></li-->
+    <~pager repeat inline>
+    <li <~cur_page inline ifeq="is_cur_page" value="1">class="active"</~cur_page>>
+      <a href="?f[pagenum]=<~pagenum><~pager_url>"><~pagenum_show></a>
+    </li>
+    </~pager>
+    <!--li><a href="#">&rarr;</a></li-->
+    <li>&nbsp;
+        <select name="f[pagesize]" onchange="$('#FFilter input[name=\'f[pagesize]\']').val($(this).val());$('#FFilter').submit()" class="form-control">
+        <~/common/sel/pagesize.sel select="f[pagesize]">
+        </select>
+    </li>
+  </ul>
+</~pager_block>

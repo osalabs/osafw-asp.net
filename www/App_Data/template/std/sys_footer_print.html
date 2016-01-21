@@ -1,0 +1,21 @@
+<!--script src="//code.jquery.com/jquery-1.11.2.min.js"></script-->
+<!--script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script-->
+<script src="<~ROOT_URL>/js/jquery-1.11.3.min.js"></script>
+<script src="<~ROOT_URL>/js/bootstrap.min.js"></script>
+
+<~load_script>
+
+<script>
+  <~head_script.js>
+
+  $(document).ready(function(){
+    <~body_onload.js>
+  });
+
+  <~./common.js>
+  <~./admin.js ifge="SESSION[access_level]" value="100">
+</script>
+
+<~footer_script>
+

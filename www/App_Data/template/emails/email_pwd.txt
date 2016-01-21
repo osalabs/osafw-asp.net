@@ -1,0 +1,11 @@
+Member Password
+Hello <~nick>,
+
+your login credentials to access <~GLOBAL[ROOT_DOMAIN]><~ROOT_URL> :
+
+login: <~email>
+password: <~pwd>
+
+
+Have a nice day,
+Admin

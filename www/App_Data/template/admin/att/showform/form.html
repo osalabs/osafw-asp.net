@@ -1,0 +1,57 @@
+<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" enctype="multipart/form-data">
+ <input type="hidden" name="XSS" value="<~session[XSS]>">
+
+  <fieldset>
+    <~/common/form/msg>
+
+    <~/common/form/group_id>
+
+    <div class="form-group <~/common/error if="ERR[att_categories_id]">">
+      <label class="control-label col-md-3" for="att_categories_id">`Category`</label>
+      <div class="col-md-3">
+        <select id="att_categories_id" name="item[att_categories_id]" class="form-control">
+          <option value="">- no category -</option>
+          <~select_options_att_categories_id noescape>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[iname]">">
+      <label class="control-label col-md-3" for="iname">`File name`</label>
+      <div class="col-md-9">
+        <input id="iname" name="item[iname]" maxlength="128" value="<~i[iname]>" type="text" class="form-control">
+        <~stats_block if="id" inline>
+          <p class="help-block">File size: <~fsize_human>. Original file name: <~i[fname]></p>
+        </~stats_block>
+      </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[file1]">">
+      <label class="control-label col-md-3" for="file1">`File`</label>
+      <div class="col-md-9">
+        <~not_uploaded unless="i[fsize]" inline>
+          <input id="file1" name="file1" type="file">
+        </~not_uploaded>
+            <~uploaded if="i[fsize]" inline>
+                 <~uploaded_img if="i[is_image]" inline>
+                   <div>
+                      <a href="<~url>" target="_blank"><img src="<~url_m>"></a>
+                   </div>
+                 </~uploaded_img>
+                 <~uploaded_file unless="i[is_image]" inline>
+                   <div class="form-control-static">
+                      <a href="<~url>" target="_blank">open file <~i[fname]></a>
+                   </div>
+                 </~uploaded_file>
+            </~uploaded>
+        <~err_file1_NOFILE ifeq="ERR[file1]" value="NOFILE" inline><p class="help-block">`You have to select file for upload`</p></~err_file1_NOFILE>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <~/common/form/group_status>
+    <~/common/form/actions_std>
+
+  </fieldset>
+</form>

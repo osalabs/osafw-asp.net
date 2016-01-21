@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title><~title><~tdot ifne="GLOBAL[controller.action]" value="Home.Index" inline> - </~tdot><~./site_name></title>
+    <meta name="keywords" content="<~keywords> <~./site_name> <~./keywords>" />
+    <meta name="description" content="<~./site_name>" />
+
+    <~/std/sys_head>
+
+  </head>
+  <body class="<~body_class>">
+    <~/std/header>
+
+    <~sub_header>
+
+    <div class="container main-container">
+        <~pre_main>
+        <div class="row">
+            <~with_sidebar unless="hide_sidebar" inline>
+                <div class="col-md-3 sidebar">
+                    <~/std/sidebar unless="hide_std_sidebar">
+                    <~sidebar>
+                </div>
+                <div class="col-md-9 main">
+                    <~main>
+                </div>
+            </~with_sidebar>
+            <~no_sidebar if="hide_sidebar" inline>
+                <div class="col-md-12 main">
+                    <~main>
+                </div>
+            </~no_sidebar>
+        </div>
+    </div><!--/.fluid-container-->
+    <footer class="site-footer hide-print">
+      <~/std/footer>
+    </footer>
+
+    <~/std/sys_footer>
+  </body>
+</html>

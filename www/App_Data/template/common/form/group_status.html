@@ -1,0 +1,24 @@
+<~status_block if="id" inline>
+<div class="form-group">
+  <label class="control-label col-md-3" for="status">`Status`</label>
+  <div class="col-md-3">
+        <select id="status" name="item[status]" class="form-control">
+            <~/common/sel/status.sel select="i[status]">
+        </select>
+  </div>
+</div>
+
+<div class="form-group">
+  <label class="control-label col-md-3">`Added on`</label>
+  <div class="col-md-9"><p class="form-control-static"><~i[add_time]> `by` <~add_user_id_name></p>
+  </div>
+</div>
+</~status_block>
+
+<~upd_block if="i[upd_user_id]" inline>
+<div class="form-group">
+  <label class="control-label col-md-3">`Updated on`</label>
+  <div class="col-md-9"><p class="form-control-static"><~i[upd_time]> by <~upd_user_id_name></p>
+  </div>
+</div>
+</~upd_block>

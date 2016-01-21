@@ -1,0 +1,36 @@
+<form action="<~../url>" method="post" onsubmit="return confirm('`Are you sure?`')">
+<input type="hidden" name="XSS" value="<~SESSION[XSS]>">
+<input type="hidden" name="_method" value="PUT">
+
+<table class="table table-striped table-condensed list">
+    <thead>
+        <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
+            <th><input type="checkbox" name="all" value="1" onclick="list_chkall(this)"></th>
+            <th class="sortable" data-sort="iname">`Title`</th>
+            <th class="sortable" data-sort="pub_time">`Published on`</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+<~list_rows repeat inline>
+        <tr data-url="<~row_click_url>">
+            <td><input class="multicb" type="checkbox" name="cb[<~id>]" value="1"></td>
+            <td><~leveler repeat inline if="leveler">&#8212; </~leveler><~iname><~home_page if="is_home" inline> <strong class="text-muted"> - home page</strong></~home_page></td>
+            <td><~pub_time unless="status"><~/admin/spages/status.sel selvalue="status" if="status"></td>
+            <td nowrap="nowrap">
+                <a href="<~full_url>" target="_blank">`View`</a>
+                <~/common/dot><a href="<~row_click_url>">`Edit`</a>
+                <~del_btn unless="is_home" inline><~/common/dot><a href="<~../url>/<~id>/delete" onclick="return delete_btn(this)">`Del`</a></~del_btn>
+            </td>
+        </tr>
+</~list_rows>
+    </tbody>
+</table>
+
+<input type="submit" name="delete" value="`Delete`" class="btn btn-danger" > `checked rows`
+
+</form>
+<form id="FOneDelete" action="<~../url>/%id%?XSS=<~SESSION[XSS]>" method="post">
+</form>
+
+<~/common/pagination>

@@ -1,0 +1,46 @@
+<div class="modal fade" id="modal-att" data-load-url="<~/admin/att/url>/(Select)">
+  <div class="modal-dialog">
+    <div class="modal-content">
+    </div>
+  </div>
+</div>
+
+<script>
+function modal_att_open($att_category, on_select_callback){
+    var $modal = $('#modal-att').modal('show');
+    var url = $modal.data('load-url')+'?category='+$att_category;
+    $modal.find('.modal-content').html(HTML_LOADING).load( url );
+
+    if ($.isFunction(on_select_callback)){
+        $modal.off('select.modal-att').on('select.modal-att', on_select_callback);
+    }
+}
+
+//setup standard handlers for att selection
+ $(document).ready(function() {
+
+    $(document).on('click', '.on-select-att', function (e) {
+        var $this = $(this);
+        var $fg = $this.closest('.form-group');
+
+        modal_att_open($this.data('att-category'), function (e, id, iname, url, is_image) {
+            $fg.find(':input:hidden').val(id);
+            $fg.find('.on-remove-att').show(); //show remove button
+            var $attinfo = $fg.find('.att-info').show();
+            if (is_image && $attinfo.find('img').length){
+                $attinfo.find('img').show().prop('src', '/Att/'+id+'?preview=1&size=s');
+            }else{
+                $attinfo.find('a').prop('href', url).find('.att-iname').text(iname);
+            }
+        });
+    });
+    $(document).on('click', '.on-remove-att', function (e) {
+        var $fg = $(this).closest('.form-group');
+        $fg.find(':input:hidden').val('');
+        $fg.find('.att-info').hide();
+        $fg.find('.on-remove-att').hide();
+    });
+
+ });
+
+</script>

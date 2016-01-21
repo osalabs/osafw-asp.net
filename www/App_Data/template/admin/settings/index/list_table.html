@@ -1,0 +1,26 @@
+<table class="table table-striped table-condensed list">
+    <thead>
+        <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
+            <th><input type="checkbox" name="all" value="1" onclick="list_chkall(this)"></th>
+            <th class="sortable" data-sort="iname">`Name`</th>
+            <th>`Content`</th>
+            <!--th class="sortable" data-sort="upd_time">`Updated on`</th-->
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+<~list_rows repeat inline>
+        <tr data-url="<~row_click_url>">
+            <td><input class="multicb" type="checkbox" name="cb[<~id>]" value="1"></td>
+            <td><~iname></td>
+            <td><~ivalue truncate></td>
+            <!--td><~upd_time></td-->
+            <td nowrap="nowrap">
+                <a href="<~row_click_url>">`Edit`</a>
+            </td>
+        </tr>
+</~list_rows>
+    </tbody>
+</table>
+
+<~/common/pagination>

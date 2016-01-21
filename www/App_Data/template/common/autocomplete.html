@@ -1,0 +1,13 @@
+<link href="<~ROOT_URL>/css/typeahead.js-bootstrap.css" rel="stylesheet">
+<script src="<~ROOT_URL>/js/typeahead.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('input[data-autocomplete]').each(function(index, el) {
+            var $el=$(el);
+            $el.typeahead({
+                name:   el.id,
+                remote: $el.data('autocomplete')
+            });
+        });
+    });
+</script>

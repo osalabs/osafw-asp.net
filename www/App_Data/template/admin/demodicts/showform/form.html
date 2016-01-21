@@ -1,0 +1,27 @@
+<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+ <input type="hidden" name="XSS" value="<~session[XSS]>">
+
+  <fieldset>
+    <~/common/form/msg>
+
+    <~/common/form/group_id>
+
+    <div class="form-group <~/common/error if="ERR[iname]">">
+      <label class="control-label col-md-3 required" for="iname">`Title`</label>
+      <div class="col-md-9">
+        <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required>
+        <~err_iname_EXISTS ifeq="ERR[iname]" value="EXISTS" inline><p class="help-block">`Such title already exists in our database`</p></~err_iname_EXISTS>
+      </div>
+    </div>
+    <div class="form-group <~/common/error if="ERR[idesc]">">
+      <label class="control-label col-md-3" for="idesc">`Description`</label>
+      <div class="col-md-9">
+        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control"><~i[idesc]></textarea>
+      </div>
+    </div>
+
+    <~/common/form/group_status>
+    <~/common/form/actions_std>
+
+  </fieldset>
+</form>

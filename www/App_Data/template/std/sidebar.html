@@ -1,0 +1,33 @@
+<div class="sidebar-nav">
+  <ul class="nav nav-list">
+    <~logged_menu if="SESSION[is_logged]" inline>
+       <li class="nav-header">Member's Menu</li>
+       <li <~/std/header/active ifeq="GLOBAL[controller]" value="Main"> ><a href="<~ROOT_URL>/Main">Main Menu</a></li>
+       <li <~/std/header/active ifeq="GLOBAL[controller]" value="MySettings"> ><a href="<~ROOT_URL>/My/Settings">My Profile</a></li>
+       <li <~/std/header/active ifeq="GLOBAL[controller]" value="MyPassword"> ><a href="<~ROOT_URL>/My/Password">Change Password</a></li>
+
+       <~admin100_menu ifgt="SESSION[access_level]" value="80" inline>
+          <li class="nav-header">Moderator Menu</li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminCategories"> ><a href="<~ROOT_URL>/Admin/Categories">Manage Categories</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminDemos"> ><a href="<~ROOT_URL>/Admin/Demos">Demo</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminDemoDicts"> ><a href="<~ROOT_URL>/Admin/DemoDicts">Demo Dict</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminSpages"> ><a href="<~ROOT_URL>/Admin/Spages">Pages</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminAtt"> ><a href="<~ROOT_URL>/Admin/Att">Manage Uploads</a></li>
+       </~admin100_menu>
+
+       <~admin100_menu ifeq="SESSION[access_level]" value="100" inline>
+          <li class="nav-header">Admin Menu</li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminUsers"> ><a href="<~ROOT_URL>/Admin/Users">Manage Members</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminSettings"> ><a href="<~ROOT_URL>/Admin/Settings">Site Settings</a></li>
+          <li <~/std/header/active ifeq="GLOBAL[controller]" value="AdminDB"> ><a href="<~ROOT_URL>/Admin/DB">Direct DB Access</a></li>
+       </~admin100_menu>
+    </~logged_menu>
+
+    <li class="nav-header">Guest Menu</li>
+    <li><a href="#">Link</a></li>
+    <li><a href="#">Link</a></li>
+    <li class="nav-header">Sidebar</li>
+    <li><a href="#">Link</a></li>
+    <li><a href="#">Link</a></li>
+  </ul>
+</div><!--/.well -->
