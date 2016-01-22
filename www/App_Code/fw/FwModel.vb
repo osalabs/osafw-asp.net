@@ -1,0 +1,246 @@
+﻿' Fw Model base class
+'
+' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
+' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+
+Imports System.IO
+
+Public MustInherit Class FwModel
+    Protected fw As FW
+    Protected db As DB
+    Public table_name As String = "" 'must be assigned in child class
+    Public csv_export_fields As String = "*"
+    Public csv_export_headers As String = ""
+
+    Public Sub New(Optional fw As FW = Nothing)
+        If fw IsNot Nothing Then
+            Me.fw = fw
+            Me.db = fw.db
+        End If
+    End Sub
+
+    Public Overridable Sub init(fw As FW)
+        Me.fw = fw
+        Me.db = fw.db
+    End Sub
+
+    Public Overridable Function one(id As Integer) As Hashtable
+        Dim where As Hashtable = New Hashtable
+        where("id") = id
+        Return db.row(table_name, where)
+    End Function
+
+    Public Overridable Function iname(id As Integer) As String
+        Dim row As Hashtable = one(id)
+        Return row("iname")
+    End Function
+
+    'return standard list of id,iname where status=0 order by iname
+    Public Overridable Function list() As ArrayList
+        Dim sql As String = "select * from " & table_name & " where status=0 order by iname"
+        Return db.array(sql)
+    End Function
+
+    'just return first row by iname field (you may want to make it unique)
+    Public Overridable Function one_by_iname(iname As String) As Hashtable
+        Dim where As Hashtable = New Hashtable
+        where("iname") = iname
+        Return db.row(table_name, where)
+    End Function
+
+    'check if item exists for a given field
+    Public Overridable Function is_exists_byfield(uniq_key As Object, not_id As Integer, field As String) As Boolean
+        Dim val As String = db.value("select 1 from " & table_name & " where " & field & " = " & db.q(uniq_key) & " and id <>" & db.qi(not_id))
+        If val = "1" Then
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
+    'check if item exists for a given iname
+    Public Overridable Function is_exists(uniq_key As Object, not_id As Integer) As Boolean
+        Return is_exists_byfield(uniq_key, not_id, "iname")
+    End Function
+
+    'add new record and return new record id
+    Public Overridable Function add(item As Hashtable) As Integer
+        'item("add_time") = Now() 'not necessary because add_time field in db should have default value now() or getdate()
+        If Not item.ContainsKey("add_user_id") AndAlso fw.SESSION("is_logged") Then item("add_user_id") = fw.SESSION("user")("id")
+        Dim id As Integer = db.insert(table_name, item)
+        fw.log_event(table_name & "_add", id)
+        Return id
+    End Function
+
+    'update exising record
+    Public Overridable Function update(id As Integer, item As Hashtable) As Boolean
+        item("upd_time") = Now()
+        If Not item.ContainsKey("upd_user_id") AndAlso fw.SESSION("is_logged") Then item("upd_user_id") = fw.SESSION("user")("id")
+
+        Dim where As New Hashtable
+        where("id") = id
+        db.update(table_name, item, where)
+
+        fw.log_event(table_name & "_upd", id)
+        Return True
+    End Function
+
+    'mark record as deleted (status=127) OR actually delete from db (if is_perm)
+    Public Overridable Sub delete(id As Integer, Optional is_perm As Boolean = False)
+        Dim where As New Hashtable
+        where("id") = id
+
+        If is_perm Then
+            'place here code that remove related data
+            db.del(table_name, where)
+        Else
+            Dim vars As New Hashtable
+            vars("status") = 127
+            vars("upd_time") = Now()
+            If fw.SESSION("is_logged") Then vars("upd_user_id") = fw.SESSION("user")("id")
+
+            db.update(table_name, vars, where)
+        End If
+        fw.log_event(table_name & "_del", id)
+    End Sub
+
+    'upload utils
+    Public Function upload_file(id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
+        Return UploadUtils.upload_file(fw, table_name, id, filepath, input_name, is_skip_check)
+    End Function
+
+    'return upload dir for the module name and id related to FW.config("site_root")/upload
+    ' id splitted to 1000
+    Public Function get_upload_dir(ByVal id As Long) As String
+        Return UploadUtils.get_upload_dir(fw, table_name, id)
+    End Function
+
+    Public Function get_upload_url(ByVal id As Long, ByVal ext As String, Optional size As String = "") As String
+        Return UploadUtils.get_upload_url(fw, table_name, id, ext, size)
+    End Function
+
+    'removes all type of image files uploaded with thumbnails
+    Public Function remove_upload(ByVal id As Long, ByVal ext As String) As Boolean
+        Dim dir As String = get_upload_dir(id)
+
+        If UploadUtils.is_upload_img_ext_allowed(ext) Then
+            'if this is image - remove possibly created thumbs
+            File.Delete(dir & "/" & id & "_l" & ext)
+            File.Delete(dir & "/" & id & "_m" & ext)
+            File.Delete(dir & "/" & id & "_s" & ext)
+        End If
+
+        'delete main file
+        File.Delete(dir & "/" & id & ext)
+        Return True
+    End Function
+
+    Public Function get_upload_img_path(ByVal id As Long, ByVal size As String, Optional ext As String = "") As String
+        Return UploadUtils.get_upload_img_path(fw, table_name, id, size, ext)
+    End Function
+
+    '----------------- just a covenience methods
+    Public Sub logger(ByRef dmp_obj As Object)
+        fw.logger("DEBUG", dmp_obj)
+    End Sub
+
+
+    Public Overridable Function get_select_options(sel_id As String) As String
+        Return FormUtils.select_options_db(Me.list(), sel_id)
+    End Function
+
+    Public Function get_autocomplete_items(q As String) As ArrayList
+        Dim sql As String = "select iname from " & table_name & " where status=0 and iname like " & db.q("%" & q & "%")
+        Return db.col(sql)
+    End Function
+
+    'sel_ids - comma-separated ids
+    Public Function get_multi_list(sel_ids As String) As ArrayList
+        Dim ids As New ArrayList(Split(sel_ids, ","))
+        Dim rows As ArrayList = Me.list()
+        For Each row As Hashtable In rows
+            row("is_checked") = ids.Contains(row("id"))
+        Next
+        Return rows
+    End Function
+
+    ''' <summary>
+    '''     return comma-separated ids of linked elements - TODO refactor to use arrays, not comma-separated string
+    ''' </summary>
+    ''' <param name="table_name">link table name that contains id_name and link_id_name fields</param>
+    ''' <param name="id">main id</param>
+    ''' <param name="id_name">field name for main id</param>
+    ''' <param name="link_id_name">field name for linked id</param>
+    ''' <returns></returns>
+    Public Function get_link_ids(table_name As String, id As Integer, id_name As String, link_id_name As String) As String
+        Dim where As New Hashtable
+        where(id_name) = id
+        Dim rows As ArrayList = db.array(table_name, where)
+        Dim res As New ArrayList
+        For Each row As Hashtable In rows
+            res.Add(row(link_id_name))
+        Next
+
+        Return FormUtils.col2comma_str(res)
+    End Function
+
+    ''' <summary>
+    '''  update (and add/del) linked table
+    ''' </summary>
+    ''' <param name="table_name">link table name that contains id_name and link_id_name fields</param>
+    ''' <param name="id">main id</param>
+    ''' <param name="id_name">field name for main id</param>
+    ''' <param name="link_id_name">field name for linked id</param>
+    ''' <param name="linked_keys">hashtable with keys as link id (as passed from web)</param>
+    Public Sub update_linked(table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
+        Dim fields As New Hashtable
+        Dim where As New Hashtable
+
+        'set all fields as under update
+        fields("status") = 1
+        where(id_name) = id
+        db.update(table_name, fields, where)
+
+        If linked_keys IsNot Nothing Then
+            For Each link_id As String In linked_keys.Keys
+                fields = New Hashtable
+                fields(id_name) = id
+                fields(link_id_name) = link_id
+                fields("status") = 0
+
+                where = New Hashtable
+                where(id_name) = id
+                where(link_id_name) = link_id
+                db.update_or_insert(table_name, fields, where)
+            Next
+        End If
+
+        'remove those who still not updated (so removed)
+        where = New Hashtable
+        where(id_name) = id
+        where("status") = 1
+        db.del(table_name, where)
+    End Sub
+
+
+    Public Function add_or_update_quick(iname As String) As Integer
+        Dim result As Integer
+        Dim item As Hashtable = Me.one_by_iname(iname)
+        If item.ContainsKey("id") Then
+            'exists
+            result = item("id")
+        Else
+            'not exists - add new
+            item = New Hashtable
+            item("iname") = iname
+            result = Me.add(item)
+        End If
+        Return result
+    End Function
+
+    Public Function get_csv_export() As StringBuilder
+        Dim rows As ArrayList = db.array("select " & csv_export_fields & " from " & table_name & " where status=0")
+        Return Utils.get_csv_export(csv_export_headers, csv_export_fields, rows)
+    End Function
+End Class
+
