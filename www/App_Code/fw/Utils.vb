@@ -468,9 +468,20 @@ Public Class Utils
     End Function
 
     'return path to tmp filename WITHOUT extension
-    Public Shared Function get_tmp_filename() As String
-        Return Path.GetTempPath & "\tmp" & Utils.get_uuid()
+    Public Shared Function get_tmp_filename(Optional prefix As String = "osafw") As String
+        Return Path.GetTempPath & "\" & prefix & Utils.get_uuid()
     End Function
+
+    'scan tmp directory, find all tmp files created by website and delete older than 1 hour
+    Public Shared Sub cleanup_tmp_files(Optional prefix As String = "osafw")
+        Dim files As String() = Directory.GetFiles(Path.GetTempPath(), prefix & "*")
+        For Each file As String In files
+            Dim fi As FileInfo = New FileInfo(file)
+            If DateDiff(DateInterval.Minute, fi.CreationTime, Now()) > 60 Then
+                fi.Delete()
+            End If
+        Next
+    End Sub
 
     'return md5 hash (hexadecimals) for a string
     Public Shared Function md5(str As String) As String

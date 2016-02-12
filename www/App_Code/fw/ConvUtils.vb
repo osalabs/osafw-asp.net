@@ -31,8 +31,7 @@ Public Class ConvUtils
             If out_filename = "" Then out_filename = "output"
             fw.logger("INFO", "sending file response  = " & pdf_file & " to " & out_filename & ".pdf")
             fw.file_response(pdf_file, out_filename & ".pdf")
-            'remove pdf file
-            'File.Delete(pdf_file) 'TODO - can't delete here as file_response may not yet finish transferring file. Implement better way - maybe cleanup tmp dir from files older than 24h with specific prefix?
+            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             html2pdf(fw, html_file, out_filename, options)
         End If
@@ -95,15 +94,14 @@ Public Class ConvUtils
             If out_filename = "" Then out_filename = "output"
             fw.logger("INFO", "sending file response  = " & doc_file & " to " & out_filename & ".doc")
             fw.file_response(doc_file, out_filename & ".doc")
-            'remove pdf file
-            'File.Delete(doc_file) 'TODO - can't delete here as file_response may not yet finish transferring file. Implement better way - maybe cleanup tmp dir from files older than 24h with specific prefix?
+            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             'TODO html2doc(fw, html_file, out_filename)
             File.Delete(out_filename)
             File.Move(doc_file, out_filename)
         End If
         'remove tmp html file
-        'File.Delete(html_file)
+        File.Delete(html_file)
 
         Return html_data
     End Function
@@ -148,8 +146,7 @@ Public Class ConvUtils
             If out_filename = "" Then out_filename = "output"
             fw.logger("INFO", "sending file response  = " & xls_file & " to " & out_filename & ".xls")
             fw.file_response(xls_file, out_filename & ".xls", "application/vnd.ms-excel")
-            'remove pdf file
-            'File.Delete(xls_file) 'TODO - can't delete here as file_response may not yet finish transferring file. Implement better way - maybe cleanup tmp dir from files older than 24h with specific prefix?
+            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             html2xls(fw, html_file, out_filename)
         End If
@@ -168,12 +165,13 @@ Public Class ConvUtils
         html_data = _replace_specials(html_data)
 
         If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
+            If out_filename = "" Then out_filename = "output"
             'out to browser
             fw.resp.AddHeader("Content-type", "application/vnd.ms-excel")
             fw.resp.AddHeader("Content-Disposition", "attachment; filename=""" & out_filename & ".xls""")
             fw.resp.Write(html_data)
         Else
-            fw.set_file_content(out_filename, html_data)
+            FW.set_file_content(out_filename, html_data)
         End If
 
         Return html_data
