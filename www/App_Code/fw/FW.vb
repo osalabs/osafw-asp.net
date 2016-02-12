@@ -667,6 +667,7 @@ Public Class FW
             Return 'no further processing
         End If
 
+        Me.resp.CacheControl = "no-cache" 'disable cacheing of dynamic pages, TODO give controllers control over this
         If format = "pjax" Then
             Dim page_tpl As String = G("PAGE_TPL_PJAX")
             parser(bdir, page_tpl, hf)
