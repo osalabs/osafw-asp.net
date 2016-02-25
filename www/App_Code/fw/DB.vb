@@ -10,6 +10,7 @@ Imports System.Data.Common
 Imports System.IO
 
 Public Class DB
+    Implements IDisposable
     Private Shared schema_cache As Hashtable 'cache for the schema, lifetime = app lifetime
 
     'Private Shared TimeFieldLabel As String = " <small>Format 24hr.time. Eg, 1330 for 1:30pm"
@@ -36,24 +37,24 @@ Public Class DB
             conn = dbconn_cache(current_db)
         End If
         If conn Is Nothing OrElse conn.State <> ConnectionState.Open Then
-                'connect/reconnect
-                current_db = fw.config(conf_db_name)
-                conf = fw.config("db")(current_db)
-                dbtype = conf("type")
-                'schema = conf("schema")
-                schema = New Hashtable
+            'connect/reconnect
+            current_db = fw.config(conf_db_name)
+            conf = fw.config("db")(current_db)
+            dbtype = conf("type")
+            'schema = conf("schema")
+            schema = New Hashtable
 
-                Dim oConnStr As String = conf("connection_string")
-                If dbtype = "SQL" Then
-                    conn = New SqlConnection(oConnStr)
-                ElseIf dbtype = "OLE" Then
-                    conn = New OleDbConnection(oConnStr)
-                Else
-                    Dim msg As String = "Unknown type [" & dbtype & "] for db " & current_db
-                    fw.logger(msg)
-                    Throw New ApplicationException(msg)
-                End If
-                conn.Open()
+            Dim oConnStr As String = conf("connection_string")
+            If dbtype = "SQL" Then
+                conn = New SqlConnection(oConnStr)
+            ElseIf dbtype = "OLE" Then
+                conn = New OleDbConnection(oConnStr)
+            Else
+                Dim msg As String = "Unknown type [" & dbtype & "] for db " & current_db
+                fw.logger(msg)
+                Throw New ApplicationException(msg)
+            End If
+            conn.Open()
             dbconn_cache(current_db) = conn
         End If
 
@@ -74,9 +75,10 @@ Public Class DB
         For Each conn_name As String In dbconn_cache.Keys
             dbconn_cache(conn_name).Close()
         Next
+        dbconn_cache.Clear()
     End Sub
 
-    <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")> _
+    <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Function query(ByVal sql As String) As DbDataReader
         connect()
         fw.logger("DB:" & current_db & ", SQL QUERY: " & sql)
@@ -93,7 +95,7 @@ Public Class DB
     End Function
 
     'exectute without results (so db reader will be closed)
-    <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")> _
+    <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Sub exec(ByVal sql As String)
         connect()
         fw.logger("DB=" & current_db & " SQL QUERY = " & sql)
@@ -450,18 +452,18 @@ Public Class DB
             If dbtype = "SQL" Then
                 'fw.logger("cache MISS " & current_db & "." & table)
                 'get information about all columns in the table
-                Dim sql As String = "SELECT c.column_name as 'name'," & _
-                        " c.data_type as 'type'," & _
-                        " CASE c.is_nullable WHEN 'YES' THEN 1 ELSE 0 END AS 'is_nullable'," & _
-                        " c.column_default as 'default'," & _
-                        " c.character_maximum_length as 'maxlen'," & _
-                        " c.numeric_precision," & _
-                        " c.numeric_scale," & _
-                        " c.character_set_name as 'charset'," & _
-                        " c.collation_name as 'collation'" & _
-                        " FROM INFORMATION_SCHEMA.TABLES t," & _
-                        "   INFORMATION_SCHEMA.COLUMNS c" & _
-                        " WHERE t.table_name = c.table_name" & _
+                Dim sql As String = "SELECT c.column_name as 'name'," &
+                        " c.data_type as 'type'," &
+                        " CASE c.is_nullable WHEN 'YES' THEN 1 ELSE 0 END AS 'is_nullable'," &
+                        " c.column_default as 'default'," &
+                        " c.character_maximum_length as 'maxlen'," &
+                        " c.numeric_precision," &
+                        " c.numeric_scale," &
+                        " c.character_set_name as 'charset'," &
+                        " c.collation_name as 'collation'" &
+                        " FROM INFORMATION_SCHEMA.TABLES t," &
+                        "   INFORMATION_SCHEMA.COLUMNS c" &
+                        " WHERE t.table_name = c.table_name" &
                         "   AND t.table_name = " & q(table)
                 Dim rows As ArrayList = array(sql)
                 For Each row As Hashtable In rows
@@ -469,8 +471,8 @@ Public Class DB
                 Next
             Else
                 'OLE DB (Access)
-                Dim schemaTable As DataTable = _
-                    dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, _
+                Dim schemaTable As DataTable =
+                    dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
                     New Object() {Nothing, Nothing, table, Nothing})
 
                 For Each row As DataRow In schemaTable.Rows
@@ -500,7 +502,7 @@ Public Class DB
         Dim result As String = ""
         Select Case LCase(mstype)
             'TODO - unsupported: bit, image, varbinary, timestamp
-            Case "tinyint", "smallint", "int", "bigint"
+            Case "tinyint", "smallint", "int", "bigint", "bit"
                 result = "int"
             Case "real", "numeric", "decimal", "money", "smallmoney"
                 result = "float"
@@ -530,5 +532,22 @@ Public Class DB
 
         Return result
     End Function
+
+#Region "IDisposable Support"
+    Private disposedValue As Boolean ' To detect redundant calls
+
+    Protected Overridable Sub Dispose(disposing As Boolean)
+        If Not disposedValue Then
+            If disposing Then
+                Me.disconnect()
+            End If
+        End If
+        disposedValue = True
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        Dispose(True)
+    End Sub
+#End Region
 
 End Class

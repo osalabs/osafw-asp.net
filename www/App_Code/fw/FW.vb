@@ -807,6 +807,8 @@ Public Class FW
                 'mail_to may contain several emails delimited by ;
                 Dim amail_to As ArrayList = Utils.email_split(mail_to)
                 For Each email As String In amail_to
+                    email = Trim(email)
+                    If email = "" Then Continue For
                     message.To.Add(New MailAddress(email))
                 Next
 
@@ -819,6 +821,8 @@ Public Class FW
                         Next
                     Else
                         For Each cc As String In aCC
+                            cc = Trim(cc)
+                            If cc = "" Then Continue For
                             message.CC.Add(New MailAddress(cc))
                         Next
                     End If
@@ -856,18 +860,18 @@ Public Class FW
     End Function
 
     'shortcut for send_email from template from the /emails template dir
-    Public Function send_email_tpl(ByVal mail_to As String, ByVal tpl As String, ByVal hf As Hashtable) As Boolean
+    Public Function send_email_tpl(ByVal mail_to As String, ByVal tpl As String, ByVal hf As Hashtable, Optional filenames As Hashtable = Nothing, Optional aCC As ArrayList = Nothing, Optional reply_to As String = "") As Boolean
         Dim parser_obj As ParsePage = New ParsePage(Me)
         Dim r As Regex = New Regex("[\n\r]+")
         Dim subj_body As String = parser_obj.parse_page("/emails", tpl, hf)
         If subj_body.Length = 0 Then Throw New ApplicationException("No email template defined [" & tpl & "]")
         Dim arr() As String = r.Split(subj_body, 2)
-        Return send_email("", mail_to, arr(0), arr(1))
+        Return send_email("", mail_to, arr(0), arr(1), filenames, aCC, reply_to)
     End Function
 
     'send email message to site admin (usually used in case of errors)
     Public Sub send_email_admin(msg As String)
-        Me.send_email("", Me.config("admin_email"), Left(msg, 128), msg)
+        Me.send_email("", Me.config("admin_email"), Left(msg, 512), msg)
     End Sub
 
     Public Function load_url(ByVal url As String) As String
@@ -933,6 +937,7 @@ Public Class FW
             End If
 
             'free unmanaged resources (unmanaged objects) and override Finalize() below.
+            db.disconnect() 'this will return db connections to pool
             If flogger IsNot Nothing Then flogger.Close()
             ' TODO: set large fields to null.
         End If
