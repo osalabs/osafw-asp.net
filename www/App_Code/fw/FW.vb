@@ -23,7 +23,8 @@ Public Class FW
     Implements IDisposable
     Public Shared METHOD_ALLOWED As Hashtable = Utils.qh("GET POST PUT DELETE")
 
-    Private flogger As System.IO.StreamWriter
+    Private floggerFS As System.IO.FileStream
+    Private floggerSW As System.IO.StreamWriter
     Private models As New Hashtable
     Public Shared Current As FW 'store FW current "singleton", set in run
 
@@ -516,10 +517,7 @@ Public Class FW
             End If
         End If
 
-        Diagnostics.Debug.WriteLine(dumper(dmp_obj))
-
         Dim str As String = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff") & " " & level & " "
-
         Dim st As New Diagnostics.StackTrace(True)
         Dim sf As Diagnostics.StackFrame = st.GetFrame(1)
 
@@ -536,17 +534,25 @@ Public Class FW
             str &= ex.ToString
         End Try
 
-        Dim log_file As String = config("log")
+        'write to debug console first
+        Diagnostics.Debug.WriteLine(str)
 
+        'write to log file
+        Dim log_file As String = config("log")
         Try
-            'If IsNothing(FW.flogger) Then 'TODO keep log file open, TODO support write to log from multiple processes
-            If flogger Is Nothing Then flogger = New System.IO.StreamWriter(log_file, True)
-            flogger.WriteLine(str.ToString)
-            flogger.Flush()
+            'keep log file open to avoid overhead
+            If floggerFS Is Nothing Then
+                'open log with shared read/write so loggers from other processes can still write to it
+                floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
+                floggerSW = New System.IO.StreamWriter(floggerFS)
+                floggerSW.AutoFlush = True
+            End If
+            'force seek to end just in case other process added to file
+            floggerFS.Seek(0, SeekOrigin.End)
+            floggerSW.WriteLine(str.ToString)
         Catch ex As Exception
             Diagnostics.Debug.WriteLine("WARN logger can't write to log file. Reason:" & ex.Message)
         End Try
-        'If flogger IsNot Nothing Then flogger.Close()
     End Sub
 
     Public Shared Function dumper(ByVal dmp_obj As Object, Optional ByVal level As Integer = 0) As String 'TODO better type detection(suitable for all collection types)
@@ -589,40 +595,56 @@ Public Class FW
         Return str.ToString()
     End Function
 
-    'return file content OR "" if no file exists or some other error happened 
-    Public Shared Function get_file_content(ByRef file_name As String, Optional ByRef ErrInfo As String = "") As String
-        Dim file_data As String = ""
-        Dim objReader As StreamReader
-        file_name = Regex.Replace(file_name, "/", "\")
-        If Not File.Exists(file_name) Then Return ""
+    'return file content OR "" if no file exists or some other error happened (see errorInfo)
+    ''' <summary>
+    ''' return file content OR ""
+    ''' </summary>
+    ''' <param name="filename"></param>
+    ''' <param name="errInfo"></param>
+    ''' <returns></returns>
+    Public Shared Function get_file_content(ByRef filename As String, Optional ByRef errInfo As String = "") As String
+        Dim result As String = ""
+        filename = Regex.Replace(filename, "/", "\")
+        If Not File.Exists(filename) Then Return result
 
         Try
-            objReader = New StreamReader(file_name)
-            file_data = objReader.ReadToEnd()
-            objReader.Close()
+            result = File.ReadAllText(filename)
         Catch Ex As Exception
             'TODO logger("ERROR", "Error getting file content [" & file_name & "]")
-            ErrInfo = Ex.Message
+            errInfo = Ex.Message
         End Try
-        Return file_data
+        Return result
     End Function
 
-    Public Shared Function get_file_lines(ByRef filename As String, Optional ByRef ErrInfo As String = "") As ArrayList
-        Dim lines As ArrayList = New ArrayList
-        Dim file_data As String = get_file_content(filename, ErrInfo)
-        lines.AddRange(Regex.Split(file_data, "\r?\n"))
-        Return lines
-    End Function
-    Public Shared Sub set_file_content(ByRef file_name As String, ByRef file_data As String, Optional ByRef is_append As Boolean = False)
-        Dim objWriter As StreamWriter
-        file_name = Regex.Replace(file_name, "/", "\")
+    ''' <summary>
+    ''' return array of file lines OR empty array if no file exists or some other error happened (see errorInfo)
+    ''' </summary>
+    ''' <param name="filename"></param>
+    ''' <param name="errInfo"></param>
+    ''' <returns></returns>
+    Public Shared Function get_file_lines(ByRef filename As String, Optional ByRef errInfo As String = "") As String()
+        Dim result As String() = {}
         Try
-            objWriter = New StreamWriter(file_name, is_append)
-            objWriter.Write(file_data)
-            objWriter.Close()
-        Catch Ex As Exception
-            Throw
+            result = File.ReadAllLines(filename)
+        Catch ex As Exception
+            'TODO logger("ERROR", "Error getting file content [" & file_name & "]")
+            errInfo = ex.Message
         End Try
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' replace or append file content
+    ''' </summary>
+    ''' <param name="filename"></param>
+    ''' <param name="fileData"></param>
+    ''' <param name="isAppend">False by default </param>
+    Public Shared Sub set_file_content(ByRef filename As String, ByRef fileData As String, Optional ByRef isAppend As Boolean = False)
+        filename = Regex.Replace(filename, "/", "\")
+
+        Using sw As New StreamWriter(filename, isAppend)
+            sw.Write(fileData)
+        End Using
     End Sub
 
     'show page from template  /cur_controller/cur_action = parser('/cur_controller/cur_action/', $ps)
@@ -937,9 +959,13 @@ Public Class FW
             End If
 
             'free unmanaged resources (unmanaged objects) and override Finalize() below.
-            db.disconnect() 'this will return db connections to pool
-            If flogger IsNot Nothing Then flogger.Close()
-            ' TODO: set large fields to null.
+            Try
+                db.disconnect() 'this will return db connections to pool
+                If floggerSW IsNot Nothing Then floggerSW.Close() 'no need to close floggerFS as StreamWriter closes it
+                ' TODO: set large fields to null.
+            Catch ex As Exception
+                Diagnostics.Debug.WriteLine("exception in Dispose:" & ex.Message())
+            End Try
         End If
         disposedValue = True
     End Sub

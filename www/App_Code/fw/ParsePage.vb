@@ -745,7 +745,7 @@ Public Class ParsePage
 
         If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
 
-        Dim lines As ArrayList = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+        Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
         Dim line As String
         Dim selected As String = ""
         For Each line In lines
@@ -782,7 +782,7 @@ Public Class ParsePage
 
         If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
 
-        Dim lines As ArrayList = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+        Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
 
         Dim i As Integer = 0
         Dim line As String
@@ -831,7 +831,7 @@ Public Class ParsePage
         If name Is Nothing Then name = ""
 
         If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
-        Dim lines As ArrayList = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+        Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
 
         Dim line As String
         For Each line In lines
