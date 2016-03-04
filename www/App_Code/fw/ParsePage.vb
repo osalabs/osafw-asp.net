@@ -101,7 +101,6 @@
 
 Imports System.IO
 Imports Newtonsoft.Json
-Imports CommonMark 'for markdown attibute
 
 Public Class ParsePage
     Private Shared RX_NOTS As New Regex("^(\S+)", RegexOptions.Compiled)
@@ -120,6 +119,11 @@ Public Class ParsePage
 
     Private Shared DEF_DATE_FORMAT As String = "M/d/yyyy" ' for US
     '"d M yyyy HH:mm"
+
+    'for dynamic load of CommonMark markdown converter
+    Private Shared aCommonMark As Reflection.Assembly
+    Private Shared tCommonMarkConverter As Type
+    Private Shared mConvert As Reflection.MethodInfo
 
     Private fw As FW
     Private TMPL_PATH As String
@@ -703,7 +707,20 @@ Public Class ParsePage
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("markdown") Then
-                    value = CommonMarkConverter.Convert(value)
+                    Try
+                        If aCommonMark Is Nothing Then
+                            'try to dynamic load CommonMark
+                            aCommonMark = Reflection.Assembly.Load("CommonMark")
+                            tCommonMarkConverter = aCommonMark.GetType("CommonMark.CommonMarkConverter")
+                            mConvert = tCommonMarkConverter.GetMethod("Convert", New Type() {GetType(String), aCommonMark.GetType("CommonMark.CommonMarkSettings")})
+                        End If
+                        'equivalent of: value = CommonMarkConverter.Convert(value)
+                        value = mConvert.Invoke(Nothing, New Object() {value, Nothing})
+                    Catch ex As Exception
+                        fw.logger("WARN", "error parsing markdown, check bin\CommonMark.dll exists")
+                        fw.logger("DEBUG", ex.Message)
+                    End Try
+
                     attr_count -= 1
                 End If
             End If

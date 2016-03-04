@@ -431,7 +431,7 @@ Public Class FW
         If (FORM.ContainsKey("XSS") OrElse cur_method = "POST" OrElse cur_method = "PUT" OrElse cur_method = "DELETE") _
             AndAlso SESSION("XSS") > "" AndAlso SESSION("XSS") <> FORM("XSS") _
             AndAlso controller <> "Login" Then 'special case - no XSS check for Login controller!
-            If is_die Then Throw New AuthException("XSS Error")
+            If is_die Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
             Return False
         End If
 
@@ -673,7 +673,10 @@ Public Class FW
                     Me.parser_json(hf)
                 End If
             Else
-                Throw New Exception("JSON response is not enabled for this Controller.Action (set ps(""_json_enabled"")=True to enable).")
+                Dim ps As New Hashtable
+                ps("success") = False
+                ps("message") = "JSON response is not enabled for this Controller.Action (set ps(""_json_enabled"")=True to enable)."
+                Me.parser_json(ps)
             End If
 
             Return 'no further processing for json
@@ -824,7 +827,8 @@ Public Class FW
                 message.From = New MailAddress(mail_from)
                 message.Subject = mail_subject
                 message.Body = mail_body
-                If reply_to > "" Then message.ReplyTo = New MailAddress(reply_to) 'TODO: change to ReplyToList when fully decide not to support .net <4
+                'If reply_to > "" Then message.ReplyTo = New MailAddress(reply_to) '.net<4
+                If reply_to > "" Then message.ReplyToList.Add(reply_to) '.net>=4
 
                 'mail_to may contain several emails delimited by ;
                 Dim amail_to As ArrayList = Utils.email_split(mail_to)
@@ -915,6 +919,10 @@ Public Class FW
             hf("DUMP_FORM") = dumper(FORM)
             hf("DUMP_SESSION") = dumper(SESSION)
         End If
+
+        hf("success") = False
+        hf("message") = msg
+        hf("_json_enabled") = True
         parser("/error", hf)
     End Sub
 
