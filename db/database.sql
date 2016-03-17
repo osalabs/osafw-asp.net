@@ -1,6 +1,3 @@
--- osafw-asp.net default database strucutres
--- version for SQL Server
-
 DROP TABLE users;
 CREATE TABLE users (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
@@ -20,17 +17,18 @@ CREATE TABLE users (
   phone                 NVARCHAR(16) NOT NULL DEFAULT '',
 
   notes                 NTEXT,
-  login_time            DATETIME,
+  login_time            DATETIME2,
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 )
 CREATE UNIQUE INDEX users_email ON users (email);
 INSERT INTO users (fname, lname, email, pwd, access_level)
 VALUES ('Website','Admin','admin@admin.com','CHANGE_ME',100);
+
 
 /*Site Settings - special table for misc site settings*/
 DROP TABLE settings;
@@ -47,9 +45,9 @@ CREATE TABLE settings (
 
   is_user_edit          TINYINT DEFAULT 0,  /* if 1 - use can edit this value*/
 
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 CREATE UNIQUE INDEX settings_icode ON settings (icode);
@@ -68,9 +66,9 @@ CREATE TABLE att_categories (
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 INSERT INTO att_categories (icode, iname) VALUES
@@ -97,9 +95,9 @@ CREATE TABLE att (
   iname                 NVARCHAR(255) NOT NULL DEFAULT '',   /*attachment name*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 CREATE INDEX att_table_name ON att (table_name, item_id);
@@ -114,7 +112,7 @@ CREATE TABLE att_table_link (
   item_id               INT NOT NULL,
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under update*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
 );
 CREATE UNIQUE INDEX att_table_link_UX ON att_table_link (table_name, item_id, att_id);
@@ -136,15 +134,15 @@ CREATE TABLE spages (
   meta_keywords         NVARCHAR(255) NOT NULL DEFAULT '',      /*meta keywords*/
   meta_description      NVARCHAR(255) NOT NULL DEFAULT '',      /*meta description*/
 
-  pub_time              DATETIME,                               /*publish date-time*/
+  pub_time              DATETIME2,                               /*publish date-time*/
   template              NVARCHAR(64),                           /*template to use, if not defined - default site template used*/
   prio                  INT NOT NULL DEFAULT 0,                 /* 0 is normal and lowest priority*/
   is_home               INT DEFAULT 0,                          /* 1 is for home page (non-deletable page*/
 
   status                TINYINT DEFAULT 0,    /*0-ok, 10-not published, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 CREATE INDEX spages_parent_id ON spages (parent_id, prio);
@@ -164,14 +162,14 @@ DROP TABLE categories;
 CREATE TABLE categories (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
-  iname					        NVARCHAR(64) NOT NULL DEFAULT '',
-  idesc					        NTEXT,
+  iname                 NVARCHAR(64) NOT NULL DEFAULT '',
+  idesc                 NTEXT,
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 INSERT INTO categories (iname) VALUES
@@ -191,9 +189,9 @@ CREATE TABLE events (
   idesc                 NTEXT,
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 CREATE UNIQUE INDEX events_icode_idx ON events (icode);
@@ -217,7 +215,7 @@ CREATE TABLE event_log (
 
   records_affected      INT NOT NULL DEFAULT 0,
 
-  add_time              DATETIME NOT NULL DEFAULT getdate(),  /*date record added*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_user_id           INT DEFAULT 0,                        /*user added record, 0 if sent by cron module*/
 );
 CREATE INDEX event_log_events_id_idx ON event_log (events_id);

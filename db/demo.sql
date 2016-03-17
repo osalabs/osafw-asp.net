@@ -6,7 +6,7 @@ CREATE TABLE demos (
   demo_dicts_id         INT NOT NULL DEFAULT 0,           /* demo dictionary link*/
 
   iname                 NVARCHAR(64) NOT NULL DEFAULT '', /*string value for names*/
-  idesc                 NTEXT,                            /*large text value*/
+  idesc                 NVARCHAR(MAX),                    /*large text value*/
 
   email                 NVARCHAR(128) NOT NULL DEFAULT '',/*string value for unique field, such as email*/
 
@@ -23,13 +23,13 @@ CREATE TABLE demos (
 
   fdate_combo           DATE,                             /*date field with 3 combos editing*/
   fdate_pop             DATE,                             /*date field with popup editing*/
-  fdatetime             DATETIME,                         /*date+time field*/
+  fdatetime             DATETIME2,                         /*date+time field*/
   ftime                 INT NOT NULL DEFAULT 0,           /*time field - we always store time as seconds from start of the day [0-86400]*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(),  /*date record added*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_user_id           INT DEFAULT 0,                        /*user added record*/
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 CREATE UNIQUE INDEX demos_email ON demos (email);
@@ -40,12 +40,12 @@ CREATE TABLE demo_dicts (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
   iname                 NVARCHAR(64) NOT NULL default '',
-  idesc                 NTEXT,
+  idesc                 NVARCHAR(MAX),
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
-  add_time              DATETIME NOT NULL DEFAULT getdate(), /*from date_joined*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(), /*from date_joined*/
   add_user_id           INT DEFAULT 0,
-  upd_time              DATETIME,
+  upd_time              DATETIME2,
   upd_user_id           INT DEFAULT 0
 );
 INSERT INTO demo_dicts (iname, idesc, add_time) VALUES ('test1', 'test1 description', GETDATE());
