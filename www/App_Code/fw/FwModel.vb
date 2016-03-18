@@ -105,22 +105,22 @@ Public MustInherit Class FwModel
     End Sub
 
     'upload utils
-    Public Function upload_file(id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
+    Public Overridable Function upload_file(id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
         Return UploadUtils.upload_file(fw, table_name, id, filepath, input_name, is_skip_check)
     End Function
 
     'return upload dir for the module name and id related to FW.config("site_root")/upload
     ' id splitted to 1000
-    Public Function get_upload_dir(ByVal id As Long) As String
+    Public Overridable Function get_upload_dir(ByVal id As Long) As String
         Return UploadUtils.get_upload_dir(fw, table_name, id)
     End Function
 
-    Public Function get_upload_url(ByVal id As Long, ByVal ext As String, Optional size As String = "") As String
+    Public Overridable Function get_upload_url(ByVal id As Long, ByVal ext As String, Optional size As String = "") As String
         Return UploadUtils.get_upload_url(fw, table_name, id, ext, size)
     End Function
 
     'removes all type of image files uploaded with thumbnails
-    Public Function remove_upload(ByVal id As Long, ByVal ext As String) As Boolean
+    Public Overridable Function remove_upload(ByVal id As Long, ByVal ext As String) As Boolean
         Dim dir As String = get_upload_dir(id)
 
         If UploadUtils.is_upload_img_ext_allowed(ext) Then
@@ -135,7 +135,7 @@ Public MustInherit Class FwModel
         Return True
     End Function
 
-    Public Function get_upload_img_path(ByVal id As Long, ByVal size As String, Optional ext As String = "") As String
+    Public Overridable Function get_upload_img_path(ByVal id As Long, ByVal size As String, Optional ext As String = "") As String
         Return UploadUtils.get_upload_img_path(fw, table_name, id, size, ext)
     End Function
 
@@ -149,13 +149,13 @@ Public MustInherit Class FwModel
         Return FormUtils.select_options_db(Me.list(), sel_id)
     End Function
 
-    Public Function get_autocomplete_items(q As String) As ArrayList
+    Public Overridable Function get_autocomplete_items(q As String) As ArrayList
         Dim sql As String = "select iname from " & table_name & " where status=0 and iname like " & db.q("%" & q & "%")
         Return db.col(sql)
     End Function
 
     'sel_ids - comma-separated ids
-    Public Function get_multi_list(sel_ids As String) As ArrayList
+    Public Overridable Function get_multi_list(sel_ids As String) As ArrayList
         Dim ids As New ArrayList(Split(sel_ids, ","))
         Dim rows As ArrayList = Me.list()
         For Each row As Hashtable In rows
@@ -172,7 +172,7 @@ Public MustInherit Class FwModel
     ''' <param name="id_name">field name for main id</param>
     ''' <param name="link_id_name">field name for linked id</param>
     ''' <returns></returns>
-    Public Function get_link_ids(table_name As String, id As Integer, id_name As String, link_id_name As String) As String
+    Public Overridable Function get_link_ids(table_name As String, id As Integer, id_name As String, link_id_name As String) As String
         Dim where As New Hashtable
         where(id_name) = id
         Dim rows As ArrayList = db.array(table_name, where)
@@ -192,7 +192,7 @@ Public MustInherit Class FwModel
     ''' <param name="id_name">field name for main id</param>
     ''' <param name="link_id_name">field name for linked id</param>
     ''' <param name="linked_keys">hashtable with keys as link id (as passed from web)</param>
-    Public Sub update_linked(table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
+    Public Overridable Sub update_linked(table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
         Dim fields As New Hashtable
         Dim where As New Hashtable
 
@@ -223,7 +223,7 @@ Public MustInherit Class FwModel
     End Sub
 
 
-    Public Function add_or_update_quick(iname As String) As Integer
+    Public Overridable Function add_or_update_quick(iname As String) As Integer
         Dim result As Integer
         Dim item As Hashtable = Me.one_by_iname(iname)
         If item.ContainsKey("id") Then
@@ -238,7 +238,7 @@ Public MustInherit Class FwModel
         Return result
     End Function
 
-    Public Function get_csv_export() As StringBuilder
+    Public Overridable Function get_csv_export() As StringBuilder
         Dim rows As ArrayList = db.array("select " & csv_export_fields & " from " & table_name & " where status=0")
         Return Utils.get_csv_export(csv_export_headers, csv_export_fields, rows)
     End Function

@@ -81,7 +81,7 @@ Public MustInherit Class FwController
     'NOTE: automatically set to defaults - pagenum=0 and pagesize=MAX_PAGE_ITEMS
     'NOTE: if request param 'dofilter' passed - session filters cleaned
     'sample in IndexAction: me.get_filter()
-    Public Function get_filter(Optional session_key As String = Nothing) As Hashtable
+    Public Overridable Function get_filter(Optional session_key As String = Nothing) As Hashtable
         Dim f As Hashtable = fw.FORM("f")
         If f Is Nothing Then f = New Hashtable
 
@@ -159,7 +159,7 @@ Public MustInherit Class FwController
     ''' Set list sorting fields - Me.list_orderby according to Me.list_filter filter and Me.list_sortmap and Me.list_sortdef
     ''' </summary>
     ''' <remarks></remarks>
-    Public Sub set_list_sorting()
+    Public Overridable Sub set_list_sorting()
         If Me.list_sortdef Is Nothing Then Throw New Exception("No default sort order defined, define in list_sortdef ")
         If Me.list_sortmap Is Nothing Then Throw New Exception("No sort order mapping defined, define in list_sortmap ")
 
@@ -198,7 +198,7 @@ Public MustInherit Class FwController
     ''' Add to Me.list_where search conditions from Me.list_filter("s") and based on fields in Me.search_fields
     ''' </summary>
     ''' <remarks>Sample: Me.search_fields="field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'</remarks>
-    Public Sub set_list_search()
+    Public Overridable Sub set_list_search()
         Dim s As String = Trim(Me.list_filter("s"))
         If s > "" AndAlso Me.search_fields > "" Then
             Dim like_quoted As String = db.q("%" & s & "%")
@@ -233,17 +233,17 @@ Public MustInherit Class FwController
     ''' Me.list_pager pager from FormUtils.get_pager
     ''' </summary>
     ''' <remarks></remarks>
-    Public Sub get_list_rows()
+    Public Overridable Sub get_list_rows()
         Me.list_count = db.value("select count(*) from " & model0.table_name & " where " & Me.list_where)
         If Me.list_count > 0 Then
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
 
             'offset+1 because _RowNumber starts from 1
-            Dim sql As String = "SELECT * FROM (" & _
-                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" & _
-                            "   FROM " & model0.table_name & _
-                            "   WHERE " & Me.list_where & _
+            Dim sql As String = "SELECT * FROM (" &
+                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" &
+                            "   FROM " & model0.table_name &
+                            "   WHERE " & Me.list_where &
                             ") tmp WHERE _RowNumber BETWEEN " & (offset + 1) & " AND " & (offset + 1 + limit - 1)
             'for MySQL this would be much simplier
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
@@ -270,7 +270,7 @@ Public MustInherit Class FwController
     ''' <param name="fields">hash of field/values</param>
     ''' <returns>new autoincrement id (if added) or old id (if update)</returns>
     ''' <remarks>Also set fw.FLASH</remarks>
-    Public Function model_add_or_update(id As Integer, fields As Hashtable) As Integer
+    Public Overridable Function model_add_or_update(id As Integer, fields As Hashtable) As Integer
         If id > 0 Then
             model0.update(id, fields)
             fw.FLASH("record_updated", 1)

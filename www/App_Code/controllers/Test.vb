@@ -14,6 +14,7 @@ Public Class TestController
         Dim hf As Hashtable = New Hashtable
 
         hf("memory_var") = "this is memory var"
+        hf("markdown_var") = "this is **markdown** string"
         hf("zero") = 0
         hf("one") = 1
         hf("two") = 2
