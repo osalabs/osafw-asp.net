@@ -650,7 +650,8 @@ Public Class ParsePage
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("number_format") Then
-                    value = FormatNumber(value, 2)
+                    Dim precision = IIf(hattrs("number_format") > "", Utils.f2int(hattrs("number_format")), 2)
+                    value = FormatNumber(value, precision)
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("date") Then

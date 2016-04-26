@@ -26,7 +26,6 @@ Public Class FwAdminController
 
         Me.set_list_sorting()
 
-        Me.list_where = " status = 0" 'if initial where empty, use " 1=1 "
         Me.set_list_search()
         'set here non-standard search
         'If f("field") > "" Then

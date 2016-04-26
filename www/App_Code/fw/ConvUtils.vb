@@ -114,7 +114,7 @@ Public Class ConvUtils
         Dim process As New System.Diagnostics.Process
 
         info.FileName = FW.config("html_converter")
-        info.Arguments = """" & htmlfile & """ """ & xlsfile & """ -c xls -AutoSize"
+        info.Arguments = """" & htmlfile & """ """ & xlsfile & """ -c xls"
         process.StartInfo = info
         process.Start()
         process.WaitForExit()

@@ -23,7 +23,7 @@ Public Class AdminEventsController
         db.connect()
 
         'get filters
-        Dim f As Hashtable = get_filter("s sortby sortdir pagesize pagenum events_id users_id date")
+        Dim f As Hashtable = get_filter()
 
         If Not fw.FORM("dofilter") > "" AndAlso f("date") = "" Then
             f("date") = DateUtils.Date2Str(Now())

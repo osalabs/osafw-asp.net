@@ -24,7 +24,7 @@ Public Class AdminUsersController
         End If
 
         'get filters
-        Dim f As Hashtable = get_filter("s sortby sortdir pagesize pagenum")
+        Dim f As Hashtable = get_filter()
 
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"

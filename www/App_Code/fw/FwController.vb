@@ -23,8 +23,9 @@ Public MustInherit Class FwController
     Protected db As DB
     Protected model0 As FwModel
     Protected list_filter As Hashtable             ' filter values for the list screen
+    Protected list_view As String                  ' table/view to use in list sql, if empty model0.table_name used
     Protected list_orderby As String               ' orderby for the list screen
-    Protected list_where As String                 ' where to use in list sql
+    Protected list_where As String = " status = 0 " ' where to use in list sql, default is status=0
     Protected list_count As Integer                ' count of list rows returned from db
     Protected list_rows As ArrayList               ' list rows returned from db (array of hashes)
     Protected list_pager As ArrayList              ' pager for the list from FormUtils.get_pager
@@ -199,10 +200,14 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks>Sample: Me.search_fields="field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'</remarks>
     Public Overridable Sub set_list_search()
+        'Me.list_where = " status = 0" 'if initial where empty, use " 1=1 "
+
         Dim s As String = Trim(Me.list_filter("s"))
         If s > "" AndAlso Me.search_fields > "" Then
+            Dim list_table_name As String = list_view
+            If list_table_name = "" Then list_table_name = model0.table_name
+
             Dim like_quoted As String = db.q("%" & s & "%")
-            Dim exact_quoted As String = db.q(s)
 
             Dim afields As String() = Utils.qw(Me.search_fields) 'OR fields delimited by space
             For i As Integer = 0 To afields.Length - 1
@@ -213,7 +218,7 @@ Public MustInherit Class FwController
                     If fand.Substring(0, 1) = "!" Then
                         'exact match
                         fand = fand.Substring(1)
-                        afieldsand(j) = fand & " = " & exact_quoted
+                        afieldsand(j) = fand & " = " & db.qone(list_table_name, fand, s)
                     Else
                         'like match
                         afieldsand(j) = fand & " LIKE " & like_quoted
@@ -234,7 +239,9 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks></remarks>
     Public Overridable Sub get_list_rows()
-        Me.list_count = db.value("select count(*) from " & model0.table_name & " where " & Me.list_where)
+        Dim list_table_name As String = list_view
+        If list_table_name = "" Then list_table_name = model0.table_name
+        Me.list_count = db.value("select count(*) from " & list_table_name & " where " & Me.list_where)
         If Me.list_count > 0 Then
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
@@ -242,7 +249,7 @@ Public MustInherit Class FwController
             'offset+1 because _RowNumber starts from 1
             Dim sql As String = "SELECT * FROM (" &
                             "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" &
-                            "   FROM " & model0.table_name &
+                            "   FROM " & list_table_name &
                             "   WHERE " & Me.list_where &
                             ") tmp WHERE _RowNumber BETWEEN " & (offset + 1) & " AND " & (offset + 1 + limit - 1)
             'for MySQL this would be much simplier

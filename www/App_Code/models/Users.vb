@@ -90,4 +90,20 @@ Public Class Users
         Return FormUtils.select_options_db(Me.list(), sel_id)
     End Function
 
+    ''' <summary>
+    ''' check if current user acl is enough. throw exception or return false if user's acl is not enough
+    ''' </summary>
+    ''' <param name="acl">minimum required access level</param>
+    Public Function check_access(acl As Integer, Optional is_die As Boolean = True) As Boolean
+        Dim users_acl As Integer = Utils.f2int(fw.SESSION("access_level"))
+
+        'check access
+        If users_acl < acl Then
+            If is_die Then Throw New ApplicationException("Access Denied")
+            Return False
+        End If
+
+        Return True
+    End Function
+
 End Class

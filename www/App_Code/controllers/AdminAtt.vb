@@ -24,7 +24,7 @@ Public Class AdminAttController
         Dim hf As Hashtable = New Hashtable
 
         'get filters
-        Dim f As Hashtable = get_filter("s sortby sortdir pagesize pagenum att_categories_id")
+        Dim f As Hashtable = get_filter()
 
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"

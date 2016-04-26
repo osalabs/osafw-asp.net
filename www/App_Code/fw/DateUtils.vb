@@ -67,4 +67,12 @@ Public Class DateUtils
         Dim d As DateTime = theDate.AddDays(whDayOfWeek - theDate.DayOfWeek)
         Return IIf(d <= theDate, d.AddDays(7), d)
     End Function
+
+    'convert .net date to javascript timestamp
+    Public Shared Function Date2JsTimestamp(dt As Date) As Long
+        Dim span As TimeSpan = New TimeSpan(Date.Parse("1/1/1970").Ticks)
+        Dim time As Date = dt.Subtract(span)
+        Return CLng(time.Ticks / 10000)
+    End Function
+
 End Class

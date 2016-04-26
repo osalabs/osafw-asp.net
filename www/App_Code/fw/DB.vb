@@ -90,6 +90,8 @@ Public Class DB
             dbcomm = New OleDbCommand(sql, dbconn_cache(current_db))
         End If
 
+        dbcomm.CommandTimeout = 300
+
         Dim dbread As DbDataReader = dbcomm.ExecuteReader()
         Return dbread
     End Function
@@ -261,6 +263,7 @@ Public Class DB
     End Function
 
     Public Function qone(ByVal table As String, ByVal field_name As String, ByVal field_value As Object) As String
+        connect()
         load_table_schema(table)
         field_name = field_name.ToLower()
         If Not schema(table).containskey(field_name) Then Throw New ApplicationException("field " & table & "." & field_name & " does not defined in FW.config(""schema"") ")

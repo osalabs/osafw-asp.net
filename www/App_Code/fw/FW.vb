@@ -48,6 +48,8 @@ Public Class FW
     Public cur_format As String
     Public cur_params As ArrayList
 
+    Public is_log_events As Boolean = True 'can be set temporarly to false to prevent event logging (for batch process for ex)
+
     'begin processing one request
     Public Shared Sub run(Optional context As HttpContext = Nothing)
         If context Is Nothing Then context = HttpContext.Current
@@ -773,7 +775,11 @@ Public Class FW
         Try
             ps = mInfo.Invoke(new_controller, args)
         Catch ex As TargetInvocationException
-            Throw ex.InnerException
+            'ignore redirect exception
+            If ex.InnerException Is Nothing OrElse Not (TypeOf (ex.InnerException) Is RedirectException) Then
+                Throw 'this keeps stack, also see http://weblogs.asp.net/fmarguerie/rethrowing-exceptions-and-preserving-the-full-call-stack-trace
+            End If
+            'Throw ex.InnerException
         End Try
         If ps IsNot Nothing Then parser(ps)
     End Sub
@@ -953,6 +959,7 @@ Public Class FW
     End Function
 
     Public Sub log_event(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0)
+        If Not is_log_events Then Return
         Me.model(Of Events).log_event(ev_icode, item_id, item_id2, iname, records_affected)
     End Sub
 
