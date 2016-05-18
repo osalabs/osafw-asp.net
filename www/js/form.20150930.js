@@ -190,7 +190,7 @@ function apply_scrollable_table($table, is_force) {
 
 
 function list_chkall(cab){
- $(".multicb", cab.form).attr('checked', cab.checked);
+ $(".multicb", cab.form).prop('checked', cab.checked);
 }
 
 // <a href="#" data-mail-name="NAME" data-mail-domain="DOM" data-mail="subject=XXX">[yyy]</a>
