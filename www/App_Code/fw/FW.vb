@@ -294,7 +294,7 @@ Public Class FW
         Try
             _auth(cur_controller, cur_action)
 
-            Dim calledType As Type = Type.GetType(cur_controller & "Controller", False)
+            Dim calledType As Type = Type.GetType(cur_controller & "Controller", False, True) 'case ignored
             If calledType Is Nothing Then
                 logger("WARN", "No controller found for controller=[" & cur_controller & "], using default Home")
                 'no controller found - call default controller with default action

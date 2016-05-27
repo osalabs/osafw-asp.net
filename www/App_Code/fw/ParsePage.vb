@@ -121,8 +121,7 @@ Public Class ParsePage
     '"d M yyyy HH:mm"
 
     'for dynamic load of CommonMark markdown converter
-    Private Shared aCommonMark As Reflection.Assembly
-    Private Shared tCommonMarkConverter As Type
+    Private Shared CommonMarkSettings As Object
     Private Shared mConvert As Reflection.MethodInfo
 
     Private fw As FW
@@ -709,14 +708,20 @@ Public Class ParsePage
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("markdown") Then
                     Try
-                        If aCommonMark Is Nothing Then
+                        If mConvert Is Nothing Then
                             'try to dynamic load CommonMark
-                            aCommonMark = Reflection.Assembly.Load("CommonMark")
-                            tCommonMarkConverter = aCommonMark.GetType("CommonMark.CommonMarkConverter")
+                            Dim aCommonMark As Reflection.Assembly = Reflection.Assembly.Load("CommonMark")
+                            Dim tCommonMarkConverter As Type = aCommonMark.GetType("CommonMark.CommonMarkConverter")
+                            Dim tCommonMarkSettings As Type = aCommonMark.GetType("CommonMark.CommonMarkSettings")
+                            CommonMarkSettings = tCommonMarkSettings.GetProperty("Default", tCommonMarkSettings).GetValue(Nothing, Nothing).Clone()
+                            CommonMarkSettings.RenderSoftLineBreaksAsLineBreaks = True
+                            'more default settings can be overriden here
+
                             mConvert = tCommonMarkConverter.GetMethod("Convert", New Type() {GetType(String), aCommonMark.GetType("CommonMark.CommonMarkSettings")})
                         End If
+
                         'equivalent of: value = CommonMarkConverter.Convert(value)
-                        value = mConvert.Invoke(Nothing, New Object() {value, Nothing})
+                        value = mConvert.Invoke(Nothing, New Object() {value, CommonMarkSettings})
                     Catch ex As Exception
                         fw.logger("WARN", "error parsing markdown, check bin\CommonMark.dll exists")
                         fw.logger("DEBUG", ex.Message)
