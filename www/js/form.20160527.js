@@ -242,24 +242,25 @@ function field_insert_at_cursor(myField, myValue) {
 }
 
 /* usage:
+<a href="#" class="on-share" data-url="[optional]" data-title="[optional]" data-top="[optional top offset]" data-left="[optional left offset]">
 $(document).on('click', '.on-share', toggle_share);
-$(document).on('click', '#sharer a', click_share);
  */
 function toggle_share (e) {
     e.preventDefault();
     var el = this;
     var $this = $(this);
     $sharer = $('#sharer');
+    var is_exists = !!$sharer.length;
+    if (!is_exists) $(document).on('click', '#sharer a', click_share);
 
     $sharer.remove();//close any opened
 
     if (!$sharer.length || $sharer[0].el!=el){
         //this share opened by another element, so show share again on this element
-
-        var $concert = $this.closest('.sb-content-concert');
+        var data = $this.data();
         var config = {
-            url: $concert.data('url'),
-            title: $concert.data('iname')
+            url: data.url ? data.url : window.location.href,
+            title: data.iname ? data.iname : document.title
         };
 
         var os = $this.offset();
@@ -271,7 +272,11 @@ function toggle_share (e) {
                 +'<a href="#" data-share="mail"><i class="ico-share ico-mail"></i></a>'
                 +'</div>');
         $(document.body).append($sharer);
-        $sharer.css('top',os.top+7).css('left', os.left-$sharer.width()-12);
+
+        var offset_top = data.top ? data.top : 7;
+        var offset_left = data.left ? data.left : -$sharer.width()-12;
+
+        $sharer.css('top',os.top+offset_top).css('left', os.left+offset_left);
         $sharer[0].el = el;
         $sharer[0].config = config;
     }
