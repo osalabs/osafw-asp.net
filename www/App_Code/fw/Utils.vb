@@ -547,8 +547,8 @@ Public Class Utils
             If trlen1 > 0 Then trlen = trlen1
         End If
         If hattrs.ContainsKey("trchar") Then trchar = hattrs("trchar")
-        If hattrs.ContainsKey("trend") Then trchar = hattrs("trend")
-        If hattrs.ContainsKey("trword") Then trchar = hattrs("trword")
+        If hattrs.ContainsKey("trend") Then trend = hattrs("trend")
+        If hattrs.ContainsKey("trword") Then trword = hattrs("trword")
 
         Dim orig_len As Integer = Len(str)
         If orig_len < trlen Then Return str 'no need truncate
@@ -598,6 +598,32 @@ Public Class Utils
         str = Regex.Replace(str, "<br\s*\/?>", vbLf)
         str = Regex.Replace(str, "(?:<[^>]*>)+", " ")
         Return str
+    End Function
+
+    'sel_ids - comma-separated ids
+    'value:
+    '     nothing - use id value from input
+    '     "123..."  - use index (by order)
+    '     "other value" - use this value
+    'return hash: id => id
+    Shared Function commastr2hash(sel_ids As String, Optional value As String = Nothing) As Hashtable
+        Dim ids As New ArrayList(Split(sel_ids, ","))
+        Dim result As New Hashtable
+        For i = 0 To ids.Count - 1
+            Dim v As String = ids(i)
+            result(v) = IIf(IsNothing(value), v, IIf(value = "123...", i, value))
+        Next
+        Return result
+    End Function
+
+    'comma-delimited str to newline-delimited str
+    Public Shared Function commastr2nlstr(str As String) As String
+        Return Replace(str, ",", vbCrLf)
+    End Function
+
+    'newline-delimited str to comma-delimited str
+    Public Shared Function nlstr2commastr(str As String) As String
+        Return Regex.Replace(str & "", "[\n\r]+", ",")
     End Function
 
 End Class
