@@ -1,11 +1,11 @@
-<form action="<~../url>" method="post" onsubmit="return confirm('`Are you sure?`')">
+<form action="<~../url>" method="post">
 <input type="hidden" name="XSS" value="<~SESSION[XSS]>">
 <input type="hidden" name="_method" value="PUT">
 
-<table class="table table-striped table-condensed list">
+<table class="table table-striped table-condensed table-hover list">
     <thead>
         <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
-            <th><input type="checkbox" name="all" value="1" onclick="list_chkall(this)"></th>
+            <th><input type="checkbox" name="all" value="1" class="on-list-chkall"></th>
             <th class="sortable" data-sort="iname">`Title`</th>
             <th class="sortable" data-sort="add_time">`Added on`</th>
             <th></th>
@@ -19,14 +19,14 @@
             <td><~add_time></td>
             <td nowrap="nowrap">
                 <a href="<~row_click_url>">`Edit`</a>
-                <~/common/dot><a href="<~../url>/<~id>/delete" onclick="return delete_btn(this)">`Del`</a>
+                <~/common/dot><a href="<~../url>/<~id>/delete" class="on-delete-list-row">`Del`</a>
             </td>
         </tr>
 </~list_rows>
     </tbody>
 </table>
 
-<input type="submit" name="delete" value="`Delete`" class="btn btn-danger" > `checked rows`
+<~/common/list/btn_multidel>
 
 </form>
 <form id="FOneDelete" action="<~../url>/%id%?XSS=<~SESSION[XSS]>" method="post">

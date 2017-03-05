@@ -22,15 +22,15 @@ Public Class AttController
     Public Sub DownloadAction(Optional ByVal form_id As String = "")
         Dim id As Integer = Utils.f2int(form_id)
         If id = 0 Then Throw New ApplicationException("404 File Not Found")
-        Dim size As String = fw.FORM("size")
+        Dim size As String = reqs("size")
         model.transmit_file(Utils.f2int(form_id), size)
     End Sub
 
     Public Sub ShowAction(Optional ByVal form_id As String = "")
         Dim id As Integer = Utils.f2int(form_id)
         If id = 0 Then Throw New ApplicationException("404 File Not Found")
-        Dim size As String = fw.FORM("size")
-        Dim is_preview As Boolean = fw.FORM("preview") = "1"
+        Dim size As String = reqs("size")
+        Dim is_preview As Boolean = reqs("preview") = "1"
 
         If is_preview Then
             Dim item As Hashtable = model.one(id)
@@ -38,7 +38,7 @@ Public Class AttController
                 model.transmit_file(id, size, "inline")
             Else
                 'if it's not an image and requested preview - return std image
-                Dim filepath As String = fw.config("site_root") & "/img/att_file.png" ' TODO move to web.config or to model?
+                Dim filepath As String = fw.config("site_root") & "/img/att_file.png" ' TODO move to web.config or to model? and no need for transfer file - just redirect TODO
                 Dim ext As String = UploadUtils.get_upload_file_ext(filepath)
                 fw.resp.AppendHeader("Content-type", model.get_mime4ext(ext))
                 fw.resp.TransmitFile(filepath)

@@ -1,9 +1,10 @@
 <div class="list_filter">
-<form method="GET" id="FFilter" name="FFilter" class="form-horizontal">
+<form method="GET" id="FFilter" name="FFilter" class="form-horizontal" data-autosubmit>
   <input type="hidden" name="dofilter" value="1">
   <input type="hidden" name="f[pagesize]" value="<~f[pagesize]>">
   <input type="hidden" name="f[sortby]" value="<~f[sortby]>">
   <input type="hidden" name="f[sortdir]" value="<~f[sortdir]>">
+  <~/common/form/relid>
   <~list_filter_inputs>
 
   <~/common/list/filter_search>

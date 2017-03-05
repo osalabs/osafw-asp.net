@@ -24,7 +24,7 @@ Public Class Events
     Public Overloads Sub log_event(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0)
         Dim hEV As Hashtable = one_by_icode(ev_icode)
         If Not hEV.ContainsKey("id") Then
-            fw.logger("WARN", "No event defined for icode=[" & ev_icode & "], auto-creating")
+            fw.logger(LogLevel.WARN, "No event defined for icode=[", ev_icode, "], auto-creating")
             hEV = New Hashtable
             hEV("icode") = ev_icode
             hEV("iname") = ev_icode

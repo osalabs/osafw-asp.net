@@ -1,11 +1,12 @@
-﻿' Demo Admin  controller
+﻿' Demo Admin controller
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2015 Oleg Savchuk www.osalabs.com
+' (c) 2009-2017 Oleg Savchuk www.osalabs.com
 
 Public Class AdminDemosController
     Inherits FwAdminController
     Protected model As Demos
+    Protected model_related As DemoDicts
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -20,41 +21,50 @@ Public Class AdminDemosController
         search_fields = "iname idesc"
         list_sortdef = "iname asc"
         list_sortmap = Utils.qh("id|id iname|iname add_time|add_time demo_dicts_id|demo_dicts_id email|email")
+
+        related_field_name = "demo_dicts_id"
+        model_related = fw.model(Of DemoDicts)()
     End Sub
 
-    Public Overrides Function IndexAction() As Hashtable
-        Dim ps As Hashtable = MyBase.IndexAction()
+    Public Overrides Sub set_list_search()
+        MyBase.set_list_search()
+
+        If list_filter("status") > "" Then list_where &= " and status=" & db.qi(list_filter("status"))
+    End Sub
+
+    Public Overrides Sub get_list_rows()
+        MyBase.get_list_rows()
 
         'add/modify rows from db if necessary
         For Each row As Hashtable In Me.list_rows
-            row("demo_dicts") = fw.model(Of DemoDicts).one(row("demo_dicts_id"))
+            row("demo_dicts") = model_related.one(row("demo_dicts_id"))
         Next
-
-        Return ps
-    End Function
+    End Sub
 
     Public Overrides Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
-        'set new form defaults here if any
-        'Me.form_new_defaults = New Hashtable
+        'Me.form_new_defaults = New Hashtable 'set new form defaults here if any
+        'Me.form_new_defaults = reqh("item") 'OR optionally set defaults from request params
         'item("field")="default value"
         Dim ps As Hashtable = MyBase.ShowFormAction(form_id)
 
         'read dropdowns lists from db
         Dim item As Hashtable = ps("i")
         ps("select_options_parent_id") = FormUtils.select_options_db(db.array("select id, iname from " & model.table_name & " where parent_id=0 and status=0 order by iname"), item("parent_id"))
-        ps("select_options_demo_dicts_id") = fw.model(Of DemoDicts).get_select_options(item("demo_dicts_id"))
-        ps("dict_link_auto_id_iname") = fw.model(Of DemoDicts).iname(item("dict_link_auto_id"))
-        ps("multi_datarow") = fw.model(Of DemoDicts).get_multi_list(item("dict_link_multi"))
+        ps("select_options_demo_dicts_id") = model_related.get_select_options(item("demo_dicts_id"))
+        ps("dict_link_auto_id_iname") = model_related.iname(item("dict_link_auto_id"))
+        ps("multi_datarow") = model_related.get_multi_list(item("dict_link_multi"))
         FormUtils.combo4date(item("fdate_combo"), ps, "fdate_combo")
 
         Return ps
     End Function
 
-    Public Overrides Sub SaveAction(Optional ByVal form_id As String = "")
+    Public Overrides Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in save_fields ")
 
-        Dim item As Hashtable = req("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
+        Dim success = True
+        Dim is_new = (id = 0)
 
         Try
             Validate(id, item)
@@ -63,19 +73,20 @@ Public Class AdminDemosController
 
             Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Me.save_fields)
             FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
-            itemdb("dict_link_auto_id") = fw.model(Of DemoDicts).add_or_update_quick(item("dict_link_auto_id_iname"))
-            itemdb("dict_link_multi") = FormUtils.multi2ids(fw.FORM("dict_link_multi"))
+            itemdb("dict_link_auto_id") = model_related.add_or_update_quick(item("dict_link_auto_id_iname"))
+            itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
             itemdb("fdate_combo") = FormUtils.date4combo(item, "fdate_combo")
             itemdb("ftime") = FormUtils.timestr2int(item("ftime_str")) 'ftime - convert from HH:MM to int (0-24h in seconds)
 
             id = Me.model_add_or_update(id, itemdb)
 
-            fw.redirect(base_url & "/" & id & "/edit")
         Catch ex As ApplicationException
+            success = False
             Me.set_form_error(ex)
-            fw.route_redirect("ShowForm", New String() {id})
         End Try
-    End Sub
+
+        Return Me.save_check_result(success, id, is_new)
+    End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)
         Dim result As Boolean = Me.validate_required(item, Me.required_fields)
@@ -95,15 +106,9 @@ Public Class AdminDemosController
     End Sub
 
     Public Function AjaxAutocompleteAction() As Hashtable
-        Dim jout As New Hashtable
-        Dim query As String = fw.FORM("q")
+        Dim items As ArrayList = model_related.get_autocomplete_items(reqs("q"))
 
-        Dim items As ArrayList = fw.model(Of DemoDicts)().get_autocomplete_items(query)
-
-        Dim ps As New Hashtable
-        ps("_json_enabled") = True
-        ps("_json_data") = items
-        Return ps
+        Return New Hashtable From {{"_json_data", items}}
     End Function
 
 End Class

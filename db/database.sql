@@ -128,7 +128,6 @@ CREATE TABLE spages (
   idesc                 NVARCHAR(MAX),                          /*page contents, markdown*/
   head_att_id           INT NULL FOREIGN KEY REFERENCES att(id), /*optional head banner image*/
 
-  iname_tagline         NVARCHAR(64) NOT NULL DEFAULT '',       /*page tagline*/
   idesc_left            NVARCHAR(MAX),                          /*left sidebar content, markdown*/
   idesc_right           NVARCHAR(MAX),                          /*right sidebar content, markdown*/
   meta_keywords         NVARCHAR(255) NOT NULL DEFAULT '',      /*meta keywords*/
@@ -138,6 +137,9 @@ CREATE TABLE spages (
   template              NVARCHAR(64),                           /*template to use, if not defined - default site template used*/
   prio                  INT NOT NULL DEFAULT 0,                 /* 0 is normal and lowest priority*/
   is_home               INT DEFAULT 0,                          /* 1 is for home page (non-deletable page*/
+
+  custom_css            NVARCHAR(MAX),                          /*custom page css*/
+  custom_js             NVARCHAR(MAX),                          /*custom page js*/
 
   status                TINYINT DEFAULT 0,    /*0-ok, 10-not published, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
@@ -162,8 +164,8 @@ DROP TABLE categories;
 CREATE TABLE categories (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
-  iname                 NVARCHAR(64) NOT NULL DEFAULT '',
-  idesc                 NTEXT,
+  iname					        NVARCHAR(64) NOT NULL DEFAULT '',
+  idesc					        NTEXT,
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
@@ -214,6 +216,7 @@ CREATE TABLE event_log (
   iname                 NVARCHAR(255) NOT NULL DEFAULT '', /*short description of what's happened or additional data*/
 
   records_affected      INT NOT NULL DEFAULT 0,
+  fields                NVARCHAR(MAX),       /*serialized json with related fields data (for history) in form {fieldname: data, fieldname: data}*/
 
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_user_id           INT DEFAULT 0,                        /*user added record, 0 if sent by cron module*/
@@ -222,10 +225,36 @@ CREATE INDEX event_log_events_id_idx ON event_log (events_id);
 CREATE INDEX event_log_add_user_id_idx ON event_log (add_user_id);
 CREATE INDEX event_log_add_time_idx ON event_log (add_time);
 
-CREATE TABLE event_log_details (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-    [event_log_id]      BIGINT NULL FOREIGN KEY REFERENCES event_log(id),
-    [fname]             NVARCHAR(255) NOT NULL,   /*field name changed*/
-    [fdata]             NVARCHAR(255) NOT NULL   /*new data written*/
-);
+/*Lookup Manager Tables*/
+DROP TABLE lookup_manager_tables;
+CREATE TABLE lookup_manager_tables (
+  id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
+  tname                 NVARCHAR(255) NOT NULL DEFAULT '', /*table name*/
+  iname                 NVARCHAR(255) NOT NULL DEFAULT '', /*human table name*/
+  idesc                 NVARCHAR(MAX),                     /*table internal description*/
+
+  is_one_form           TINYINT NOT NULL DEFAULT 0,        /*1 - lookup table cotains one row, use form view*/
+  is_custom_form        TINYINT NOT NULL DEFAULT 0,        /*1 - use custom form template, named by lowercase(tname)*/
+  header_text           NVARCHAR(MAX),                     /*text to show in header when editing table*/
+  footer_text           NVARCHAR(MAX),                     /*text to show in footer when editing table*/
+  column_id             NVARCHAR(255),                     /*table id column, if empty - use id*/
+
+  list_columns          NVARCHAR(MAX),                     /*comma-separated field list to display on list view, if defined - bo table edit mode available*/
+  columns               NVARCHAR(MAX),                     /*comma-separated field list to display, if empty - all fields displayed*/
+  column_names          NVARCHAR(MAX),                     /*comma-separated column list of column names, if empty - use field name*/
+  column_types          NVARCHAR(MAX),                     /*comma-separated column list of column types/lookups (" "-string(default),textarea,checkbox,tname.field-lookup table), if empty - use standard input[text]*/
+  column_groups         NVARCHAR(MAX),                     /*comma-separated column list of groups column related to, if empty - don't include column in group*/
+
+  status                TINYINT DEFAULT 0,                /*0-ok, 127-deleted*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
+  add_user_id           INT DEFAULT 0,                        /*user added record*/
+  upd_time              DATETIME2,
+  upd_user_id           INT DEFAULT 0
+);
+CREATE UNIQUE INDEX lookup_manager_tables_tname ON lookup_manager_tables (tname);
+GO
+
+insert into lookup_manager_tables (tname, iname)
+VALUES ('categories','Categories');
+GO

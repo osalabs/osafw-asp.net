@@ -159,16 +159,27 @@ Public Class Att
 
         If item("id") > 0 Then
             check_access_rights(item("id"))
+            fw.resp.CacheControl = "private" 'use public only if all uploads are public
 
             Dim filepath As String = get_upload_img_path(id, size, item("ext"))
-            fw.logger("Transmit(" & disposition & ") filepath [" & filepath & "]")
-            Dim filename As String = Replace(item("fname"), """", "'")
-            Dim ext As String = UploadUtils.get_upload_file_ext(filename)
+            Dim filetime As Date = System.IO.File.GetLastWriteTime(filepath)
+            filetime = New Date(filetime.Year, filetime.Month, filetime.Day, filetime.Hour, filetime.Minute, filetime.Second) 'remove any milliseconds
 
-            fw.resp.AppendHeader("Content-type", get_mime4ext(ext))
-            fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
+            Dim ifmodhead As String = fw.req.Headers("If-Modified-Since")
+            Dim ifmod As Date
+            If ifmodhead IsNot Nothing AndAlso DateTime.TryParse(ifmodhead, ifmod) AndAlso ifmod.ToLocalTime >= filetime Then
+                fw.resp.StatusCode = 304 'not modified
+                fw.resp.SuppressContent = True
+            Else
+                fw.logger(LogLevel.INFO, "Transmit(", disposition, ") filepath [", filepath, "]")
+                Dim filename As String = Replace(item("fname"), """", "'")
+                Dim ext As String = UploadUtils.get_upload_file_ext(filename)
 
-            fw.resp.TransmitFile(filepath)
+                fw.resp.AppendHeader("Content-type", get_mime4ext(ext))
+                fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
+
+                fw.resp.TransmitFile(filepath)
+            End If
         Else
             Throw New ApplicationException("No file specified")
         End If

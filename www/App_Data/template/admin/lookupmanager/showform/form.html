@@ -1,0 +1,36 @@
+<form class="form-horizontal" method="post" action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+ <input type="hidden" name="XSS" value="<~session[XSS]>">
+ <input type="hidden" name="d" value="<~d>">
+
+  <fieldset>
+    <~/common/form/msg>
+
+
+    <~fields repeat inline>
+        <~group_block if="is_group" inline>
+            <div class="form-group">
+                <div class="col-md-9 col-md-offset-3">
+                    <h4><~igroup></h4>
+                </div>
+            </div>
+        </~group_block>
+        <div class="form-group <~/common/error if="is_error">">
+          <label class="control-label col-md-3" for="<~colname>"><~iname></label>
+          <div class="col-md-9">
+            <~type_input unless="type">
+            <~type_checkbox ifeq="type" value="checkbox">
+            <~type_textarea ifeq="type" value="textarea">
+            <~type_lookup ifeq="type" value="lookup">
+          </div>
+        </div>
+    </~fields>
+
+    <div class="form-group">
+      <div class="col-md-offset-3 col-md-9">
+        <button type="submit" class="btn btn-primary">`Submit`</button>
+        <button type="button" class="btn btn-default" onclick="cancel_form(this.form, '<~../url>?d=<~d>')">`Cancel`</button>
+      </div>
+    </div>
+
+  </fieldset>
+</form>

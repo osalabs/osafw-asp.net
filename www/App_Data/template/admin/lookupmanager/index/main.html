@@ -1,0 +1,34 @@
+<h1><~title></h1>
+
+<div class="clearfix btn-std">
+<~mode_switch if="is_two_modes" inline>
+<div class="btn-group pull-right on-mode-switch" data-toggle="buttons">
+  <label class="btn btn-default <~/common/active unless="f[mode]">">
+    <input type="radio" name="f[mode]" value="" id="option1" autocomplete="off" <~/common/checked unless="f[mode]">> <i class="glyphicon glyphicon-th-list"></i> Browse
+  </label>
+  <label class="btn btn-default <~/common/active if="f[mode]">">
+    <input type="radio" name="f[mode]" value="edit" id="option2" autocomplete="off" <~/common/checked if="f[mode]">> <i class="glyphicon glyphicon-edit"></i> Table Edit
+  </label>
+</div>
+</~mode_switch>
+
+<div class="btn-group">
+    <a class="btn btn-default" href="<~../url>"><~/common/char/larr> `Back to Lookup Manager`</a>
+</div>
+
+<div class="btn-group">
+    <a class="btn btn-default on-add-new" href="<~../url>/new?d=<~d>"><i class="glyphicon glyphicon-plus"></i> `Add New`</a>
+</div>
+</div>
+
+<~header_text if="defs[header_text]" inline>
+<p class="well well-sm">
+    <~defs[header_text] nl2br>
+</p>
+</~header_text>
+
+<~/common/form/msg>
+
+<~list_filter>
+<~list_table unless="f[mode]">
+<~list_table_edit if="f[mode]">

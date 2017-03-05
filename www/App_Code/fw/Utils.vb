@@ -626,4 +626,27 @@ Public Class Utils
         Return Regex.Replace(str & "", "[\n\r]+", ",")
     End Function
 
+    ''' <summary>
+    ''' for each row in rows add keys/values to this row (by ref)
+    ''' </summary>
+    ''' <param name="rows">db array</param>
+    ''' <param name="fields">keys/values to add</param>
+    Public Shared Sub dbarray_inject(rows As ArrayList, fields As Hashtable)
+        For Each row As Hashtable In rows
+            'array merge
+            For Each key In fields.Keys
+                row(key) = fields(key)
+            Next
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' escapes/encodes string so it can be passed as part of the url
+    ''' </summary>
+    ''' <param name="str"></param>
+    ''' <returns></returns>
+    Public Shared Function escape_url(str As String) As String
+        Return HttpUtility.UrlEncode(str)
+    End Function
+
 End Class

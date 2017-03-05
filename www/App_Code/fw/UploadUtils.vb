@@ -11,6 +11,7 @@ Public Class UploadParams
     Public is_required As Boolean = False 'set to True and upload_simple will throw ApplicationException if file required, but not uploaded
     Public is_mkdir As Boolean = True 'create save_path if not exists
     Public is_overwrite As Boolean = True 'overwrite existing file
+    Public is_cleanup As Boolean = False 'only if is_overwrite=true, apply remove_upload_img to destination path (cleans all old jpg/png/gif with thumbnails)
     Public is_resize As Boolean = False 'resize to max w/h if image
     Public max_w As Integer = 1200 ' default max image width
     Public max_h As Integer = 1200 ' default max iamge height
@@ -73,12 +74,14 @@ Public Class UploadUtils
             End If
             up.full_path = up.full_path & "\" & up.filename
 
+            If up.is_overwrite AndAlso up.is_cleanup Then remove_upload_img_bypath(up.fw, up.full_path)
+
             If Not up.is_overwrite And System.IO.File.Exists(up.full_path) Then
                 If up.is_required Then Throw New ApplicationException("Uploaded file cannot overwrite existing file")
                 Return result
             End If
 
-            up.fw.logger("saving to " & up.full_path)
+            up.fw.logger(LogLevel.DEBUG, "saving to ", up.full_path)
             file.SaveAs(up.full_path)
 
             If up.is_resize AndAlso is_upload_img_ext_allowed(up.ext) Then
@@ -155,26 +158,30 @@ Public Class UploadUtils
         Return url
     End Function
 
-
     'removes all type of image files uploaded with thumbnails
     Public Shared Function remove_upload_img(fw As FW, ByVal module_name As String, ByVal id As Long) As Boolean
         Dim dir As String = UploadUtils.get_upload_dir(fw, module_name, id)
+        Return remove_upload_img_bypath(fw, dir & "\" & id)
+    End Function
 
-        File.Delete(dir & "\" & id & "_l.png")
-        File.Delete(dir & "\" & id & "_l.gif")
-        File.Delete(dir & "\" & id & "_l.jpg")
+    Public Shared Function remove_upload_img_bypath(fw As FW, path As String) As Boolean
+        path = System.IO.Path.GetDirectoryName(path) & "\" & System.IO.Path.GetFileNameWithoutExtension(path) 'cut extension if any
 
-        File.Delete(dir & "\" & id & "_m.png")
-        File.Delete(dir & "\" & id & "_m.gif")
-        File.Delete(dir & "\" & id & "_m.jpg")
+        File.Delete(path & "_l.png")
+        File.Delete(path & "_l.gif")
+        File.Delete(path & "_l.jpg")
 
-        File.Delete(dir & "\" & id & "_s.png")
-        File.Delete(dir & "\" & id & "_s.gif")
-        File.Delete(dir & "\" & id & "_s.jpg")
+        File.Delete(path & "_m.png")
+        File.Delete(path & "_m.gif")
+        File.Delete(path & "_m.jpg")
 
-        File.Delete(dir & "\" & id & ".png")
-        File.Delete(dir & "\" & id & ".gif")
-        File.Delete(dir & "\" & id & ".jpg")
+        File.Delete(path & "_s.png")
+        File.Delete(path & "_s.gif")
+        File.Delete(path & "_s.jpg")
+
+        File.Delete(path & ".png")
+        File.Delete(path & ".gif")
+        File.Delete(path & ".jpg")
         Return True
     End Function
 

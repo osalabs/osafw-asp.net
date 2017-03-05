@@ -53,14 +53,11 @@ Public Class Users
 
     'fill the session and do all necessary things just user authenticated (and before redirect
     Public Function do_login(id As Integer) As Boolean
-        Dim hU As Hashtable = one(id)
-
         fw.SESSION.Clear()
         fw.SESSION("is_logged", True)
         fw.SESSION("XSS", Utils.get_rand_str(16))
-        fw.SESSION("login", hU("email"))
-        fw.SESSION("access_level", Utils.f2int(hU("access_level")))
-        fw.SESSION("user", hU)
+
+        session_reload(id)
 
         fw.log_event("login", id)
         'update login info
@@ -70,12 +67,16 @@ Public Class Users
         Return True
     End Function
 
-    Public Function session_reload() As Boolean
-        Dim hU As Hashtable = one(me_id())
+    Public Function session_reload(Optional id As Integer = 0) As Boolean
+        If id = 0 Then id = me_id()
+        Dim hU As Hashtable = one(id)
 
         fw.SESSION("login", hU("email"))
         fw.SESSION("access_level", Utils.f2int(hU("access_level")))
         fw.SESSION("user", hU)
+        Dim fname = Trim(hU("fname"))
+        Dim lname = Trim(hU("lname"))
+        fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname) 'will be empty If no user name Set
 
         Return True
     End Function

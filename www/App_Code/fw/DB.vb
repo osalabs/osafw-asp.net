@@ -11,6 +11,7 @@ Imports System.IO
 
 Public Class DB
     Implements IDisposable
+    Private Shared schemafull_cache As Hashtable 'cache for the full schema, lifetime = app lifetime
     Private Shared schema_cache As Hashtable 'cache for the schema, lifetime = app lifetime
 
     'Private Shared TimeFieldLabel As String = " <small>Format 24hr.time. Eg, 1330 for 1:30pm"
@@ -51,7 +52,7 @@ Public Class DB
                 conn = New OleDbConnection(oConnStr)
             Else
                 Dim msg As String = "Unknown type [" & dbtype & "] for db " & current_db
-                fw.logger(msg)
+                fw.logger(LogLevel.FATAL, msg)
                 Throw New ApplicationException(msg)
             End If
             conn.Open()
@@ -81,7 +82,7 @@ Public Class DB
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Function query(ByVal sql As String) As DbDataReader
         connect()
-        fw.logger("DB:" & current_db & ", SQL QUERY: " & sql)
+        fw.logger(LogLevel.INFO, "DB:", current_db, ", SQL QUERY: ", sql)
 
         Dim dbcomm As DbCommand = Nothing
         If dbtype = "SQL" Then
@@ -89,8 +90,6 @@ Public Class DB
         ElseIf dbtype = "OLE" Then
             dbcomm = New OleDbCommand(sql, dbconn_cache(current_db))
         End If
-
-        dbcomm.CommandTimeout = 300
 
         Dim dbread As DbDataReader = dbcomm.ExecuteReader()
         Return dbread
@@ -100,7 +99,7 @@ Public Class DB
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Sub exec(ByVal sql As String)
         connect()
-        fw.logger("DB=" & current_db & " SQL QUERY = " & sql)
+        fw.logger(LogLevel.INFO, "DB:", current_db, ", SQL QUERY: ", sql)
 
         Dim dbcomm As DbCommand = Nothing
         If dbtype = "SQL" Then
@@ -204,6 +203,14 @@ Public Class DB
         Return Strings.Left(Trim(str), length)
     End Function
 
+    'quote identifier: table => [table]
+    Public Function q_ident(ByVal str As String) As String
+        If IsNothing(str) Then str = ""
+        str = Replace(str, "[", "")
+        str = Replace(str, "]", "")
+        Return "[" & str & "]"
+    End Function
+
     'if length defined - string will be Left(Trim(str),length) before quoted
     Public Function q(ByVal str As String, Optional length As Integer = 0) As String
         If IsNothing(str) Then str = ""
@@ -254,9 +261,7 @@ Public Class DB
         For Each k In fields.Keys
             q = qone(table, k, fields(k))
             'quote field name too
-            k = Replace(k, "[", "")
-            k = Replace(k, "]", "")
-            If q IsNot Nothing Then fieldsq("[" & k & "]") = q
+            If q IsNot Nothing Then fieldsq(q_ident(k)) = q
         Next k
 
         Return fieldsq
@@ -286,18 +291,13 @@ Public Class DB
                     quoted = "NULL"
                 Else
                     quoted = Utils.f2int(field_value)
-                    'Dim f As String = Regex.Replace(field_value, "\D", "")
-                    'If (f.Length > 0) Then quoted = f
                 End If
 
             ElseIf field_type = "datetime" Then
                 quoted = Me.qd(field_value)
 
             ElseIf field_type = "float" Then
-                quoted = Utils.f2float(Regex.Replace(field_value, ",", "."))
-                'Dim f As String = Regex.Replace(field_value, "[^\d,.]", "")
-                'f = Regex.Replace(f, ",", ".")
-                'If (f.Length > 0) Then quoted = f
+                quoted = Utils.f2float(field_value)
 
             Else
                 'fieldsq(k) = "'" & Regex.Replace(fields(k), "(['""])", "\\$1") & "'"
@@ -370,7 +370,7 @@ Public Class DB
 
     'join key/values with quoting values according to table
     ' h - already quoted! values
-    Private Function _join_hash(h As Hashtable, ByVal kv_delim As String, ByVal pairs_delim As String) As String
+    Public Function _join_hash(h As Hashtable, ByVal kv_delim As String, ByVal pairs_delim As String) As String
         Dim res As String = ""
         If h.Count < 1 Then Return res
 
@@ -392,12 +392,12 @@ Public Class DB
         Dim where_string As String = _join_hash(where, "=", " and ")
         If where_string.Length > 0 Then where_string = " where " & where_string
 
-        Dim sql As String = "select * from   [" & table & "] " & where_string
+        Dim sql As String = "select * from " & q_ident(table) & " " & where_string
         If order_by.Length > 0 Then sql = sql & " order by " & order_by
         Return sql
     End Function
 
-    Private Function hash2sql_u(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable) As String
+    Public Function hash2sql_u(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable) As String
         fields = quote(table, fields)
         where = quote(table, where)
 
@@ -406,7 +406,7 @@ Public Class DB
 
         If where_string.Length > 0 Then where_string = " where " & where_string
 
-        Dim sql As String = "update [" & table & "] " & " set " & update_string & where_string
+        Dim sql As String = "update " & q_ident(table) & " " & " set " & update_string & where_string
 
         Return sql
     End Function
@@ -421,7 +421,7 @@ Public Class DB
 
         fields.Values.CopyTo(ar, 0)
         Dim values_string As String = String.Join(", ", ar)
-        Dim sql As String = "insert into [" & table & "] " & "(" & names_string & " ) values(" & values_string & ")"
+        Dim sql As String = "insert into " & q_ident(table) & " " & "(" & names_string & " ) values(" & values_string & ")"
         Return sql
     End Function
 
@@ -430,67 +430,96 @@ Public Class DB
         Dim where_string As String = _join_hash(where, "=", " and ")
         If where_string.Length > 0 Then where_string = " where " & where_string
 
-        Dim sql As String = "delete from [" & table & "] " & where_string
+        Dim sql As String = "delete from " & q_ident(table) & " " & where_string
         Return sql
     End Function
 
+    Public Function load_table_schema_full(table As String) As ArrayList
+        'check if full schema already there
+        If IsNothing(schemafull_cache) Then schemafull_cache = New Hashtable
+        If Not schemafull_cache.ContainsKey(current_db) Then schemafull_cache(current_db) = New Hashtable
+        If schemafull_cache(current_db).ContainsKey(table) Then
+            Return schemafull_cache(current_db)(table)
+        End If
+
+        'cache miss
+        Dim result As New ArrayList
+        If dbtype = "SQL" Then
+            'fw.logger("cache MISS " & current_db & "." & table)
+            'get information about all columns in the table
+            Dim sql As String = "SELECT c.column_name as 'name'," &
+                    " c.data_type as 'type'," &
+                    " CASE c.is_nullable WHEN 'YES' THEN 1 ELSE 0 END AS 'is_nullable'," &
+                    " c.column_default as 'default'," &
+                    " c.character_maximum_length as 'maxlen'," &
+                    " c.numeric_precision," &
+                    " c.numeric_scale," &
+                    " c.character_set_name as 'charset'," &
+                    " c.collation_name as 'collation'," &
+                    " c.ORDINAL_POSITION as 'pos'," &
+                    " COLUMNPROPERTY(object_id(c.table_name), c.column_name, 'IsIdentity') as is_identity" &
+                    " FROM INFORMATION_SCHEMA.TABLES t," &
+                    "   INFORMATION_SCHEMA.COLUMNS c" &
+                    " WHERE t.table_name = c.table_name" &
+                    "   AND t.table_name = " & q(table) &
+                    " order by c.ORDINAL_POSITION"
+            result = array(sql)
+            For Each row As Hashtable In result
+                row("internal_type") = map_mssqltype2internal(row("type"))
+            Next
+        Else
+            'OLE DB (Access)
+            Dim schemaTable As DataTable =
+                dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
+                New Object() {Nothing, Nothing, table, Nothing})
+
+            For Each row As DataRow In schemaTable.Rows
+                'COLUMN_NAME
+                'COLUMN_HASDEFAULT
+                'COLUMN_DEFAULT
+                'IS_NULLABLE
+                'DATA_TYPE
+                'CHARACTER_MAXIMUM_LENGTH
+                'fw.logger(row("COLUMN_NAME"))
+                'fw.logger(row("DATA_TYPE"))
+                'fw.logger(row("CHARACTER_MAXIMUM_LENGTH"))
+                Dim h = New Hashtable
+                h("name") = row("COLUMN_NAME").ToString().ToLower()
+                h("type") = row("DATA_TYPE")
+                h("internal_type") = map_oletype2internal(row("DATA_TYPE"))
+                'TODO - add more schema fields if necessary
+                result.Add(h)
+            Next
+        End If
+
+        'save to cache
+        schemafull_cache(current_db)(table) = result
+
+        Return result
+    End Function
+
     'load table schema from db
-    Private Sub load_table_schema(table As String)
+    Public Function load_table_schema(table As String) As Hashtable
         'for non-MSSQL schemas - just use config schema for now - TODO
         If dbtype <> "SQL" AndAlso dbtype <> "OLE" Then
             If schema.Count = 0 Then
                 schema = conf("schema")
             End If
-            Return
+            Return Nothing
         End If
 
         'check if schema already there
-        If schema.ContainsKey(table) Then Return
+        If schema.ContainsKey(table) Then Return schema(table)
 
         If IsNothing(schema_cache) Then schema_cache = New Hashtable
         If Not schema_cache.ContainsKey(current_db) Then schema_cache(current_db) = New Hashtable
         If Not schema_cache(current_db).ContainsKey(table) Then
             Dim h As New Hashtable
 
-            If dbtype = "SQL" Then
-                'fw.logger("cache MISS " & current_db & "." & table)
-                'get information about all columns in the table
-                Dim sql As String = "SELECT c.column_name as 'name'," &
-                        " c.data_type as 'type'," &
-                        " CASE c.is_nullable WHEN 'YES' THEN 1 ELSE 0 END AS 'is_nullable'," &
-                        " c.column_default as 'default'," &
-                        " c.character_maximum_length as 'maxlen'," &
-                        " c.numeric_precision," &
-                        " c.numeric_scale," &
-                        " c.character_set_name as 'charset'," &
-                        " c.collation_name as 'collation'" &
-                        " FROM INFORMATION_SCHEMA.TABLES t," &
-                        "   INFORMATION_SCHEMA.COLUMNS c" &
-                        " WHERE t.table_name = c.table_name" &
-                        "   AND t.table_name = " & q(table)
-                Dim rows As ArrayList = array(sql)
-                For Each row As Hashtable In rows
-                    h(row("name").ToString().ToLower()) = map_mssqltype2internal(row("type"))
-                Next
-            Else
-                'OLE DB (Access)
-                Dim schemaTable As DataTable =
-                    dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
-                    New Object() {Nothing, Nothing, table, Nothing})
-
-                For Each row As DataRow In schemaTable.Rows
-                    'COLUMN_NAME
-                    'COLUMN_HASDEFAULT
-                    'COLUMN_DEFAULT
-                    'IS_NULLABLE
-                    'DATA_TYPE
-                    'CHARACTER_MAXIMUM_LENGTH
-                    'fw.logger(row("COLUMN_NAME"))
-                    'fw.logger(row("DATA_TYPE"))
-                    'fw.logger(row("CHARACTER_MAXIMUM_LENGTH"))
-                    h(row("COLUMN_NAME").ToString().ToLower()) = map_oletype2internal(row("DATA_TYPE"))
-                Next
-            End If
+            Dim fields As ArrayList = load_table_schema_full(table)
+            For Each row As Hashtable In fields
+                h(row("name").ToString().ToLower()) = row("internal_type")
+            Next
 
             schema(table) = h
             schema_cache(current_db)(table) = h
@@ -499,7 +528,8 @@ Public Class DB
             schema(table) = schema_cache(current_db)(table)
         End If
 
-    End Sub
+        Return schema(table)
+    End Function
 
     Private Function map_mssqltype2internal(mstype As String) As String
         Dim result As String = ""
@@ -507,7 +537,7 @@ Public Class DB
             'TODO - unsupported: bit, image, varbinary, timestamp
             Case "tinyint", "smallint", "int", "bigint", "bit"
                 result = "int"
-            Case "real", "numeric", "decimal", "money", "smallmoney"
+            Case "real", "numeric", "decimal", "money", "smallmoney", "float"
                 result = "float"
             Case "datetime", "datetime2", "date", "smalldatetime"
                 result = "datetime"

@@ -61,6 +61,10 @@ Public Class Spages
         Return item
     End Function
 
+    Public Function list_children(parent_id As Integer) As ArrayList
+        Return db.array("select * from " & table_name & " where status<>127 and parent_id=" & db.qi(parent_id) & " order by iname")
+    End Function
+
     ''' <summary>
     ''' Read ALL rows from db according to where, then apply get_pages_tree to return tree structure 
     ''' </summary>

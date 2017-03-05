@@ -18,7 +18,7 @@ Public Class MyPasswordController
     End Sub
 
     Public Function ShowFormAction() As Hashtable
-        If fw.FORM("result") = "record_updated" Then
+        If reqs("result") = "record_updated" Then
             fw.G("green_msg") = "Login/Password has been changed"
         End If
 
@@ -38,7 +38,7 @@ Public Class MyPasswordController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -53,11 +53,11 @@ Public Class MyPasswordController
         Dim id As Integer = fw.SESSION("user")("id")
 
         Try
-            Validate(id, fw.FORM("item"))
+            Validate(id, reqh("item"))
             'load old record if necessary
             'Dim itemdb As Hashtable = Users.one(id)
 
-            item = FormUtils.form2dbhash(fw.FORM("item"), Utils.qw("email pwd"))
+            item = FormUtils.form2dbhash(reqh("item"), Utils.qw("email pwd"))
 
             If id > 0 Then
                 'update

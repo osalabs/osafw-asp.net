@@ -1,5 +1,7 @@
-<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form class="form-horizontal" method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
+ <input type="hidden" name="return_url" value="<~return_url>">
+ <~/common/form/relid>
 
   <fieldset>
     <~/common/form/msg>
@@ -33,9 +35,11 @@
       </div>
     </div>
     <div class="form-group <~/common/error if="ERR[idesc]">">
-      <label class="control-label col-md-3" for="idesc">`Description`</label>
+      <label class="control-label col-md-3" for="idesc">`Description`
+            <span class="nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown&nbsp;syntax</a> supported</span>
+      </label>
       <div class="col-md-9">
-        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control"><~i[idesc]></textarea>
+        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control markdown autoresize"><~i[idesc]></textarea>
       </div>
     </div>
 

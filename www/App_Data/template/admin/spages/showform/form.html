@@ -1,17 +1,19 @@
-<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form class="form-horizontal" method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
+ <input type="hidden" name="return_url" value="<~return_url>">
 
     <div class="pull-right">
+        <span class="form-saved-status"></span>
         <button type="submit" class="btn btn-primary">`Submit`</button>
-        <button type="button" class="btn btn-default" onclick="cancel_form(this.form, '<~../url>')">`Cancel`</button>
+        <button type="button" class="btn btn-default on-cancel" data-href="<~./cancel_url>">`Cancel`</button>
     </div>
     <div class="btn-std">
      <div class="btn-group">
-         <a class="btn btn-default" href="<~../url>/new">`Add New`</a>
-         <~add_sub if="id" inline>
-            <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>">`Add New Sub-Page`</a>
-         </~add_sub>
-         <a class="btn btn-default" href="<~../url>">`Return back to list`</a>
+        <a class="btn btn-default" href="<~../url><~/common/list/relid>"><i class="glyphicon glyphicon-menu-left"></i> `Return back to list`</a>
+        <a class="btn btn-default" href="<~../url>/new<~/common/list/relid>"><i class="glyphicon glyphicon-plus"></i> `Add New`</a>
+        <~add_sub if="id" inline>
+          <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add New Sub-Page`</a>
+        </~add_sub>
      </div>
     </div>
 
@@ -33,7 +35,7 @@
             <input id="url" name="item[url]" maxlength="255" value="<~i[url]>" type="text" class="form-control" <~/common/required unless="i[is_home]"> <~/common/disabled if="i[is_home]">>
             <span class="input-group-btn">
                 <!--button class="btn btn-default" type="button">Go!</button-->
-                <a href="<~full_url>" target="_blank" class="btn btn-default btn-sm">View Page <i class="glyphicon glyphicon-new-window"></i></a>
+                <a href="<~full_url>" target="_blank" class="btn btn-default btn-sm">View <i class="glyphicon glyphicon-new-window"></i></a>
             </span>
         </div>
       </div>
@@ -73,13 +75,6 @@
     <fieldset>
         <legend>Page Attributes</legend>
 
-        <div class="form-group <~/common/error if="ERR[iname_tagline]">">
-          <label class="control-label col-md-3" for="iname_tagline">`Tagline`</label>
-          <div class="col-md-9">
-            <input id="iname_tagline" name="item[iname_tagline]" maxlength="64" value="<~i[iname_tagline]>" type="text" class="form-control">
-          </div>
-        </div>
-
         <div class="form-group <~/common/error if="ERR[parent_id]">">
           <label class="control-label col-md-3" for="parent_id">`Parent page`</label>
           <div class="col-md-9">
@@ -112,6 +107,19 @@
           </div>
           <div class="col-md-2">
             <p class="help-block">0 - lowest priority</p>
+          </div>
+        </div>
+
+        <div class="form-group <~/common/error if="ERR[custom_css]">">
+          <label class="control-label col-md-3" for="custom_css">`Custom CSS`</label>
+          <div class="col-md-9">
+            <textarea id="custom_css" name="item[custom_css]" rows="3" class="form-control autoresize"><~i[custom_css]></textarea>
+          </div>
+        </div>
+        <div class="form-group <~/common/error if="ERR[custom_js]">">
+          <label class="control-label col-md-3" for="custom_js">`Custom JS`</label>
+          <div class="col-md-9">
+            <textarea id="custom_js" name="item[custom_js]" rows="3" class="form-control autoresize"><~i[custom_js]></textarea>
           </div>
         </div>
 
@@ -167,3 +175,17 @@
 
   </fieldset>
 </form>
+
+<~sub_block if="id" inline>
+<h3>Sub-Pages</h3>
+
+<p>
+  <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add New Sub-Page`</a>
+</p>
+
+<ul>
+  <~subpages repeat inline>
+  <li><a href="<~../url>/<~id>/edit"><~iname></a></li>
+  </~subpages>
+</ul>
+</~sub_block>

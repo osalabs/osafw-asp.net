@@ -1,32 +1,52 @@
 ﻿' Framework core class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+' (c) 2009-2017 Oleg Savchuk www.osalabs.com
 
 Imports System.IO
 Imports System.Net.Mail
 Imports System.Reflection
 
 'Custom Exceptions
-<Serializable> Public Class AuthException : Inherits ApplicationException
+<Serializable>
+Public Class AuthException : Inherits ApplicationException
     Public Sub New(message As String)
         MyBase.New(message)
     End Sub
 End Class
-<Serializable> Public Class ValidationException : Inherits ApplicationException
+<Serializable>
+Public Class ValidationException : Inherits ApplicationException
 End Class
-<Serializable> Public Class RedirectException : Inherits Exception
+<Serializable>
+Public Class RedirectException : Inherits Exception
 End Class
+
+''' <summary>
+''' Logger levels, ex: logger(LogLevel.ERROR, "Something happened")
+''' </summary>
+Public Enum LogLevel As Integer
+    OFF             'no logging occurs
+    FATAL           'severe error, current request (or even whole application) aborted (notify admin)
+    [ERROR]         'error happened, but current request might still continue (notify admin)
+    WARN            'potentially harmful situations for further investigation, request processing continues
+    INFO            'default for production (easier maintenance/support), progress of the application at coarse-grained level (fw request processing: request start/end, sql, route/external redirects, sql, fileaccess, third-party API)
+    DEBUG           'default for development (default for logger("msg") call), fine-grained level
+    TRACE           'very detailed dumps (in-module details like fw core, despatcher, parse page, ...)
+    ALL             'just log everything
+End Enum
 
 'Main Framework Class
 Public Class FW
     Implements IDisposable
     Public Shared METHOD_ALLOWED As Hashtable = Utils.qh("GET POST PUT DELETE")
 
+
     Private floggerFS As System.IO.FileStream
     Private floggerSW As System.IO.StreamWriter
+
     Private models As New Hashtable
     Public Shared Current As FW 'store FW current "singleton", set in run
+    Public cache As New FwCache 'request level cache
 
     Public FORM As Hashtable
     Public G As Hashtable 'for storing global vars - used in template engine, also stores "_flash"
@@ -48,6 +68,7 @@ Public Class FW
     Public cur_format As String
     Public cur_params As ArrayList
 
+    Public cache_control As String = "no-cache" 'cache control header to add to pages, controllers can change per request
     Public is_log_events As Boolean = True 'can be set temporarly to false to prevent event logging (for batch process for ex)
 
     'begin processing one request
@@ -120,7 +141,10 @@ Public Class FW
         Return FwConfig.settings(name)
     End Function
 
-    'return pjax, json or empty (usual html page)
+    ''' <summary>
+    ''' returns format expected by client browser
+    ''' </summary>
+    ''' <returns>"pjax", "json" or empty (usual html page)</returns>
     Public Function get_response_expected_format() As String
         Dim result As String = ""
         If Me.cur_format = "json" OrElse Me.req.AcceptTypes IsNot Nothing AndAlso Array.IndexOf(Me.req.AcceptTypes, "application/json") >= Me.req.AcceptTypes.GetLowerBound(0) Then
@@ -129,6 +153,14 @@ Public Class FW
             result = "pjax"
         End If
         Return result
+    End Function
+
+    ''' <summary>
+    ''' return true if browser requests json response
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function is_json_expected() As Boolean
+        Return get_response_expected_format() = "json"
     End Function
 
     Public Sub dispatch()
@@ -140,6 +172,8 @@ Public Class FW
         url = Regex.Replace(url, "\/$", "") 'cut last / if any
         Me.request_url = url
 
+        logger(LogLevel.TRACE, "REQUESTING ", url)
+
         'init defaults
         cur_controller = "Home"
         cur_action = "Index"
@@ -148,8 +182,6 @@ Public Class FW
         cur_format = "html"
         cur_method = req.RequestType
         cur_params = New ArrayList
-
-        logger("INFO", "*** REQUEST START " & cur_method & " " & url)
 
         'check if method override exits
         If FORM.ContainsKey("_method") Then
@@ -182,7 +214,7 @@ Public Class FW
                         Exit For
                     End If
                 Else
-                    logger("WARN", "Wrong route destination: " & rdest)
+                    logger(LogLevel.WARN, "Wrong route destination: " & rdest)
                 End If
             End If
         Next
@@ -262,14 +294,14 @@ Public Class FW
                 ElseIf cur_method = "DELETE" And cur_id > "" Then
                     cur_action_raw = "Delete"
                 Else
-                    logger("ERROR", "Wrong Route Params")
-                    logger("ERROR", cur_method)
-                    logger("ERROR", url)
+                    logger(LogLevel.WARN, "Wrong Route Params")
+                    logger(LogLevel.WARN, cur_method)
+                    logger(LogLevel.WARN, url)
                     err_msg("Wrong Route Params")
                     Exit Sub
                 End If
 
-                logger("***** REST controller.action=" & cur_controller & "." & cur_action_raw)
+                logger(LogLevel.TRACE, "REST controller.action=", cur_controller, ".", cur_action_raw)
 
             Else
                 'otherwise detect controller/action/id.format/more_action
@@ -296,7 +328,7 @@ Public Class FW
 
             Dim calledType As Type = Type.GetType(cur_controller & "Controller", False, True) 'case ignored
             If calledType Is Nothing Then
-                logger("WARN", "No controller found for controller=[" & cur_controller & "], using default Home")
+                logger(LogLevel.DEBUG, "No controller found for controller=[", cur_controller, "], using default Home")
                 'no controller found - call default controller with default action
                 calledType = Type.GetType("HomeController", True)
                 cur_controller_path = "/Home"
@@ -304,11 +336,11 @@ Public Class FW
                 cur_action = "NotFound"
             End If
 
-            logger("***** TRY controller.action=" & cur_controller & "." & cur_action)
+            logger(LogLevel.TRACE, "TRY controller.action=", cur_controller, ".", cur_action)
 
             Dim mInfo As MethodInfo = calledType.GetMethod(cur_action & "Action")
             If IsNothing(mInfo) Then
-                logger("WARN", "No method found for controller.action=[" & cur_controller & "." & cur_action & "], checking route_default_action")
+                logger(LogLevel.DEBUG, "No method found for controller.action=[", cur_controller, ".", cur_action, "], checking route_default_action")
                 'no method found - try to get default action
                 Dim what_to_do As Boolean = False
                 Dim pInfo As FieldInfo = calledType.GetField("route_default_action")
@@ -339,30 +371,32 @@ Public Class FW
             G("controller") = cur_controller
             G("action") = cur_action
             G("controller.action") = cur_controller & "." & cur_action
-            logger("***** FINAL controller.action=" & G("controller.action"))
 
-            'logger("cur_method=" & cur_method)
-            'logger("cur_controller=" & cur_controller)
-            'logger("cur_action=" & cur_action)
-            'logger("cur_format=" & cur_format)
-            'logger("cur_id=" & cur_id)
-            'logger("cur_action_more=" & cur_action_more)
+            logger(LogLevel.TRACE, "FINAL controller.action=", cur_controller, ".", cur_action)
+            'logger(LogLevel.TRACE, "cur_method=" , cur_method)
+            'logger(LogLevel.TRACE, "cur_controller=" , cur_controller)
+            'logger(LogLevel.TRACE, "cur_action=" , cur_action)
+            'logger(LogLevel.TRACE, "cur_format=" , cur_format)
+            'logger(LogLevel.TRACE, "cur_id=" , cur_id)
+            'logger(LogLevel.TRACE, "cur_action_more=" , cur_action_more)
+
+            logger(LogLevel.INFO, "REQUEST START [", cur_method, " ", url, "] => ", cur_controller, ".", cur_action)
 
             If mInfo Is Nothing Then
                 'if no method - just call FW.parser(hf) - show template from /cur_controller/cur_action dir
-                logger("***** DEFAULT PARSER ")
+                logger(LogLevel.DEBUG, "DEFAULT PARSER")
                 parser(New Hashtable)
             Else
                 call_controller(calledType, mInfo, args)
             End If
-            'logger("INFO", "NO EXCEPTION IN dispatch")
+            'logger(LogLevel.INFO, "NO EXCEPTION IN dispatch")
 
         Catch Ex As RedirectException
             'not an error, just exit via Redirect
-            logger("DEBUG", "Redirected...")
+            logger(LogLevel.INFO, "Redirected...")
 
         Catch Ex As AuthException 'not authorized for the resource requested
-            logger("DEBUG", Ex.Message)
+            logger(LogLevel.DEBUG, Ex.Message)
             'if not logged - just redirect to login 
             If SESSION("is_logged") <> True Then
                 redirect(config("UNLOGGED_DEFAULT_URL"), False)
@@ -382,13 +416,14 @@ Public Class FW
 
             If TypeOf (iex) Is RedirectException Then
                 'not an error, just exit via Redirect - TODO - remove here as already handled above?
-                logger("DEBUG", "Redirected...")
+                logger(LogLevel.DEBUG, "Redirected...")
             Else
-                logger("ERROR", "===== ERROR DUMP APP =====")
-                logger("ERROR", Ex.Message)
-                logger("ERROR", Ex.ToString())
-                logger("ERROR", FORM)
-                logger("ERROR", SESSION)
+                'it's ApplicationException, so just warning
+                logger(LogLevel.WARN, "===== ERROR DUMP APP =====")
+                logger(LogLevel.WARN, Ex.Message)
+                logger(LogLevel.WARN, Ex.ToString())
+                logger(LogLevel.WARN, "REQUEST FORM:", FORM)
+                logger(LogLevel.WARN, "SESSION:", SESSION)
 
                 'send_email_admin("App Exception: " & Ex.ToString() & vbCrLf & vbCrLf & _
                 '                 "Request: " & req.Path & vbCrLf & vbCrLf & _
@@ -399,18 +434,19 @@ Public Class FW
             End If
 
         Catch Ex As Exception
-            logger("ERROR", "===== ERROR DUMP =====")
-            logger("ERROR", Ex.Message)
-            logger("ERROR", Ex.ToString())
-            logger("ERROR", FORM)
-            logger("ERROR", SESSION)
+            'it's general Exception, so something more severe occur, log as error and notify admin
+            logger(LogLevel.ERROR, "===== ERROR DUMP =====")
+            logger(LogLevel.ERROR, Ex.Message)
+            logger(LogLevel.ERROR, Ex.ToString())
+            logger(LogLevel.ERROR, "REQUEST FORM:", FORM)
+            logger(LogLevel.ERROR, "SESSION:", SESSION)
 
-            send_email_admin("Exception: " & Ex.ToString() & vbCrLf & vbCrLf & _
-                             "Request: " & req.Path & vbCrLf & vbCrLf & _
-                             "Form: " & dumper(FORM) & vbCrLf & vbCrLf & _
+            send_email_admin("Exception: " & Ex.ToString() & vbCrLf & vbCrLf &
+                             "Request: " & req.Path & vbCrLf & vbCrLf &
+                             "Form: " & dumper(FORM) & vbCrLf & vbCrLf &
                              "Session:" & dumper(SESSION))
 
-            If Utils.f2bool(Me.config("is_debug")) Then
+            If Me.config("log_level") >= LogLevel.DEBUG Then
                 Throw
             Else
                 err_msg("Server Error. Please, contact site administrator!", Ex)
@@ -418,7 +454,7 @@ Public Class FW
         End Try
 
         Dim end_timespan As TimeSpan = DateTime.Now - start_time
-        logger("INFO", "*** REQUEST END in " & end_timespan.TotalSeconds & "s, " & String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds) & "/s")
+        logger(LogLevel.INFO, "REQUEST END   [", cur_method, " ", url, "] in ", end_timespan.TotalSeconds, "s, ", String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds), "/s")
     End Sub
 
     'simple auth check based on /controller/action - and rules filled in in Config class
@@ -431,10 +467,13 @@ Public Class FW
 
         'integrated XSS check - only for POST/PUT/DELETE requests or if it contains XSS param
         If (FORM.ContainsKey("XSS") OrElse cur_method = "POST" OrElse cur_method = "PUT" OrElse cur_method = "DELETE") _
-            AndAlso SESSION("XSS") > "" AndAlso SESSION("XSS") <> FORM("XSS") _
-            AndAlso controller <> "Login" Then 'special case - no XSS check for Login controller!
-            If is_die Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
-            Return False
+            AndAlso SESSION("XSS") > "" AndAlso SESSION("XSS") <> FORM("XSS") Then
+            'XSS validation failed - check if we are under xss-excluded controller
+            Dim no_xss As Hashtable = Me.config("no_xss")
+            If no_xss Is Nothing OrElse Not no_xss.ContainsKey(controller) Then
+                If is_die Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
+                Return False
+            End If
         End If
 
         Dim path As String = "/" & controller & "/" & action
@@ -501,40 +540,40 @@ Public Class FW
         FORM = f
     End Sub
 
-    Public Overloads Sub logger(ByRef dmp_obj As Object)
-        logger("DEBUG", dmp_obj)
+    Public Overloads Sub logger(ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        _logger(LogLevel.DEBUG, args)
+    End Sub
+    Public Overloads Sub logger(level As LogLevel, ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        _logger(level, args)
     End Sub
 
-    Public Overloads Sub logger(ByVal level As String, ByRef dmp_obj As Object)
-        If Regex.IsMatch(level, "debug", RegexOptions.IgnoreCase) Then
-            'skip logging if debug level and is_debug not set
-            If Not Me.config().ContainsKey("is_debug") Then
-                Return
-            End If
-            Dim is_d As Boolean = False
-            Boolean.TryParse(Me.config("is_debug"), is_d)
-            'skip logging if debug level and is_debug not True
-            If Not is_d Then
-                Return
-            End If
-        End If
+    'internal logger routine, just to avoid pass args by value 2 times
+    Public Sub _logger(level As LogLevel, ByRef args() As Object)
+        'skip logging if requested level more than config's debug level
+        If level > CType(Me.config("log_level"), LogLevel) Then Return
 
-        Dim str As String = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff") & " " & level & " "
+        Dim str As New StringBuilder(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff"))
+        str.Append(" ").Append(level.ToString()).Append(" ")
+        str.Append(Diagnostics.Process.GetCurrentProcess().Id).Append(" ")
         Dim st As New Diagnostics.StackTrace(True)
         Dim sf As Diagnostics.StackFrame = st.GetFrame(1)
 
         Try
             If sf.GetMethod().Name = "logger" Then sf = st.GetFrame(2)
-            str &= Replace(sf.GetFileName().ToString(), Me.config("site_root"), "") & ":" & sf.GetMethod().Name & " " & sf.GetFileLineNumber().ToString & " # "
+            Dim fname As String = sf.GetFileName()
+            If fname IsNot Nothing Then 'nothing in Release configuration
+                str.Append(Replace(Replace(sf.GetFileName().ToString(), Me.config("site_root"), ""), "\App_Code", ""))
+            End If
+            str.Append(":").Append(sf.GetMethod().Name).Append(" ").Append(sf.GetFileLineNumber().ToString).Append(" # ")
         Catch ex As Exception
-            str &= " ... #"
+            str.Append(" ... #")
         End Try
 
-        Try
-            str &= dumper(dmp_obj)
-        Catch ex As Exception
-            str &= ex.ToString
-        End Try
+        For Each dmp_obj As Object In args
+            str.Append(dumper(dmp_obj))
+        Next
 
         'write to debug console first
         Diagnostics.Debug.WriteLine(str)
@@ -656,10 +695,9 @@ Public Class FW
 
     'same as parsert(hf), but with base dir param
     'output format based on requested format: json, pjax or (default) full page html
-    'for automatic json response support - set hf("_json_enabled") = True - TODO make it better?
-    'to return only specific content for json - set it to hf("_json_data")
+    'for automatic json response support - set hf("_json_enabled") = True OR set hf("_json_data") - if json requested, only _json_data will be returned
     'to override page template - set hf("_page_tpl")="another_page_layout.html"
-    '(not for json) to perform route_redirect - set hf("_route_redirect"), hf("_route_redirect_controller"), hf("_route_redirect_args")
+    '(not for json) to perform route_redirect - set hf("_route_redirect")("method"), hf("_route_redirect")("controller"), hf("_route_redirect")("args")
     '(not for json) to perform redirect - set hf("_redirect")="url"
     'TODO - create another func and call it from call_controller for processing _redirect, ... (non-parsepage) instead of calling parser?
     Public Overloads Sub parser(ByVal bdir As String, hf As Hashtable)
@@ -668,24 +706,24 @@ Public Class FW
         Dim format As String = Me.get_response_expected_format()
         If format = "json" Then
             If hf("_json_enabled") = True Then
-                If hf.ContainsKey("_json_data") Then
-                    'if _json_data exists - return only this element
-                    Me.parser_json(hf("_json_data"))
-                Else
-                    Me.parser_json(hf)
-                End If
+                hf.Remove("_json_enabled") 'remove internal flag
+                Me.parser_json(hf)
+
+            ElseIf hf.ContainsKey("_json_data") Then 'if _json_data exists - return only this element
+                Me.parser_json(hf("_json_data"))
+
             Else
                 Dim ps As New Hashtable
                 ps("success") = False
-                ps("message") = "JSON response is not enabled for this Controller.Action (set ps(""_json_enabled"")=True to enable)."
+                ps("message") = "JSON response is not enabled for this Controller.Action (set ps(""_json_enabled"")=True or ps(""_json_data"")=... to enable)."
                 Me.parser_json(ps)
             End If
-
             Return 'no further processing for json
         End If
 
         If hf.ContainsKey("_route_redirect") Then
-            Me.route_redirect(hf("_route_redirect"), hf("_route_redirect_controller"), hf("_route_redirect_args"))
+            Dim rr = hf("_route_redirect")
+            Me.route_redirect(rr("method"), rr("controller"), rr("args"))
             Return 'no further processing
         End If
 
@@ -694,7 +732,7 @@ Public Class FW
             Return 'no further processing
         End If
 
-        Me.resp.CacheControl = "no-cache" 'disable cacheing of dynamic pages, TODO give controllers control over this
+        Me.resp.CacheControl = cache_control
         If format = "pjax" Then
             Dim page_tpl As String = G("PAGE_TPL_PJAX")
             parser(bdir, page_tpl, hf)
@@ -709,7 +747,7 @@ Public Class FW
 
     '- show page from template  /controller/action = parser('/controller/action/', $layout, $ps)
     Public Overloads Sub parser(ByVal bdir As String, ByVal tpl_name As String, ByVal hf As Hashtable)
-        logger("parsing page bdir=" & bdir & ", tpl=" & tpl_name)
+        logger(LogLevel.DEBUG, "parsing page bdir=", bdir, ", tpl=", tpl_name)
         Dim parser_obj As ParsePage = New ParsePage(Me)
         Dim page As String = parser_obj.parse_page(bdir, tpl_name, hf)
         resp.Write(page)
@@ -744,7 +782,7 @@ Public Class FW
         Dim calledType As Type = Type.GetType(cur_controller & "Controller", True)
         Dim mInfo As MethodInfo = calledType.GetMethod(cur_action & "Action")
         If IsNothing(mInfo) Then
-            logger("WARN", "No method found for controller.action=[" & cur_controller & "." & cur_action & "], using default Index")
+            logger(LogLevel.INFO, "No method found for controller.action=[", cur_controller, ".", cur_action, "], displaying static page from related templates")
             'no method found - set to default Index method
             'cur_action = "Index"
             'mInfo = calledType.GetMethod(cur_action & "Action")
@@ -786,6 +824,7 @@ Public Class FW
 
 
     Public Sub file_response(ByVal filepath As String, ByVal attname As String, Optional ContentType As String = "application/octet-stream", Optional ContentDisposition As String = "attachment")
+        logger(LogLevel.DEBUG, "sending file response  = ", filepath, " as ", attname)
         attname = Regex.Replace(attname, "[^\w. \-]+", "_")
         resp.AppendHeader("Content-type", ContentType)
         resp.AppendHeader("Content-Length", Utils.file_size(filepath))
@@ -800,12 +839,15 @@ Public Class FW
     'filenames (optional) - human filename => hash filepath
     'aCC - arraylist of CC addresses (strings)
     'reply_to - optional reply to email
+    'options - hashtable with options: 
+    '         "read-receipt"
     'RETURN:
     ' true if sent successfully
     ' false if some problem occured (see log)
-    Public Function send_email(ByVal mail_from As String, ByVal mail_to As String, ByVal mail_subject As String, ByVal mail_body As String, Optional filenames As Hashtable = Nothing, Optional aCC As ArrayList = Nothing, Optional reply_to As String = "") As Boolean
+    Public Function send_email(ByVal mail_from As String, ByVal mail_to As String, ByVal mail_subject As String, ByVal mail_body As String, Optional filenames As Hashtable = Nothing, Optional aCC As ArrayList = Nothing, Optional reply_to As String = "", Optional options As Hashtable = Nothing) As Boolean
         Dim result As Boolean = True
         Dim message As MailMessage = Nothing
+        If options Is Nothing Then options = New Hashtable
 
         Try
             If Len(mail_from) = 0 Then mail_from = Me.config("mail_from") 'default mail from
@@ -815,15 +857,16 @@ Public Class FW
                 Dim test_email As String = Me.config("test_email")
                 mail_body = "TEST SEND. PASSED MAIL_TO=[" & mail_to & "]" & vbCrLf & mail_body
                 mail_to = Me.config("test_email")
-                logger("DEBUG", "EMAIL SENT TO TEST EMAIL [" & mail_to & "] - TEST ENABLED IN web.config")
+                logger(LogLevel.INFO, "EMAIL SENT TO TEST EMAIL [", mail_to, "] - TEST ENABLED IN web.config")
             End If
 
-            logger("INFO", "Sending email. From=[" & mail_from & "], ReplyTo=[" & reply_to & "], To=[" & mail_to & "], Subj=[" & mail_subject & "]")
-            logger("DEBUG", mail_body)
+            logger(LogLevel.INFO, "Sending email. From=[", mail_from, "], ReplyTo=[", reply_to, "], To=[", mail_to, "], Subj=[", mail_subject, "]")
+            logger(LogLevel.DEBUG, mail_body)
 
             If mail_to > "" Then
 
                 message = New MailMessage
+                If options.ContainsKey("read-receipt") Then message.Headers.Add("Disposition-Notification-To", mail_from)
 
                 'detect HTML body - if it's started with <!DOCTYPE or <html tags
                 If Regex.IsMatch(mail_body, "^\s*<(!DOCTYPE|html)[^>]*>", RegexOptions.IgnoreCase) Then
@@ -848,7 +891,7 @@ Public Class FW
                 If Not IsNothing(aCC) Then
                     If Me.config("is_test") Then
                         For Each cc As String In aCC
-                            logger("DEBUG", "TEST SEND. PASSED CC=[" & cc & "]")
+                            logger(LogLevel.INFO, "TEST SEND. PASSED CC=[", cc, "]")
                             message.CC.Add(New MailAddress(mail_to))
                         Next
                     Else
@@ -867,11 +910,11 @@ Public Class FW
                     fkeys.Sort()
                     For Each human_filename As String In fkeys
                         Dim filename As String = filenames(human_filename)
-                        Dim att As New Attachment(filename, Net.Mime.MediaTypeNames.Application.Octet)
+                        Dim att As New Attachment(filename, System.Net.Mime.MediaTypeNames.Application.Octet)
                         'att.ContentDisposition.FileName = human_filename
                         att.Name = human_filename
                         att.NameEncoding = System.Text.Encoding.UTF8
-                        logger("DEBUG", "attachment " & human_filename & " => " & filename)
+                        logger(LogLevel.DEBUG, "attachment ", human_filename, " => ", filename)
                         message.Attachments.Add(att)
                     Next
                 End If
@@ -883,8 +926,7 @@ Public Class FW
 
         Catch ex As Exception
             result = False
-            logger("ERROR", "send_email error")
-            logger("ERROR", ex.Message)
+            logger(LogLevel.ERROR, "send_email error:", ex.Message)
         Finally
             If message IsNot Nothing Then message.Dispose() 'important, as this will close any opened attachment files
         End Try
@@ -975,7 +1017,7 @@ Public Class FW
 
             'free unmanaged resources (unmanaged objects) and override Finalize() below.
             Try
-                db.disconnect() 'this will return db connections to pool
+                db.Dispose() 'this will return db connections to pool
                 If floggerSW IsNot Nothing Then floggerSW.Close() 'no need to close floggerFS as StreamWriter closes it
                 ' TODO: set large fields to null.
             Catch ex As Exception

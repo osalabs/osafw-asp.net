@@ -98,7 +98,7 @@ Public Class AdminAttController
             item = model.one(id)
 
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
         hf("fsize_human") = Utils.bytes2str(item("fsize"))
@@ -119,7 +119,7 @@ Public Class AdminAttController
 
     Public Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         Dim hf As New Hashtable
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         If item Is Nothing Then
             item = New Hashtable
         End If
@@ -148,7 +148,7 @@ Public Class AdminAttController
             'Proceed upload
             Dim filepath As String = Nothing
             If model.upload_file(id, filepath, "file1", True) Then
-                fw.logger("uploaded to [" & filepath & "]")
+                logger("uploaded to [" & filepath & "]")
                 Dim ext As String = UploadUtils.get_upload_file_ext(filepath)
 
                 'TODO refactor in better way
@@ -192,9 +192,10 @@ Public Class AdminAttController
             hf("_json_enabled") = True
 
             fw.G("err_msg") = ex.Message
-            Dim args() As [String] = {id}
-            hf("_route_redirect") = "ShowForm"
-            hf("_route_redirect_args") = args
+            hf("_route_redirect") = New Hashtable From {
+                    {"method", "ShowForm"},
+                    {"args", New String() {id}}
+                }
         End Try
 
         Return hf
@@ -248,7 +249,7 @@ Public Class AdminAttController
     End Sub
 
     Public Sub SaveMultiAction()
-        Dim cbses As Hashtable = fw.FORM("cb")
+        Dim cbses As Hashtable = reqh("cb")
         If cbses Is Nothing Then cbses = New Hashtable
         Dim ctr As Integer = 0
 

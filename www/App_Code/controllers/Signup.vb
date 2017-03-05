@@ -30,7 +30,7 @@ Public Class SignupController
             'item("field")='default value'
         Else
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -40,7 +40,7 @@ Public Class SignupController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
         Try

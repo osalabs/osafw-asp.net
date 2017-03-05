@@ -86,7 +86,7 @@ Public Class AdminUsersController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -100,7 +100,7 @@ Public Class AdminUsersController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
         Try
@@ -173,7 +173,7 @@ Public Class AdminUsersController
     End Sub
 
     Public Sub SaveMultiAction()
-        Dim cbses As Hashtable = fw.FORM("cb")
+        Dim cbses As Hashtable = reqh("cb")
         If cbses Is Nothing Then cbses = New Hashtable
         Dim ctr As Integer = 0
 
@@ -211,4 +211,17 @@ Public Class AdminUsersController
         End If
 
     End Sub
+
+    Public Function SendPwdAction(form_id As String) As Hashtable
+        Dim ps As New Hashtable
+        Dim id As Integer = Utils.f2int(form_id)
+
+        Dim hU As Hashtable = model.one(id)
+
+        fw.send_email_tpl(hU("email"), "email_pwd.txt", hU)
+
+        ps("success") = True
+        ps("_json_enabled") = True
+        Return ps
+    End Function
 End Class

@@ -17,7 +17,7 @@ Public Class AdminSpagesController
         'initialization
         base_url = "/Admin/Spages"
         required_fields = "iname"
-        save_fields = "iname iname_tagline idesc idesc_right head_att_id template prio"
+        save_fields = "iname idesc idesc_right head_att_id template prio custom_css custom_js"
 
         search_fields = "url iname idesc"
         list_sortdef = "iname asc"   'default sorting: name, asc|desc direction
@@ -39,28 +39,32 @@ Public Class AdminSpagesController
             Me.list_where &= " and status<>127 " 'by default - show all non-deleted
         End If
 
-        Me.list_count = db.value("select count(*) from " & model.table_name & " where " & Me.list_where)
-        If Me.list_count > 0 Then
-            'build pages tree
-            'TODO - if order not by iname - display plain page list using  Me.get_list_rows()
-            Dim pages_tree As ArrayList = model.tree(Me.list_where, "parent_id, prio desc, iname")
-            Me.list_rows = model.get_pages_tree_list(pages_tree, 0)
+        If list_filter("sortby") = "iname" AndAlso list_filter("s") = "" Then
+            Me.list_count = db.value("select count(*) from " & model.table_name & " where " & Me.list_where)
+            If Me.list_count > 0 Then
+                'build pages tree
+                Dim pages_tree As ArrayList = model.tree(Me.list_where, "parent_id, prio desc, iname")
+                Me.list_rows = model.get_pages_tree_list(pages_tree, 0)
 
-            'apply LIMIT
-            If Me.list_count > Me.list_filter("pagesize") Then
-                Dim subset As New ArrayList
-                Dim start_offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
+                'apply LIMIT
+                If Me.list_count > Me.list_filter("pagesize") Then
+                    Dim subset As New ArrayList
+                    Dim start_offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
 
-                For i As Integer = start_offset To Math.Min(start_offset + Me.list_filter("pagesize"), Me.list_rows.Count) - 1
-                    subset.Add(Me.list_rows.Item(i))
-                Next
-                Me.list_rows = subset
+                    For i As Integer = start_offset To Math.Min(start_offset + Me.list_filter("pagesize"), Me.list_rows.Count) - 1
+                        subset.Add(Me.list_rows.Item(i))
+                    Next
+                    Me.list_rows = subset
+                End If
+
+                Me.list_pager = FormUtils.get_pager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
+            Else
+                Me.list_rows = New ArrayList
+                Me.list_pager = New ArrayList
             End If
-
-            Me.list_pager = FormUtils.get_pager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
         Else
-            Me.list_rows = New ArrayList
-            Me.list_pager = New ArrayList
+            'if order not by iname or search performed - display plain page list using  Me.get_list_rows()
+            Me.get_list_rows()
         End If
 
         'add/modify rows from db if necessary
@@ -79,13 +83,14 @@ Public Class AdminSpagesController
 
     Public Overrides Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
         'set new form defaults here if any
-        If fw.FORM("parent_id") > "" Then
+        If reqs("parent_id") > "" Then
             Me.form_new_defaults = New Hashtable
-            Me.form_new_defaults("parent_id") = Utils.f2int(fw.FORM("parent_id"))
+            Me.form_new_defaults("parent_id") = reqi("parent_id")
         End If
         Dim ps As Hashtable = MyBase.ShowFormAction(form_id)
 
         Dim item As Hashtable = ps("i")
+        Dim id As Integer = item("id")
         Dim where As String = " status<>127 "
         Dim pages_tree As ArrayList = model.tree(where, "parent_id, prio desc, iname")
         ps("select_options_parent_id") = model.get_pages_tree_select_html(item("parent_id"), pages_tree)
@@ -93,18 +98,26 @@ Public Class AdminSpagesController
         ps("parent_url") = model.get_full_url(Utils.f2int(item("parent_id")))
         ps("full_url") = model.get_full_url(Utils.f2int(item("id")))
 
+        ps("parent") = model.one(Utils.f2int(item("parent_id")))
+
         If item("head_att_id") > "" Then
             ps("head_att_id_url_s") = fw.model(Of Att).get_url_direct(item("head_att_id"), "s")
+        End If
+
+        If id > 0 Then
+            ps("subpages") = model.list_children(id)
         End If
 
         Return ps
     End Function
 
-    Public Overrides Sub SaveAction(Optional ByVal form_id As String = "")
+    Public Overrides Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in save_fields ")
 
-        Dim item As Hashtable = req("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
+        Dim success = True
+        Dim is_new = (id = 0)
 
         Try
             Dim item_old As Hashtable = model.one(id)
@@ -129,11 +142,12 @@ Public Class AdminSpagesController
 
             If item_old("is_home") = "1" Then FwCache.remove("home_page") 'reset home page cache if Home page changed
 
-            fw.redirect(base_url & "/" & id & "/edit" & base_url_suffix)
         Catch ex As ApplicationException
+            success = False
             Me.set_form_error(ex)
-            fw.route_redirect("ShowForm", New String() {id})
         End Try
-    End Sub
+
+        Return Me.save_check_result(success, id, is_new)
+    End Function
 
 End Class

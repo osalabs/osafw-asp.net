@@ -17,7 +17,7 @@ Public Class PasswordController
     Public Function IndexAction() As Hashtable
         Dim hf As Hashtable = New Hashtable
 
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         If fw.cur_method = "GET" Then 'read from db
             'set defaults here
             item = New Hashtable
@@ -32,7 +32,7 @@ Public Class PasswordController
 
     Public Sub SaveAction()
         Try
-            Dim login As String = Trim(fw.FORM("item")("login"))
+            Dim login As String = Trim(reqh("item")("login"))
 
             If login.Length = 0 Then Throw New ApplicationException("Please enter your Email")
 

@@ -25,9 +25,14 @@ Public MustInherit Class FwModel
     End Sub
 
     Public Overridable Function one(id As Integer) As Hashtable
-        Dim where As Hashtable = New Hashtable
-        where("id") = id
-        Return db.row(table_name, where)
+        Dim item As Hashtable = fw.cache.get_request_value("fwmodel_one_" & table_name & "#" & id)
+        If IsNothing(item) Then
+            Dim where As Hashtable = New Hashtable
+            where("id") = id
+            item = db.row(table_name, where)
+            fw.cache.set_request_value("fwmodel_one_" & table_name & "#" & id, item)
+        End If
+        Return item
     End Function
 
     Public Overridable Function iname(id As Integer) As String
@@ -82,6 +87,8 @@ Public MustInherit Class FwModel
         db.update(table_name, item, where)
 
         fw.log_event(table_name & "_upd", id)
+
+        fw.cache.request_remove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
         Return True
     End Function
 
@@ -93,6 +100,7 @@ Public MustInherit Class FwModel
         If is_perm Then
             'place here code that remove related data
             db.del(table_name, where)
+            fw.cache.request_remove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
         Else
             Dim vars As New Hashtable
             vars("status") = 127
@@ -139,9 +147,14 @@ Public MustInherit Class FwModel
         Return UploadUtils.get_upload_img_path(fw, table_name, id, size, ext)
     End Function
 
-    '----------------- just a covenience methods
-    Public Sub logger(ByRef dmp_obj As Object)
-        fw.logger("DEBUG", dmp_obj)
+    'methods from fw - just for a covenience, so no need to use "fw.", as they are used quite frequently
+    Public Overloads Sub logger(ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        fw._logger(LogLevel.DEBUG, args)
+    End Sub
+    Public Overloads Sub logger(level As LogLevel, ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        fw._logger(level, args)
     End Sub
 
 

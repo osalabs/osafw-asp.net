@@ -1,0 +1,29 @@
+  <div class="filter_option form-group">
+    <label class="control-label col-sm-3" for="fusers_id">`Date`</label>
+      <div class="input-group col-sm-3">
+        <div class="input-group date">
+          <input id="fdate_pop" name="f[date]" maxlength="10" value="<~f[date]>" type="text" class="form-control">
+          <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+        </div>
+      </div>
+  </div>
+
+  <div class="filter_option form-group">
+    <label class="control-label col-sm-3" for="fevents_id">`Event`</label>
+      <div class="input-group col-sm-6">
+        <select name="f[events_id]" class="form-control">
+          <option value=""> - all - </option>
+          <~filter_select_events noescape>
+        </select>
+      </div>
+  </div>
+
+  <div class="filter_option form-group">
+    <label class="control-label col-sm-3" for="fusers_id">`User`</label>
+      <div class="input-group col-sm-6">
+        <select name="f[users_id]" class="form-control">
+          <option value=""> - all - </option>
+          <~filter_select_users noescape>
+        </select>
+      </div>
+  </div>

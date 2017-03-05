@@ -1,0 +1,52 @@
+<form action="<~../url>/SaveMulti" method="post" onsubmit="return confirm('`Are you sure?`')">
+<input type="hidden" name="XSS" value="<~SESSION[XSS]>">
+<input type="hidden" name="d" value="<~d>">
+
+<table class="table table-striped table-bordered table-condensed list">
+    <thead>
+        <~group_headers_block if="is_group_headers" inline>
+            <tr class="list-header">
+                <th></th>
+                <~group_headers repeat inline xyz>
+                    <th colspan="<~colspan>"><~iname></th>
+                </~group_headers>
+                <th></th>
+            </tr>
+        </~group_headers_block>
+        <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
+            <th style="width:30px"><input type="checkbox" name="all" value="1" onclick="list_chkall(this)"></th>
+            <~fields_headers repeat inline>
+                <th class="sortable" data-sort="<~colname>">`<~iname>`</th>
+            </~fields_headers>
+            <th style="width:80px"></th>
+        </tr>
+    </thead>
+    <tbody>
+<~list_rows repeat inline>
+        <tr data-url="<~row_click_url>">
+            <td><input class="multicb" type="checkbox" name="cb[<~id>]" value="1"></td>
+            <~fields_values repeat inline>
+                <td><~value></td>
+            </~fields_values>
+            <td nowrap="nowrap">
+                <a href="<~row_click_url>">`Edit`</a>
+                <~/common/dot><a href="<~../url>/<~id>/delete?d=<~d>" onclick="return delete_btn(this)">`Del`</a>
+            </td>
+        </tr>
+</~list_rows>
+    </tbody>
+</table>
+
+<~footer_text if="defs[footer_text]" inline>
+<p class="well well-sm">
+    <~defs[footer_text] nl2br>
+</p>
+</~footer_text>
+
+<input type="submit" name="delete" value="`Delete`" class="btn btn-danger" > `checked rows`
+
+</form>
+<form id="FOneDelete" action="<~../url>/%id%?XSS=<~SESSION[XSS]>&d=<~d>" method="post">
+</form>
+
+<~/common/pagination>

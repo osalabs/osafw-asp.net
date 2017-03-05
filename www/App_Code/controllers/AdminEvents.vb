@@ -25,7 +25,7 @@ Public Class AdminEventsController
         'get filters
         Dim f As Hashtable = get_filter()
 
-        If Not fw.FORM("dofilter") > "" AndAlso f("date") = "" Then
+        If Not reqs("dofilter") > "" AndAlso f("date") = "" Then
             f("date") = DateUtils.Date2Str(Now())
         End If
 

@@ -31,7 +31,7 @@ Public Class MySettingsController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -42,7 +42,7 @@ Public Class MySettingsController
     End Function
 
     Public Sub SaveAction()
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = fw.SESSION("user")("id")
 
         Try

@@ -24,7 +24,7 @@
       <~logged_name if="SESSION[is_logged]" inline>
       <ul class="nav navbar-nav navbar-right">
         <li class="dropdown">
-          <a href="#" data-toggle="dropdown"><~SESSION[login]> (<~SESSION[user][fname]> <~SESSION[user][lname]>) <span class="caret"></span></a>
+          <a href="#" data-toggle="dropdown"><~SESSION[user_name] if="SESSION[user_name]"><~SESSION[login] unless="SESSION[user_name]"> <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li <~/std/header/active ifeq="GLOBAL[controller]" value="MySettings"> ><a href="<~/my/settings/url>">My Profile</a></li>
             <li <~/std/header/active ifeq="GLOBAL[controller]" value="MyPassword"> ><a href="<~/my/password/url>">Change Login or Password</a></li>

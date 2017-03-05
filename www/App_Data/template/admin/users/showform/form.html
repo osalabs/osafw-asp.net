@@ -1,5 +1,10 @@
-<form class="form-horizontal" method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form class="form-horizontal" method="post" data-check-changes autocomplete="off" action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
+ <input type="hidden" name="return_url" value="<~return_url>">
+ <div class="hide">
+ <input type="text" name="fakelogin" />
+ <input type="password" name="fakepassword" />
+ </div>
 
   <fieldset>
     <~/common/form/msg>
@@ -13,42 +18,49 @@
     <div class="form-group <~/common/error if="ERR[email]">">
       <label class="control-label col-md-3" for="email">`Email`</label>
       <div class="col-md-9">
-        <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="text" class="form-control">
+        <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="text" class="form-control" autocomplete="off">
         <~err_email_EXISTS ifeq="ERR[email]" value="EXISTS" inline><p class="help-block">`Such email already exists in our database`</p></~err_email_EXISTS>
       </div>
     </div>
     <div class="form-group <~/common/error if="ERR[fname]">">
       <label class="control-label col-md-3" for="fname">`First Name`</label>
       <div class="col-md-9">
-        <input id="fname" name="item[fname]" maxlength="32" value="<~i[fname]>" type="text" class="form-control">
+        <input id="fname" name="item[fname]" maxlength="32" value="<~i[fname]>" type="text" class="form-control" autocomplete="off">
       </div>
     </div>
     <div class="form-group <~/common/error if="ERR[lname]">">
       <label class="control-label col-md-3" for="lname">`Last Name`</label>
       <div class="col-md-9">
-        <input id="lname" name="item[lname]" maxlength="32" value="<~i[lname]>" type="text" class="form-control">
+        <input id="lname" name="item[lname]" maxlength="32" value="<~i[lname]>" type="text" class="form-control" autocomplete="off">
       </div>
     </div>
     <div class="form-group <~/common/error if="ERR[phone]">">
       <label class="control-label col-md-3" for="phone">`Phone`</label>
-      <div class="col-md-9">
-        <input id="phone" name="item[phone]" maxlength="16" value="<~i[phone]>" type="text" class="form-control">
+      <div class="col-md-3">
+        <input id="phone" name="item[phone]" maxlength="16" value="<~i[phone]>" type="text" class="form-control" autocomplete="off">
       </div>
     </div>
 
     <div class="form-group <~/common/error if="ERR[pwd]">">
       <label class="control-label col-md-3" for="pwd">`Password`</label>
-      <div class="col-md-9">
-        <input id="pwd" type="password" name="item[pwd]" maxlength="32" value="" class="form-control">
-        <p class="help-block">`To change a member's password - type in their new password`</p>
+      <div class="col-md-5">
+        <input id="pwd" type="password" name="item[pwd]" maxlength="32" value="" class="form-control hide" autocomplete="off">
+        <~chpwd_block if="i[id]" inline>
+            <button type="button" class="btn btn-default on-change-pwd">`Change password`</button>
+        </~chpwd_block>
       </div>
+      <~pwd_block if="i[id]" inline>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-default on-send-pwd">Remind by email</button>
+        </div>
+        </~pwd_block>
     </div>
 
     <div class="form-group <~/common/error if="ERR[access_level]">">
       <label class="control-label col-md-3" for="access_level">`Access level`</label>
-      <div class="col-md-3">
-            <select id="access_level" name="item[access_level]" class="form-control" onChange="input_changed()">
-                <option value=""> - `select` - 
+      <div class="col-md-5">
+            <select id="access_level" name="item[access_level]" class="form-control" autocomplete="off">
+                <option value=""> - `select` -
                 <~/common/sel/access_level.sel select="i[access_level]">
             </select>
       </div>
@@ -58,7 +70,7 @@
     <div class="form-group">
       <label class="control-label col-md-3" for="status">`Status`</label>
       <div class="col-md-3">
-            <select id="status" name="item[status]" class="form-control" onChange="input_changed()">
+            <select id="status" name="item[status]" class="form-control" autocomplete="off" onChange="input_changed()">
                 <~/common/sel/status.sel select="i[status]">
             </select>
       </div>

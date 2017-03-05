@@ -24,34 +24,12 @@ Public Class AdminSettingsController
         list_sortmap = Utils.qh("id|id iname|iname upd_time|upd_time")
     End Sub
 
-    Public Overrides Function IndexAction() As Hashtable
-        'get filters from the search form
-        Dim f As Hashtable = Me.get_filter()
-
-        Me.set_list_sorting()
-
+    Public Overrides Sub set_list_search()
         Me.list_where = " 1=1 "
-        Me.set_list_search()
-        'set here non-standard search
-        If f("s") = "" Then
-            'if search - no category
-            Me.list_where &= " and icat=" & db.q(f("icat"))
-        End If
+        MyBase.set_list_search()
 
-        Me.get_list_rows()
-        'add/modify rows from db if necessary
-        'For Each row As Hashtable In Me.list_rows
-        '    row("field") = "value"
-        'Next
-
-        Dim ps As Hashtable = New Hashtable
-        ps("list_rows") = Me.list_rows
-        ps("count") = Me.list_count
-        ps("pager") = Me.list_pager
-        ps("f") = Me.list_filter
-
-        Return ps
-    End Function
+        If list_filter("s") > "" Then list_where &= " and icat=" & db.qi(list_filter("s"))
+    End Sub
 
     Public Overrides Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
         'set new form defaults here if any
@@ -67,11 +45,14 @@ Public Class AdminSettingsController
         Return ps
     End Function
 
-    Public Overrides Sub SaveAction(Optional ByVal form_id As String = "")
+    Public Overrides Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in save_fields ")
 
-        Dim item As Hashtable = req("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
+        Dim success = True
+        Dim is_new = (id = 0)
+        Dim location = ""
 
         Try
             Validate(id, item)
@@ -81,7 +62,7 @@ Public Class AdminSettingsController
             Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Me.save_fields)
             'TODO - checkboxes
             'FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
-            'itemdb("dict_link_multi") = FormUtils.multi2ids(fw.FORM("dict_link_multi"))
+            'itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
 
             'only update, no add new settings
             model.update(id, itemdb)
@@ -91,13 +72,14 @@ Public Class AdminSettingsController
             'reset cache
             FwCache.remove("main_menu")
 
-            'fw.redirect(base_url & "/" & id & "/edit")
-            fw.redirect(base_url)
+            location = base_url
         Catch ex As ApplicationException
+            success = False
             Me.set_form_error(ex)
-            fw.route_redirect("ShowForm", New String() {id})
         End Try
-    End Sub
+
+        Return Me.save_check_result(success, id, is_new, "ShowForm", location)
+    End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)
         Dim result As Boolean = Me.validate_required(item, Me.required_fields)
@@ -107,8 +89,8 @@ Public Class AdminSettingsController
         Me.validate_check_result()
     End Sub
 
-    Public Overrides Sub DeleteAction(ByVal form_id As String)
+    Public Overrides Function DeleteAction(ByVal form_id As String) As Hashtable
         Throw New ApplicationException("Site Settings cannot be deleted")
-    End Sub
+    End Function
 
 End Class

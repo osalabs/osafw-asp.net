@@ -29,7 +29,6 @@ Public Class ConvUtils
             html2pdf(fw, html_file, pdf_file, options)
 
             If out_filename = "" Then out_filename = "output"
-            fw.logger("INFO", "sending file response  = " & pdf_file & " to " & out_filename & ".pdf")
             fw.file_response(pdf_file, out_filename & ".pdf")
             Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
@@ -45,6 +44,7 @@ Public Class ConvUtils
     '!and FW.config("pdf_converter_args") - MUST include %IN %OUT which will be replaced by input and output file paths accordingly
     'TODO: example: FW.config("html_converter_args")=" -po Landscape" - for landscape mode
     'all params for TotalHTMLConverter: http://www.coolutils.com/help/TotalHTMLConverter/Commandlineparameters.php
+    'all params for WkHTMLtoPDF: http://wkhtmltopdf.org/usage/wkhtmltopdf.txt
     'options:
     '  landscape = True - will produce landscape output
     Public Shared Sub html2pdf(fw As FW, ByVal htmlfile As String, ByVal filename As String, Optional options As Hashtable = Nothing)
@@ -58,14 +58,19 @@ Public Class ConvUtils
         If Not IsNothing(options) AndAlso Utils.f2bool(options("landscape")) = True Then
             cmdline = " -O Landscape " & cmdline
         End If
+        If Not IsNothing(options) AndAlso options.ContainsKey("cmd") Then
+            cmdline = options("cmd") & " " & cmdline
+        End If
         info.FileName = FwConfig.settings("pdf_converter")
         info.Arguments = cmdline
 
-        fw.logger("INFO", info.FileName & " " & info.Arguments)
+        fw.logger(LogLevel.DEBUG, "exec: ", info.FileName, " ", info.Arguments)
         process.StartInfo = info
         process.Start()
         process.WaitForExit()
+        If process.ExitCode <> 0 Then fw.logger(LogLevel.ERROR, "Exit code:", process.ExitCode)
         process.Close()
+
     End Sub
 
     'TODO - currently it just parse html and save it under .doc extension (Word capable opening it), but need redo with real converter
@@ -92,7 +97,6 @@ Public Class ConvUtils
             'TODO html2doc(fw, html_file, doc_file)
 
             If out_filename = "" Then out_filename = "output"
-            fw.logger("INFO", "sending file response  = " & doc_file & " to " & out_filename & ".doc")
             fw.file_response(doc_file, out_filename & ".doc")
             Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
@@ -114,7 +118,7 @@ Public Class ConvUtils
         Dim process As New System.Diagnostics.Process
 
         info.FileName = FW.config("html_converter")
-        info.Arguments = """" & htmlfile & """ """ & xlsfile & """ -c xls"
+        info.Arguments = """" & htmlfile & """ """ & xlsfile & """ -c xls -AutoSize"
         process.StartInfo = info
         process.Start()
         process.WaitForExit()
@@ -134,8 +138,8 @@ Public Class ConvUtils
 
         Dim html_file As String = Utils.get_tmp_filename() & ".html"
         Dim xls_file As String = Utils.get_tmp_filename() & ".xls"
-        fw.logger("INFO", "html file = " & html_file)
-        fw.logger("INFO", "xls file = " & xls_file)
+        fw.logger(LogLevel.DEBUG, "html file = ", html_file)
+        fw.logger(LogLevel.DEBUG, "xls file = ", xls_file)
 
         'remove_old_files()
         fw.set_file_content(html_file, html_data)
@@ -144,7 +148,6 @@ Public Class ConvUtils
             html2xls(fw, html_file, xls_file)
 
             If out_filename = "" Then out_filename = "output"
-            fw.logger("INFO", "sending file response  = " & xls_file & " to " & out_filename & ".xls")
             fw.file_response(xls_file, out_filename & ".xls", "application/vnd.ms-excel")
             Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else

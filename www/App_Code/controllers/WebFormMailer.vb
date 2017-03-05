@@ -15,8 +15,8 @@ Public Class WebFormMailerController
     Public Sub SaveAction()
         Dim mail_from As String = fw.config("mail_from")
         Dim mail_to As String = fw.config("support_email")
-        Dim mail_subject As String = fw.FORM("subject")
-        Dim redirect_to As String = fw.FORM("redirect")
+        Dim mail_subject As String = reqs("subject")
+        Dim redirect_to As String = reqs("redirect")
 
         Dim sys_fields As Hashtable = Utils.qh("form_format redirect subject submit RAWURL XSS")
 

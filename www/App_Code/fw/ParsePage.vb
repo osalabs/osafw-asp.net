@@ -97,7 +97,7 @@
 ' default
 ' urlencode
 ' TODO var2js
-' markdown - convert markdown text to html using CommonMark.NET. Note: may wrap tag with <p>
+' markdown - convert markdown text to html using CommonMark.NET (optional). Note: may wrap tag with <p>
 
 Imports System.IO
 Imports Newtonsoft.Json
@@ -125,12 +125,16 @@ Public Class ParsePage
     Private Shared mConvert As Reflection.MethodInfo
 
     Private fw As FW
+    'checks if template files modifies and reload them, depends on config's "log_level"
+    'true if level at least DEBUG, false for production as on production there are no tempalte file changes (unless during update, which leads to restart App anyway)
+    Private is_check_file_modifications As Boolean = False
     Private TMPL_PATH As String
     Private basedir As String = ""
 
     Public Sub New(fw As FW)
         Me.fw = fw
         TMPL_PATH = fw.config("template")
+        is_check_file_modifications = fw.config("log_level") >= LogLevel.DEBUG
     End Sub
 
     Public Function parse_json(ByVal hf As Object) As String
@@ -207,7 +211,7 @@ Public Class ParsePage
                                 value = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl)
                             ElseIf attrs.ContainsKey("sub") Then
                                 If Not TypeOf (tag_value) Is Hashtable Then
-                                    fw.logger("WARN", "ParsePage - not a Hash passed for a SUB tag=" & tag)
+                                    fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag)
                                     tag_value = New Hashtable
                                 End If
                                 value = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
@@ -240,7 +244,7 @@ Public Class ParsePage
                             '    #also checking for sub
                             If attrs.ContainsKey("sub") Then
                                 If Not TypeOf (tag_value) Is Hashtable Then
-                                    fw.logger("WARN", "ParsePage - not a Hash passed for a SUB tag=" & tag)
+                                    fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag)
                                     tag_value = New Hashtable
                                 End If
                                 v = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
@@ -273,7 +277,7 @@ Public Class ParsePage
         If FILE_CACHE.ContainsKey(filename) Then
             Dim cached_item As Hashtable = FILE_CACHE(filename)
             'if debug is off - don't check modify time for better performance (but app restart would be necessary if template changed)
-            If fw.config("is_debug") Then
+            If is_check_file_modifications Then
                 modtime = File.GetLastWriteTime(filename)
                 Dim mtmp As String = cached_item("modtime")
                 If mtmp = "" OrElse mtmp = modtime Then
@@ -283,14 +287,14 @@ Public Class ParsePage
                 Return cached_item("data")
             End If
         Else
-            If fw.config("is_debug") Then modtime = File.GetLastWriteTime(filename)
+            If is_check_file_modifications Then modtime = File.GetLastWriteTime(filename)
         End If
 
         'fw.logger("try load file " & filename)
         'get from fs(if not in cache)
         If File.Exists(filename) Then
             file_data = fw.get_file_content(filename)
-            If fw.config("is_debug") AndAlso modtime = "" Then modtime = File.GetLastWriteTime(filename)
+            If is_check_file_modifications AndAlso modtime = "" Then modtime = File.GetLastWriteTime(filename)
         End If
 
         'get from fs(if not in cache)
@@ -430,7 +434,7 @@ Public Class ParsePage
                 End If
             End If
         Catch ex As Exception
-            fw.logger("WARN", "ParsePage - error in hvalue for tag [" & tag & "]:" & ex.Message)
+            fw.logger(LogLevel.DEBUG, "ParsePage - error in hvalue for tag [", tag, "]:", ex.Message)
         End Try
 
         Return tag_value
@@ -550,7 +554,7 @@ Public Class ParsePage
         'Validate: if input doesn't contain array - return "" - nothing to repeat
         If Not TypeOf (tag_val_array) Is ArrayList Then
             If tag_val_array IsNot Nothing AndAlso tag_val_array.ToString() <> "" Then
-                fw.logger("WARN", "ParsePage - Not an ArrayList passed to repeat tag=" & tag)
+                fw.logger(LogLevel.DEBUG, "ParsePage - Not an ArrayList passed to repeat tag=", tag)
             End If
             Return ""
         End If
@@ -650,7 +654,7 @@ Public Class ParsePage
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("number_format") Then
                     Dim precision = IIf(hattrs("number_format") > "", Utils.f2int(hattrs("number_format")), 2)
-                    value = FormatNumber(value, precision)
+                    value = FormatNumber(Utils.f2float(value), precision)
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("date") Then

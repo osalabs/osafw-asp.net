@@ -78,7 +78,7 @@ Public Class AdminCategoriesController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -92,7 +92,7 @@ Public Class AdminCategoriesController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
         Try
@@ -155,7 +155,7 @@ Public Class AdminCategoriesController
     End Sub
 
     Public Sub SaveMultiAction()
-        Dim cbses As Hashtable = fw.FORM("cb")
+        Dim cbses As Hashtable = reqh("cb")
         If cbses Is Nothing Then cbses = New Hashtable
         Dim ctr As Integer = 0
 

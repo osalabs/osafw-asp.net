@@ -16,7 +16,7 @@ Public Class LoginController
         Dim hf As Hashtable = New Hashtable
         If fw.SESSION("is_logged") Then fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
 
-        Dim item As Hashtable = fw.FORM("item")
+        Dim item As Hashtable = reqh("item")
         If fw.cur_method = "GET" Then 'read from db
             'set defaults here
             item = New Hashtable
@@ -25,7 +25,7 @@ Public Class LoginController
             'read from form and make additional changes
         End If
 
-        hf("login_mode") = fw.FORM("mode")
+        hf("login_mode") = reqs("mode")
         hf("hide_sidebar") = True
 
         hf("i") = item
@@ -36,12 +36,12 @@ Public Class LoginController
 
     Public Sub SaveAction()
         Try
-            Dim login As String = Trim(fw.FORM("item")("login"))
-            Dim pwd As String = fw.FORM("item")("pwdh")
+            Dim login As String = Trim(reqh("item")("login"))
+            Dim pwd As String = reqh("item")("pwdh")
             'if use field with masked chars - read masked field
-            If fw.FORM("item")("chpwd") = "1" Then pwd = fw.FORM("item")("pwd")
+            If reqh("item")("chpwd") = "1" Then pwd = reqh("item")("pwd")
             pwd = Left(Trim(pwd), 32)
-
+            
             If login.Length = 0 Or pwd.Length = 0 Then
                 fw.FERR("REGISTER") = True
                 Throw New ApplicationException("")
@@ -62,7 +62,7 @@ Public Class LoginController
 
 
         Catch ex As ApplicationException
-            fw.G("err_ctr") = Utils.f2int(fw.FORM("err_ctr")) + 1
+            fw.G("err_ctr") = reqi("err_ctr") + 1
             fw.G("err_msg") = ex.Message
             fw.route_redirect("Index")
         End Try

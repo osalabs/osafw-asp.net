@@ -11,8 +11,20 @@ body{
     padding-bottom: 20px;
 */
 }
+
+.main-container-fluid {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+    width: auto;
+}
+
 .site-navbar {
 /*    margin-bottom: 0px; */
+}
+.navbar-brand > img {
+    display: inline-block;
 }
 
 .site-footer {
@@ -129,13 +141,28 @@ form .required:before {
  padding: 10px;
  border-radius: 4px;
 }
-.sidebar-nav .nav > li > a {
- padding: 5px 10px;
-}
+    .sidebar-nav .nav > li > a {
+        padding: 5px 10px;
+    }
+    .sidebar-nav .nav > li.active > a {
+        background-color:#eee;
+    }
 
 .btn-std {
     margin-bottom: 20px;
 }
+
+/*for .scrollable tables with fixed header*/
+.data-header {
+    position: fixed;
+    overflow: hidden;
+    background-color: #fff;
+}
+    .data-header table{
+        margin-bottom: 0;
+        max-width: none;
+        width: auto;
+    }
 
 /* jGrowl*/
 div.jGrowl div.hint_green{

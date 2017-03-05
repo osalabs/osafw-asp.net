@@ -1,4 +1,3 @@
-make_table_list(".list")
 
 $('#FFilter').find('select, input[type="radio"], input[type="checkbox"]').on('change', function(){
     $('#FFilter').trigger('submit');

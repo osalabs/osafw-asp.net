@@ -129,6 +129,38 @@ Public Class FormUtils
         Return result.ToString()
     End Function
 
+    ''' <summary>
+    ''' get name for the value fromt the select template
+    ''' ex: select_tpl_name('/common/sel/status.sel', 127) => 'Deleted'
+    ''' TODO: refactor to make common code with ParsePage?
+    ''' </summary>
+    ''' <param name="tpl_path"></param>
+    ''' <param name="sel_id"></param>
+    ''' <returns></returns>
+    Public Shared Function select_tpl_name(ByVal tpl_path As String, ByVal sel_id As String) As String
+        Dim result As String = ""
+        If sel_id Is Nothing Then sel_id = ""
+
+        Dim lines As String() = FW.get_file_lines(FwConfig.settings("template") + tpl_path)
+
+        Dim line As String
+        For Each line In lines
+            If line.Length < 2 Then Continue For
+
+            Dim arr() As String = Split(line, "|", 2)
+            Dim value As String = arr(0)
+            Dim desc As String = arr(1)
+
+            If desc.Length < 1 Or value <> sel_id Then Continue For
+
+            'result = ParsePage.RX_LANG.Replace(desc, "$1")
+            result = New Regex("`(.+?)`", RegexOptions.Compiled).Replace(desc, "$1")
+            Exit For
+        Next
+
+        Return result
+    End Function
+
     Public Shared Function clean_input(ByVal strIn As String) As String
         ' Replace invalid characters with empty strings.
         Return Regex.Replace(strIn, "[^\w\.\,\:\\\%@\-\/ ]", "")
@@ -220,7 +252,7 @@ Public Class FormUtils
     'join ids from form to comma-separated string
     'sample:
     ' many <input name="dict_link_multi[<~id>]"...>
-    ' itemdb("dict_link_multi") = FormUtils.multi2ids(fw.FORM("dict_link_multi"))
+    ' itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
     Public Shared Function multi2ids(items As Hashtable) As String
         If IsNothing(items) OrElse items.Count = 0 Then Return ""
         'Return String.Join(",", New ArrayList(items.Keys()).ToArray(GetType(String))) 'why not works properly in .NET 4???

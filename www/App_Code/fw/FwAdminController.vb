@@ -1,23 +1,26 @@
 ﻿' Base Admin screens controller
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2015 Oleg Savchuk www.osalabs.com
+' (c) 2009-2017 Oleg Savchuk www.osalabs.com
 
 Public Class FwAdminController
     Inherits FwController
+    'Public Shared Shadows route_default_action As String = "index" 'empty|index|show - calls IndexAction or ShowAction accordingly if no requested controller action found. If empty (default) - show template from /cur_controller/cur_action dir
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
 
         'DEFINE in inherited controllers like this:
         'base_url = "/Admin/Base"
-        'base_url_suffix = "?parent_id=123"
         'required_fields = "iname"
         'save_fields = "iname idesc status"
+        'save_fields_checkboxes = ""
 
         'search_fields = "iname idesc"
         'list_sortdef = "iname asc"
         'list_sortmap = Utils.qh("id|id iname|iname add_time|add_time")
+
+        'list_view = model0.table_name 'optionally override list view/table
     End Sub
 
     Public Overridable Function IndexAction() As Hashtable
@@ -38,11 +41,14 @@ Public Class FwAdminController
         '    row("field") = "value"
         'Next
 
-        Dim ps As Hashtable = New Hashtable
-        ps("list_rows") = Me.list_rows
-        ps("count") = Me.list_count
-        ps("pager") = Me.list_pager
-        ps("f") = Me.list_filter
+        Dim ps As Hashtable = New Hashtable From {
+            {"list_rows", Me.list_rows},
+            {"count", Me.list_count},
+            {"pager", Me.list_pager},
+            {"f", Me.list_filter},
+            {"related_id", Me.related_id},
+            {"return_url", Me.return_url}
+        }
 
         Return ps
     End Function
@@ -57,7 +63,7 @@ Public Class FwAdminController
     ''' </returns>
     ''' <remarks></remarks>
     Public Overridable Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
-        Dim ps As Hashtable = New Hashtable
+        Dim ps As New Hashtable
         Dim item As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
@@ -68,6 +74,7 @@ Public Class FwAdminController
             Else
                 'set defaults here
                 item = New Hashtable
+                'item = reqh("item") 'optionally set defaults from request params
                 If Me.form_new_defaults IsNot Nothing Then
                     Utils.hash_merge(item, Me.form_new_defaults)
                 End If
@@ -76,7 +83,7 @@ Public Class FwAdminController
             'read from db
             item = model0.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, fw.FORM("item"))
+            Utils.hash_merge(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -85,15 +92,19 @@ Public Class FwAdminController
 
         ps("id") = id
         ps("i") = item
+        ps("return_url") = return_url
+        ps("related_id") = related_id
 
         Return ps
     End Function
 
-    Public Overridable Sub SaveAction(Optional ByVal form_id As String = "")
-        If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in save_fields ")
+    Public Overridable Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
+        If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in Controller.save_fields")
 
-        Dim item As Hashtable = req("item")
+        Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
+        Dim success = True
+        Dim is_new = (id = 0)
 
         Try
             Validate(id, item)
@@ -104,13 +115,13 @@ Public Class FwAdminController
             If Me.save_fields_checkboxes > "" Then FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
 
             id = Me.model_add_or_update(id, itemdb)
-
-            fw.redirect(base_url & "/" & id & "/edit" & base_url_suffix)
         Catch ex As ApplicationException
+            success = False
             Me.set_form_error(ex)
-            fw.route_redirect("ShowForm", New String() {id})
         End Try
-    End Sub
+
+        Return Me.save_check_result(success, id, is_new)
+    End Function
 
     Public Overridable Sub Validate(id As Integer, item As Hashtable)
         Dim result As Boolean = Me.validate_required(item, Me.required_fields)
@@ -127,24 +138,25 @@ Public Class FwAdminController
     End Sub
 
     Public Overridable Function ShowDeleteAction(ByVal form_id As String) As Hashtable
-        Dim ps As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        ps("i") = model0.one(id)
-        Return ps
+        Return New Hashtable From {
+            {"i", model0.one(id)},
+            {"related_id", Me.related_id},
+            {"return_url", Me.return_url}
+        }
     End Function
 
-    Public Overridable Sub DeleteAction(ByVal form_id As String)
+    Public Overridable Function DeleteAction(ByVal form_id As String) As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
         model0.delete(id)
         fw.FLASH("onedelete", 1)
-        fw.redirect(base_url & base_url_suffix)
-    End Sub
+        Return Me.save_check_result(True, id)
+    End Function
 
-    Public Overridable Sub SaveMultiAction()
-        Dim cbses As Hashtable = fw.FORM("cb")
-        If cbses Is Nothing Then cbses = New Hashtable
+    Public Overridable Function SaveMultiAction() As Hashtable
+        Dim cbses As Hashtable = reqh("cb")
         Dim is_delete As Boolean = fw.FORM.ContainsKey("delete")
         Dim ctr As Integer = 0
 
@@ -156,7 +168,7 @@ Public Class FwAdminController
         Next
 
         fw.FLASH("multidelete", ctr)
-        fw.redirect(base_url & base_url_suffix)
-    End Sub
+        Return Me.save_check_result(True, New Hashtable From {{"ctr", ctr}})
+    End Function
 
 End Class

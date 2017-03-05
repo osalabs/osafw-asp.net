@@ -13,14 +13,14 @@ Public Class AdminDBController
 
     Public Function IndexAction() As Hashtable
         Dim hf As New Hashtable
-        Dim sql As String = fw.FORM("sql")
+        Dim sql As String = reqs("sql")
         Dim tablehead As ArrayList = Nothing
         Dim tablerows As ArrayList = Nothing
         Dim sql_ctr As Integer = 0
         Dim sql_time As Long = DateTime.Now().Ticks
 
         Try
-            If fw.SESSION("admindb_pwd_checked") Or fw.FORM("pwd") = dbpwd Then
+            If fw.SESSION("admindb_pwd_checked") Or reqs("pwd") = dbpwd Then
                 fw.SESSION("admindb_pwd_checked", True)
             Else
                 If sql > "" Then fw.G("err_msg") = "Wrong password"

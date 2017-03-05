@@ -121,6 +121,14 @@ Public Class FwConfig
                 Exit For
             End If
         Next
+
+        'convert strings to specific types
+        Dim log_level As LogLevel = LogLevel.INFO 'default log level if No or Wrong level in config
+        If settings.ContainsKey("log_level") Then
+            [Enum].TryParse(Of LogLevel)(settings("log_level"), True, log_level)
+        End If
+        settings("log_level") = log_level
+
     End Sub
 
 

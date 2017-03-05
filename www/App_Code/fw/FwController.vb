@@ -1,12 +1,11 @@
 ﻿' Fw Controller base class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+' (c) 2009-2017 Oleg Savchuk www.osalabs.com
 
 Public MustInherit Class FwController
     Public Shared route_default_action As String = "" 'supported values - "" (use Default Parser for unknown actions), index (use IndexAction for unknown actions), show (assume action is id and use ShowAction)
     Public base_url As String 'base url for the controller
-    Public base_url_suffix As String 'additional base url suffix
 
     Public list_sortdef As String       'required, default list sorting: name asc|desc
     Public list_sortmap As Hashtable    'required, sortmap fields
@@ -22,13 +21,16 @@ Public MustInherit Class FwController
     Protected fw As FW
     Protected db As DB
     Protected model0 As FwModel
-    Protected list_filter As Hashtable             ' filter values for the list screen
     Protected list_view As String                  ' table/view to use in list sql, if empty model0.table_name used
     Protected list_orderby As String               ' orderby for the list screen
-    Protected list_where As String = " status = 0 " ' where to use in list sql, default is status=0
+    Protected list_filter As Hashtable             ' filter values for the list screen
+    Protected list_where As String = " status<>127 " ' where to use in list sql, default is status=0
     Protected list_count As Integer                ' count of list rows returned from db
     Protected list_rows As ArrayList               ' list rows returned from db (array of hashes)
     Protected list_pager As ArrayList              ' pager for the list from FormUtils.get_pager
+    Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
+    Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
+    Protected related_field_name As String         ' if set (in Controller) and $related_id passed - list will be filtered on this field
 
     Public Sub New(Optional fw As FW = Nothing)
         If fw IsNot Nothing Then
@@ -40,12 +42,23 @@ Public MustInherit Class FwController
     Public Overridable Sub init(fw As FW)
         Me.fw = fw
         Me.db = fw.db
+
+        return_url = reqs("return_url")
+        related_id = reqs("related_id")
     End Sub
 
     'set of helper functions to return string, integer, date values from request (fw.FORM)
     Public Function req(iname As String) As Object
         Return fw.FORM(iname)
     End Function
+    Public Function reqh(iname As String) As Hashtable
+        If fw.FORM(iname) IsNot Nothing AndAlso fw.FORM(iname).GetType() Is GetType(Hashtable) Then
+            Return fw.FORM(iname)
+        Else
+            Return New Hashtable
+        End If
+    End Function
+
     Public Function reqs(iname As String) As String
         Dim value As String = fw.FORM(iname)
         If IsNothing(value) Then value = ""
@@ -228,6 +241,10 @@ Public MustInherit Class FwController
             Next
             list_where &= " and (" & Join(afields, " or ") & ")"
         End If
+
+        If related_id > "" AndAlso related_field_name > "" Then
+            list_where &= " and " & db.q_ident(related_field_name) & "=" & db.q(related_id)
+        End If
     End Sub
 
     ''' <summary>
@@ -261,6 +278,16 @@ Public MustInherit Class FwController
             Me.list_rows = New ArrayList
             Me.list_pager = New ArrayList
         End If
+
+        If related_id > "" Then
+            Utils.dbarray_inject(list_rows, New Hashtable From {{"related_id", related_id}})
+        End If
+
+        'add/modify rows from db - use in override child class
+        'For Each row As Hashtable In list_rows
+        '    row("field") = "value"
+        'Next
+
     End Sub
 
     Public Sub set_form_error(ex As Exception)
@@ -286,6 +313,72 @@ Public MustInherit Class FwController
             fw.FLASH("record_added", 1)
         End If
         Return id
+    End Function
+
+    Public Overridable Function get_return_location(Optional id As String = "") As String
+        Dim result = ""
+        Dim url As String
+
+        If id > "" Then
+            url = Me.base_url & "/" & id & "/edit"
+        Else
+            url = Me.base_url
+        End If
+
+        If return_url > "" Then
+            If fw.is_json_expected() Then
+                'if json - it's usually autosave - don't redirect back to return url yet
+                result = url & "?return_url=" & Utils.escape_url(return_url) & IIf(related_id > "", "&related_id=" & related_id, "")
+            Else
+                result = return_url
+            End If
+        Else
+            result = url & IIf(related_id > "", "?related_id=" & related_id, "")
+        End If
+
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' Called from SaveAction/DeleteAction/DeleteMulti or similar. Return json or route redirect back to ShowForm or redirect to proper location
+    ''' </summary>
+    ''' <param name="success">operation successful or not</param>
+    ''' <param name="id">item id</param>
+    ''' <param name="is_new">true if it's newly added item</param>
+    ''' <param name="action">route redirect to this method if error</param>
+    ''' <param name="location">redirect to this location if success</param>
+    ''' <param name="more_json">added to json response</param>
+    ''' <returns></returns>
+    Public Overridable Overloads Function save_check_result(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
+        If location = "" Then location = Me.get_return_location(id)
+
+        If fw.is_json_expected() Then
+            Dim ps = New Hashtable From {
+                {"_json_enabled", True},
+                {"success", success},
+                {"id", id},
+                {"is_new", is_new},
+                {"location", location},
+                {"err_msg", fw.G("err_msg")}
+            }
+            'TODO add ERR field errors to response if any
+            If Not IsNothing(more_json) Then Utils.hash_merge(ps, more_json)
+
+            Return ps
+        Else
+            'If save Then success - Return redirect
+            'If save Then failed - Return back To add/edit form
+            If success Then
+                fw.redirect(location)
+            Else
+                fw.route_redirect(action, New String() {id})
+            End If
+        End If
+        Return Nothing
+    End Function
+
+    Public Overridable Overloads Function save_check_result(success As Boolean, more_json As Hashtable) As Hashtable
+        Return save_check_result(success, "", False, "no_action", "", more_json)
     End Function
 
     '''''''''''''''''''''''''''''''''''''' Default Actions
