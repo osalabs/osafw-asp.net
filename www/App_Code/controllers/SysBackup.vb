@@ -11,9 +11,11 @@
 #Const is_backup_zip = False   'backup site files to single zip file. Requires Ionic.Zip
 #Const is_backup_to_S3 = False 'set to True to save backups to S3, also set all other aws_* parameters. Requires AWSSDK.Core and AWSSDK.S3
 
-Imports Ionic.Zip
 Imports System.IO
 
+#If is_backup_zip Then
+Imports Ionic.Zip
+#End If
 #If is_backup_to_S3 Then
 Imports Amazon
 #End If
