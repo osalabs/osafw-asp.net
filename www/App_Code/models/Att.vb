@@ -159,11 +159,15 @@ Public Class Att
 
         If item("id") > 0 Then
             check_access_rights(item("id"))
-            fw.resp.CacheControl = "private" 'use public only if all uploads are public
+            fw.resp.Cache.SetCacheability(HttpCacheability.Private) 'use public only if all uploads are public
+            fw.resp.Cache.SetExpires(DateTime.Now.AddDays(30)) 'cache for 30 days, this allows browser not to send any requests to server during this period (unless F5)
+            fw.resp.Cache.SetMaxAge(New TimeSpan(30, 0, 0, 0))
 
             Dim filepath As String = get_upload_img_path(id, size, item("ext"))
             Dim filetime As Date = System.IO.File.GetLastWriteTime(filepath)
             filetime = New Date(filetime.Year, filetime.Month, filetime.Day, filetime.Hour, filetime.Minute, filetime.Second) 'remove any milliseconds
+
+            fw.resp.Cache.SetLastModified(filetime) 'this allows browser to send If-Modified-Since request headers (unless Ctrl+F5)
 
             Dim ifmodhead As String = fw.req.Headers("If-Modified-Since")
             Dim ifmod As Date

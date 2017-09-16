@@ -48,5 +48,9 @@ Public Class TestController
         fw.parser(hf)
     End Sub
 
+    Public Sub BenchAction()
+        rw("hello world")
+    End Sub
+
 End Class
 

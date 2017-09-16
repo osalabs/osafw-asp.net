@@ -919,9 +919,10 @@ Public Class FW
                     Next
                 End If
 
-                Dim client As SmtpClient = New SmtpClient()
-                client.Send(message)
-                'client.SendAsync(message,"") 'async alternative
+                Using client As New SmtpClient()
+                    client.Send(message)
+                    'client.SendAsync(message,"") 'async alternative TBD
+                End Using
             End If
 
         Catch ex As Exception
