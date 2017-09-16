@@ -44,7 +44,7 @@ Public Class AdminEventsController
             where &= " and events_id = " & db.qi(f("events_id"))
         End If
         If f("users_id") > "" Then
-            where &= " and add_user_id = " & db.qi(f("users_id"))
+            where &= " and add_users_id = " & db.qi(f("users_id"))
         End If
         If f("date") > "" Then
             Dim d As String = db.qone(model.log_table_name, "add_time", f("date"))
@@ -76,7 +76,7 @@ Public Class AdminEventsController
             hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
 
             For Each row As Hashtable In hf("list_rows")
-                row("user") = model_users.one(row("add_user_id"))
+                row("user") = model_users.one(row("add_users_id"))
                 row("event") = model.one(row("events_id"))
             Next
         End If

@@ -58,8 +58,8 @@ Public Class AdminLookupManagerTablesController
             'here make additional changes if necessary
         End If
 
-        ps("add_user_id_name") = fw.model(Of Users).full_name(item("add_user_id"))
-        ps("upd_user_id_name") = fw.model(Of Users).full_name(item("upd_user_id"))
+        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
 
         ps("id") = id
         ps("i") = item

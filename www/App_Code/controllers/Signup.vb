@@ -55,7 +55,7 @@ Public Class SignupController
                 fw.FLASH("record_updated", 1)
             Else
                 item("access_level") = 0
-                item("add_user_id") = 0
+                item("add_users_id") = 0
                 id = model.add(item)
                 fw.FLASH("record_added", 1)
             End If

@@ -287,8 +287,8 @@ Public Class AdminLookupManagerController
         'hf("multi_datarow") = fw.model(Of DemoDicts).get_multi_list(item("dict_link_multi"))
         'FormUtils.combo4date(item("fdate_combo"), hf, "fdate_combo")
 
-        hf("add_user_id_name") = fw.model(Of Users).full_name(item("add_user_id"))
-        hf("upd_user_id_name") = fw.model(Of Users).full_name(item("upd_user_id"))
+        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item

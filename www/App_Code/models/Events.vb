@@ -38,7 +38,7 @@ Public Class Events
         fields("item_id2") = item_id2
         fields("iname") = iname
         fields("records_affected") = records_affected
-        fields("add_user_id") = fw.model(Of Users).me_id()
+        fields("add_users_id") = fw.model(Of Users).me_id()
         db.insert(log_table_name, fields)
     End Sub
 

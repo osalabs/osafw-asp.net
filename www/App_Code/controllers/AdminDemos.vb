@@ -15,7 +15,7 @@ Public Class AdminDemosController
 
         base_url = "/Admin/Demos"
         required_fields = "iname"
-        save_fields = "parent_id demo_dicts_id iname idesc email fint ffloat fcombo fradio fyesno fdate_pop fdatetime status"
+        save_fields = "parent_id demo_dicts_id iname idesc email fint ffloat fcombo fradio fyesno fdate_pop fdatetime att_id status"
         save_fields_checkboxes = "is_checkbox|0"
 
         search_fields = "iname idesc"
@@ -55,6 +55,9 @@ Public Class AdminDemosController
         ps("multi_datarow") = model_related.get_multi_list(item("dict_link_multi"))
         FormUtils.combo4date(item("fdate_combo"), ps, "fdate_combo")
 
+        ps("att") = fw.model(Of Att).one(Utils.f2int(item("att_id")))
+        ps("att_links") = fw.model(Of Att).get_all_linked(model.table_name, Utils.f2int(item("id")))
+
         Return ps
     End Function
 
@@ -77,8 +80,11 @@ Public Class AdminDemosController
             itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
             itemdb("fdate_combo") = FormUtils.date4combo(item, "fdate_combo")
             itemdb("ftime") = FormUtils.timestr2int(item("ftime_str")) 'ftime - convert from HH:MM to int (0-24h in seconds)
+            itemdb("fint") = Utils.f2int(itemdb("fint")) 'field accepts only int
 
             id = Me.model_add_or_update(id, itemdb)
+
+            fw.model(Of Att).update_att_links(model.table_name, id, reqh("att"))
 
         Catch ex As ApplicationException
             success = False

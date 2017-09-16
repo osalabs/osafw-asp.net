@@ -82,8 +82,8 @@ Public Class AdminCategoriesController
             'here make additional changes if necessary
         End If
 
-        hf("add_user_id_name") = fw.model(Of Users).full_name(item("add_user_id"))
-        hf("upd_user_id_name") = fw.model(Of Users).full_name(item("upd_user_id"))
+        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item

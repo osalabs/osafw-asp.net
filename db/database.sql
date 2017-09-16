@@ -21,9 +21,9 @@ CREATE TABLE users (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 )
 CREATE UNIQUE INDEX users_email ON users (email);
 INSERT INTO users (fname, lname, email, pwd, access_level)
@@ -46,9 +46,9 @@ CREATE TABLE settings (
   is_user_edit          TINYINT DEFAULT 0,  /* if 1 - use can edit this value*/
 
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE UNIQUE INDEX settings_icode ON settings (icode);
 CREATE INDEX settings_icat ON settings (icat);
@@ -67,9 +67,9 @@ CREATE TABLE att_categories (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 INSERT INTO att_categories (icode, iname) VALUES
 ('general', 'General images')
@@ -96,9 +96,9 @@ CREATE TABLE att (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE INDEX att_table_name ON att (table_name, item_id);
 
@@ -113,7 +113,7 @@ CREATE TABLE att_table_link (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under update*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
 );
 CREATE UNIQUE INDEX att_table_link_UX ON att_table_link (table_name, item_id, att_id);
 
@@ -143,9 +143,9 @@ CREATE TABLE spages (
 
   status                TINYINT DEFAULT 0,    /*0-ok, 10-not published, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE INDEX spages_parent_id ON spages (parent_id, prio);
 CREATE INDEX spages_url ON spages (url);
@@ -170,9 +170,9 @@ CREATE TABLE categories (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 INSERT INTO categories (iname) VALUES
 ('category1')
@@ -192,9 +192,9 @@ CREATE TABLE events (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE UNIQUE INDEX events_icode_idx ON events (icode);
 INSERT INTO events (icode, iname) VALUES ('login',    'User login');
@@ -219,10 +219,10 @@ CREATE TABLE event_log (
   fields                NVARCHAR(MAX),       /*serialized json with related fields data (for history) in form {fieldname: data, fieldname: data}*/
 
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
-  add_user_id           INT DEFAULT 0,                        /*user added record, 0 if sent by cron module*/
+  add_users_id          INT DEFAULT 0,                        /*user added record, 0 if sent by cron module*/
 );
 CREATE INDEX event_log_events_id_idx ON event_log (events_id);
-CREATE INDEX event_log_add_user_id_idx ON event_log (add_user_id);
+CREATE INDEX event_log_add_users_id_dx ON event_log (add_users_id)
 CREATE INDEX event_log_add_time_idx ON event_log (add_time);
 
 /*Lookup Manager Tables*/
@@ -248,13 +248,14 @@ CREATE TABLE lookup_manager_tables (
 
   status                TINYINT DEFAULT 0,                /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
-  add_user_id           INT DEFAULT 0,                        /*user added record*/
+  add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE UNIQUE INDEX lookup_manager_tables_tname ON lookup_manager_tables (tname);
 GO
 
-insert into lookup_manager_tables (tname, iname)
-VALUES ('categories','Categories');
+insert into lookup_manager_tables (tname, iname) VALUES
+('events','Events')
+, ('categories','Categories');
 GO

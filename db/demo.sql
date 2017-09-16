@@ -26,11 +26,13 @@ CREATE TABLE demos (
   fdatetime             DATETIME2,                         /*date+time field*/
   ftime                 INT NOT NULL DEFAULT 0,           /*time field - we always store time as seconds from start of the day [0-86400]*/
 
+  att_id                int NULL,                /*optional attached image*/
+
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
-  add_user_id           INT DEFAULT 0,                        /*user added record*/
+  add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 CREATE UNIQUE INDEX demos_email ON demos (email);
 
@@ -44,9 +46,9 @@ CREATE TABLE demo_dicts (
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(), /*from date_joined*/
-  add_user_id           INT DEFAULT 0,
+  add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_user_id           INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0
 );
 INSERT INTO demo_dicts (iname, idesc, add_time) VALUES ('test1', 'test1 description', GETDATE());
 INSERT INTO demo_dicts (iname, idesc, add_time) VALUES ('test2', 'test2 description', GETDATE());

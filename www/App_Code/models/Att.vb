@@ -53,7 +53,7 @@ Public Class Att
                 fields("att_id") = att_id
                 fields("table_name") = table_name
                 fields("item_id") = id
-                fields("add_user_id") = me_id
+                fields("add_users_id") = me_id
                 db.insert(att_table_link, fields)
             End If
         Next

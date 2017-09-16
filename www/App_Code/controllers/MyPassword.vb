@@ -62,7 +62,7 @@ Public Class MyPasswordController
             If id > 0 Then
                 'update
                 item("upd_time") = Now()
-                item("upd_user_id") = fw.SESSION("user")("id")
+                item("add_users_id") = fw.SESSION("user")("id")
 
                 Dim where As New Hashtable
                 where("id") = id
