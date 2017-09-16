@@ -36,12 +36,20 @@ Public Class LoginController
 
     Public Sub SaveAction()
         Try
+            Dim gourl = reqs("gourl")
             Dim login As String = Trim(reqh("item")("login"))
             Dim pwd As String = reqh("item")("pwdh")
             'if use field with masked chars - read masked field
             If reqh("item")("chpwd") = "1" Then pwd = reqh("item")("pwd")
             pwd = Left(Trim(pwd), 32)
-            
+
+            'for dev config only - login as first admin
+            If Utils.f2bool(fw.config("is_dev")) AndAlso login = "" AndAlso pwd = "~" Then
+                Dim dev = db.row("select TOP 1 email, pwd from users where status=0 and access_level=100 order by id")
+                login = dev("email")
+                pwd = dev("pwd")
+            End If
+
             If login.Length = 0 Or pwd.Length = 0 Then
                 fw.FERR("REGISTER") = True
                 Throw New ApplicationException("")
@@ -58,8 +66,11 @@ Public Class LoginController
 
             model.do_login(hU("id"))
 
-            fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
-
+            If gourl > "" AndAlso Not Regex.IsMatch(gourl, "^http", RegexOptions.IgnoreCase) Then 'if url set and not external url (hack!) given
+                fw.redirect(gourl)
+            Else
+                fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
+            End If
 
         Catch ex As ApplicationException
             fw.G("err_ctr") = reqi("err_ctr") + 1

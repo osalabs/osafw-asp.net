@@ -354,7 +354,7 @@ Public MustInherit Class FwController
 
         If fw.is_json_expected() Then
             Dim ps = New Hashtable From {
-                {"_json_enabled", True},
+                {"_json", True},
                 {"success", success},
                 {"id", id},
                 {"is_new", is_new},

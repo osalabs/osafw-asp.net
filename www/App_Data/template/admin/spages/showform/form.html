@@ -5,7 +5,7 @@
     <div class="pull-right">
         <span class="form-saved-status"></span>
         <button type="submit" class="btn btn-primary">`Submit`</button>
-        <button type="button" class="btn btn-default on-cancel" data-href="<~./cancel_url>">`Cancel`</button>
+        <button type="button" class="btn btn-default on-cancel" data-href="<~/common/form/cancel_url>">`Cancel`</button>
     </div>
     <div class="btn-std">
      <div class="btn-group">
@@ -155,22 +155,8 @@
         </div>
 
 
-        <~status_block if="id" inline>
-        <div class="form-group">
-          <label class="control-label col-md-3">`Added on`</label>
-          <div class="col-md-9"><p class="form-control-static"><~i[add_time]> `by` <~add_user_id_name></p>
-          </div>
-        </div>
-        </~status_block>
-
-        <~upd_block if="i[upd_user_id]" inline>
-        <div class="form-group">
-          <label class="control-label col-md-3">`Updated on`</label>
-          <div class="col-md-9"><p class="form-control-static"><~i[upd_time]> by <~upd_user_id_name></p>
-          </div>
-        </div>
-        </~upd_block>
-
+    <~/common/form/added if="id">
+    <~/common/form/updated if="i[upd_users_id]">
     <~/common/form/actions_std>
 
   </fieldset>

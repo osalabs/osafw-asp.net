@@ -221,7 +221,7 @@ Public Class AdminUsersController
         fw.send_email_tpl(hU("email"), "email_pwd.txt", hU)
 
         ps("success") = True
-        ps("_json_enabled") = True
+        ps("_json") = True
         Return ps
     End Function
 End Class

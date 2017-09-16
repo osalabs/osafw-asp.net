@@ -11,11 +11,27 @@
  }
 </style>
 
-<script src="<~ROOT_URL>/js/markdown.min.js"></script>
+<script src="<~ROOT_URL>/js/markdown-it.min.js"></script>
 <script src="<~ROOT_URL>/js/to-markdown.js"></script>
 <script src="<~ROOT_URL>/js/bootstrap-markdown.js"></script>
+<script src="<~ROOT_URL>/js/jquery.hotkeys.js"></script>
 <script>
     $(document).ready(function() {
+
+        var aconverters=[
+            {
+                filter: ['u','span','sup'],
+                replacement: function (content, node) {
+                    return content;
+                }
+            },
+        ];
+        var mdOptions={
+            html:       true,
+            breaks:     true,
+            linkify:    true
+        };
+        var md = window.markdownit(mdOptions);
 
         $("textarea.markdown")
         .on('paste', function (e) {
@@ -24,13 +40,20 @@
 
             if (cd.types.contains && cd.types.contains('text/html') || cd.types.indexOf && cd.types.indexOf('text/html')>-1 ){
                 var data = cd.getData('text/html');
-                data = toMarkdown(data);
-                field_insert_at_cursor(this, data);
+                //data = toMarkdown(data, { gfm: true });
+                data = toMarkdown(data, { converters: aconverters });
+                fw.field_insert_at_cursor(this, data);
                 e.preventDefault();
             }
         })
         .markdown({
+            //hide&disable default add image btn
             hiddenButtons: 'cmdImage',
+            disabledButtons: 'cmdImage',
+            //iconlibrary: 'glyph',
+            parser: function (v) {
+                return md.render(v);
+            },
             additionalButtons: [
                 [{
                       name: "groupCustom",
@@ -38,7 +61,13 @@
                         name: "cmdAddImage",
                         toggle: false,
                         title: "Add Image",
-                        icon: "glyphicon glyphicon-picture",
+                        hotkey: 'Ctrl+G',
+                        icon: {
+                            glyph: 'glyphicon glyphicon-picture',
+                            fa: 'fa fa-picture-o',
+                            'fa-3': 'icon-picture',
+                            octicons: 'octicon octicon-file-media'
+                        },
                         callback: function(e){
                             // Replace selection with some drinks
                             var chunk, cursor,

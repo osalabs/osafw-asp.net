@@ -470,9 +470,9 @@ Public Class AdminLookupManagerController
     End Sub
 
     'TODO for lookup tables
-    Public Function AjaxAutocompleteAction() As Hashtable
+    Public Function AutocompleteAction() As Hashtable
         Dim items As ArrayList = model_tables.get_autocomplete_items(reqs("q"))
 
-        Return New Hashtable From {{"_json_data", items}}
+        Return New Hashtable From {{"_json", items}}
     End Function
 End Class

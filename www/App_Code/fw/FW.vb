@@ -695,27 +695,28 @@ Public Class FW
 
     'same as parsert(hf), but with base dir param
     'output format based on requested format: json, pjax or (default) full page html
-    'for automatic json response support - set hf("_json_enabled") = True OR set hf("_json_data") - if json requested, only _json_data will be returned
-    'to override page template - set hf("_page_tpl")="another_page_layout.html"
+    'for automatic json response support - set hf("_json") = True OR set hf("_json")=ArrayList/Hashtable - if json requested, only _json content will be returned
+    'to override page template - set hf("_layout")="another_page_layout.html" (relative to SITE_TEMPLATES dir)
     '(not for json) to perform route_redirect - set hf("_route_redirect")("method"), hf("_route_redirect")("controller"), hf("_route_redirect")("args")
     '(not for json) to perform redirect - set hf("_redirect")="url"
     'TODO - create another func and call it from call_controller for processing _redirect, ... (non-parsepage) instead of calling parser?
     Public Overloads Sub parser(ByVal bdir As String, hf As Hashtable)
-        hf("ERR") = Me.FERR 'add errors if any
+        If Me.FERR.Count > 0 Then hf("ERR") = Me.FERR 'add errors if any
 
         Dim format As String = Me.get_response_expected_format()
         If format = "json" Then
-            If hf("_json_enabled") = True Then
-                hf.Remove("_json_enabled") 'remove internal flag
-                Me.parser_json(hf)
-
-            ElseIf hf.ContainsKey("_json_data") Then 'if _json_data exists - return only this element
-                Me.parser_json(hf("_json_data"))
-
+            If hf.ContainsKey("_json") Then
+                If TypeOf hf("_json") Is Boolean AndAlso hf("_json") = True Then
+                    hf.Remove("_json") 'remove internal flag
+                    Me.parser_json(hf)
+                Else
+                    Me.parser_json(hf("_json")) 'if _json exists - return only this element content
+                End If
             Else
-                Dim ps As New Hashtable
-                ps("success") = False
-                ps("message") = "JSON response is not enabled for this Controller.Action (set ps(""_json_enabled"")=True or ps(""_json_data"")=... to enable)."
+                Dim ps As New Hashtable From {
+                    {"success", False},
+                    {"message", "JSON response is not enabled for this Controller.Action (set ps(""_json"")=True or ps(""_json"")=data... to enable)."}
+                }
                 Me.parser_json(ps)
             End If
             Return 'no further processing for json
@@ -734,13 +735,13 @@ Public Class FW
 
         Me.resp.CacheControl = cache_control
         If format = "pjax" Then
-            Dim page_tpl As String = G("PAGE_TPL_PJAX")
-            parser(bdir, page_tpl, hf)
+            Dim layout As String = G("PAGE_LAYOUT_PJAX")
+            parser(bdir, layout, hf)
 
         Else
-            Dim page_tpl As String = G("PAGE_TPL")
-            If hf.ContainsKey("_page_tpl") Then page_tpl = hf("_page_tpl")
-            parser(bdir, page_tpl, hf)
+            Dim layout As String = G("PAGE_LAYOUT")
+            If hf.ContainsKey("_layout") Then layout = hf("_layout")
+            parser(bdir, layout, hf)
         End If
 
     End Sub

@@ -30,23 +30,12 @@ Public Class HomeController
     Public Sub ShowAction(Optional ByVal id As String = "")
         Dim hf As Hashtable = New Hashtable
 
-        fw.parser("/home/" & Utils.route_fix_chars(LCase(id)), fw.config("PAGE_TPL_USER"), hf)
+        fw.parser("/home/" & Utils.route_fix_chars(LCase(id)), fw.config("PAGE_LAYOUT_USER"), hf)
     End Sub
 
     'called if fw.dispatch can't find controller
     Public Sub NotFoundAction()
         fw.model(Of Spages).show_page_by_full_url(fw.request_url)
-    End Sub
-
-
-    Public Sub InitAction(Optional ByVal id As String = "")
-        Dim hf As Hashtable = New Hashtable
-
-        rw("initializing db [" & fw.config("db_name") & "]")
-        db.check_create_mdb(fw.config("db_name"))
-        rw("done")
-
-        'parser("/index", hf)
     End Sub
 
     Public Sub TestAction(Optional ByVal id As String = "")

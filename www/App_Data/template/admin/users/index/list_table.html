@@ -10,6 +10,7 @@
             <th class="sortable" data-sort="iname">`Name`</th>
             <th class="sortable" data-sort="email">`Email`</th>
             <th class="sortable" data-sort="access_level">`Access level`</th>
+            <th class="sortable" data-sort="status">`Status`</th>
             <th class="sortable" data-sort="add_time">`Added on`</th>
             <th></th>
         </tr>
@@ -22,6 +23,7 @@
             <td><~fname> <~lname></td>
             <td><~email></td>
             <td><~/common/sel/access_level.sel selvalue="access_level"></td>
+            <td><~../status.sel selvalue="status"></td>
             <td><~add_time></td>
             <td nowrap="nowrap">
                 <a href="<~row_click_url>">`Edit`</a>

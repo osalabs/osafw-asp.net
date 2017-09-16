@@ -105,10 +105,10 @@ Public Class AdminDemosController
         Me.validate_check_result()
     End Sub
 
-    Public Function AjaxAutocompleteAction() As Hashtable
+    Public Function AutocompleteAction() As Hashtable
         Dim items As ArrayList = model_related.get_autocomplete_items(reqs("q"))
 
-        Return New Hashtable From {{"_json_data", items}}
+        Return New Hashtable From {{"_json", items}}
     End Function
 
 End Class

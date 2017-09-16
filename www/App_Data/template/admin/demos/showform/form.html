@@ -82,7 +82,7 @@
     <div class="form-group <~/common/error if="ERR[dict_link_auto_id]">">
       <label class="control-label col-md-3" for="dict_link_auto_id">DemoDicts Autocomplete</label>
       <div class="col-md-9">
-          <input id="dict_link_auto_id" name="item[dict_link_auto_id_iname]" maxlength="255" value="<~dict_link_auto_id_iname>" type="text" class="form-control" autocomplete="off" placeholder="start typing to select..." data-autocomplete="<~../url>/(AjaxAutocomplete)?q=%QUERY">
+          <input id="dict_link_auto_id" name="item[dict_link_auto_id_iname]" maxlength="255" value="<~dict_link_auto_id_iname>" type="text" class="form-control" autocomplete="off" placeholder="start typing to select..." data-autocomplete="<~../url>/(Autocomplete)?q=%QUERY">
           <p class="help-block">will add new items to DemoDicts</p>
       </div>
     </div>
@@ -153,7 +153,7 @@
       <label class="control-label col-md-3" for="fdate_pop">Date popup</label>
       <div class="col-md-3">
         <div class="input-group date">
-          <input id="fdate_pop" name="item[fdate_pop]" maxlength="10" value="<~i[fdate_pop] date>" type="text" class="form-control">
+          <input id="fdate_pop" name="item[fdate_pop]" maxlength="10" value="<~i[fdate_pop] date="m/d/Y">" type="text" class="form-control">
           <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
         </div>
       </div>
@@ -179,15 +179,63 @@
     </div>
 
     <div class="form-group <~/common/error if="ERR[att_id]">">
-      <label class="control-label col-md-3" for="att_id">`Image`</label>
+      <label class="control-label col-md-3" for="att_id">`Attachment`</label>
       <div class="col-md-3">
-        <input id="att_id" name="item[att_id]" value="<~i[att_id]>" type="hidden">
-        <p><button type="button" class="btn btn-default on-select-att" data-att-category="general">Select/Upload image</button></p>
-        <p><button type="button" class="btn btn-default on-remove-att" <~/common/display_none unless="att_id_url_s">>Remove image</button></p>
+        <p><button id="att_id" type="button" class="btn btn-default on-select-att" data-att-category="general">`Select/Upload`</button></p>
       </div>
-      <div class="col-md-6">
-        <div class="img"><img src="<~att_id_url_s>" <~/common/display_none unless="att_id_url_s">></div>
+      <div class="col-lg-4 col-md-6">
+        <div class="thumbnail att-info" <~/common/display_none unless="att">>
+          <input name="item[att_id]" value="<~i[att_id]>" type="hidden">
+          <img src="<~/att/url>/<~att[id]>?preview=1&size=s" alt="">
+          <div class="caption text-nooverflow">
+            <p class="text-center att-iname"><~att[iname]></p>
+            <p class="text-center">
+              <a href="<~/att/url>/<~att[id]>" target="_blank" class="btn btn-default"><i class="glyphicon glyphicon-download"></i> `Download`</a>
+              <button type="button" class="btn btn-default on-remove-att"><i class="glyphicon glyphicon-remove"></i> `Remove`</button>
+            </p>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <div class="form-group <~/common/error if="ERR[att_links]">">
+      <label class="control-label col-md-3" for="att_links">`Multiple Attachments`</label>
+      <div class="col-md-9">
+        <p><button id="att_links" type="button" class="btn btn-default on-select-att" data-att-category="general"><i class="glyphicon glyphicon-plus-sign"></i> `Select/Upload`</button></p>
+        <div class="row att-list" style="margin-top:5px">
+
+          <~att_links repeat inline>
+              <div class="col-md-3 att-info">
+                <div class="thumbnail">
+                  <input type="hidden" name="att[<~id>]" value="1">
+                  <img src="<~/att/url>/<~id>?preview=1&size=s" alt="">
+                  <div class="caption text-nooverflow">
+                    <p class="text-center att-iname"><~iname></p>
+                    <p class="text-center">
+                      <a href="<~/att/url>/<~id>" target="_blank" class="btn btn-default"><i class="glyphicon glyphicon-download"></i> `Download`</a>
+                      <button type="button" class="btn btn-default on-remove-att"><i class="glyphicon glyphicon-remove"></i> `Remove`</button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+          </~att_links>
+          <div class="col-md-3 tpl hide att-info">
+            <div class="thumbnail">
+              <input type="hidden" name="" value="1">
+              <img src="" alt="">
+              <div class="caption text-nooverflow">
+                <p class="text-center att-iname"></p>
+                <p class="text-center">
+                  <a href="" target="_blank" class="btn btn-default"><i class="glyphicon glyphicon-download"></i> `Download`</a>
+                  <button type="button" class="btn btn-default on-remove-att"><i class="glyphicon glyphicon-remove"></i> `Remove`</button>
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
     <~/common/form/group_status>

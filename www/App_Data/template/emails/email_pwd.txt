@@ -1,5 +1,5 @@
 Member Password
-Hello <~nick>,
+Hello <~fname> <~lname>,
 
 your login credentials to access <~GLOBAL[ROOT_DOMAIN]><~ROOT_URL> :
 

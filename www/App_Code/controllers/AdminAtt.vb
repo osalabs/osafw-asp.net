@@ -181,7 +181,7 @@ Public Class AdminAttController
             hf("iname") = itemdb("iname")
             hf("url") = model.get_url_direct(id)
             hf("is_image") = is_image
-            hf("_json_enabled") = True
+            hf("_json") = True
 
             'otherwise just redirect
             hf("_redirect") = base_url & "/" & id & "/edit"
@@ -189,7 +189,7 @@ Public Class AdminAttController
         Catch ex As ApplicationException
             hf("success") = False
             hf("err_msg") = ex.Message
-            hf("_json_enabled") = True
+            hf("_json") = True
 
             fw.G("err_msg") = ex.Message
             hf("_route_redirect") = New Hashtable From {
