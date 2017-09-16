@@ -13,15 +13,15 @@ Public Class HomeController
 
     'CACHED as home_page
     Public Function IndexAction() As Hashtable
-        Dim ps As Hashtable = FwCache.get_value("home_page")
+        Dim ps As Hashtable = FwCache.getValue("home_page")
 
         If IsNothing(ps) OrElse ps.Count = 0 Then
             'CACHE MISS
             ps = New Hashtable
 
-			'create home page with heavy queries
+            'create home page with heavy queries
 
-            FwCache.set_value("home_page", ps)
+            FwCache.setValue("home_page", ps)
         End If
         ps("hide_sidebar") = True
         Return ps
@@ -30,12 +30,12 @@ Public Class HomeController
     Public Sub ShowAction(Optional ByVal id As String = "")
         Dim hf As Hashtable = New Hashtable
 
-        fw.parser("/home/" & Utils.route_fix_chars(LCase(id)), fw.config("PAGE_LAYOUT_USER"), hf)
+        fw.parser("/home/" & Utils.routeFixChars(LCase(id)), fw.config("PAGE_LAYOUT_USER"), hf)
     End Sub
 
     'called if fw.dispatch can't find controller
     Public Sub NotFoundAction()
-        fw.model(Of Spages).show_page_by_full_url(fw.request_url)
+        fw.model(Of Spages).showPageByFullUrl(fw.request_url)
     End Sub
 
     Public Sub TestAction(Optional ByVal id As String = "")

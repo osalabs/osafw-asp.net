@@ -24,7 +24,7 @@ Public Class AdminAttController
         Dim hf As Hashtable = New Hashtable
 
         'get filters
-        Dim f As Hashtable = get_filter()
+        Dim f As Hashtable = initFilter()
 
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"
@@ -63,20 +63,20 @@ Public Class AdminAttController
                         " ORDER BY " & orderby
 
             hf("list_rows") = db.array(sql)
-            hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
+            hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))
 
             'add/modify rows from db
             For Each row As Hashtable In hf("list_rows")
                 row("fsize_human") = Utils.bytes2str(row("fsize"))
-                If row("is_image") = 1 Then row("url_s") = model.get_url(row("id"), "s")
-                row("url_direct") = model.get_url_direct(row("id"))
+                If row("is_image") = 1 Then row("url_s") = model.getUrl(row("id"), "s")
+                row("url_direct") = model.getUrlDirect(row("id"))
 
                 If row("att_categories_id") > "" Then row("cat") = fw.model(Of AttCategories).one(row("att_categories_id"))
             Next
         End If
         hf("f") = f
 
-        hf("select_att_categories_ids") = fw.model(Of AttCategories).get_select_options(f("att_categories_id"))
+        hf("select_att_categories_ids") = fw.model(Of AttCategories).getSelectOptions(f("att_categories_id"))
 
         Return hf
     End Function
@@ -98,17 +98,17 @@ Public Class AdminAttController
             item = model.one(id)
 
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
         hf("fsize_human") = Utils.bytes2str(item("fsize"))
-        hf("url") = model.get_url(id)
-        If item("is_image") = 1 Then hf("url_m") = model.get_url(id, "m")
+        hf("url") = model.getUrl(id)
+        If item("is_image") = 1 Then hf("url_m") = model.getUrl(id, "m")
 
-        hf("select_options_att_categories_id") = fw.model(Of AttCategories).get_select_options(item("att_categories_id"))
+        hf("select_options_att_categories_id") = fw.model(Of AttCategories).getSelectOptions(item("att_categories_id"))
 
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -132,7 +132,7 @@ Public Class AdminAttController
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Utils.qw("att_categories_id iname status"))
+            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("att_categories_id iname status"))
             If Not itemdb("iname") > "" Then itemdb("iname") = "new file upload"
 
             Dim is_add As Boolean = False
@@ -147,9 +147,9 @@ Public Class AdminAttController
 
             'Proceed upload
             Dim filepath As String = Nothing
-            If model.upload_file(id, filepath, "file1", True) Then
+            If model.uploadFile(id, filepath, "file1", True) Then
                 logger("uploaded to [" & filepath & "]")
-                Dim ext As String = UploadUtils.get_upload_file_ext(filepath)
+                Dim ext As String = UploadUtils.getUploadFileExt(filepath)
 
                 'TODO refactor in better way
                 Dim file As HttpPostedFile = fw.req.Files("file1")
@@ -158,16 +158,16 @@ Public Class AdminAttController
                 Dim vars As New Hashtable
                 If is_add Then vars("iname") = file.FileName
                 vars("fname") = file.FileName
-                vars("fsize") = Utils.file_size(filepath)
+                vars("fsize") = Utils.fileSize(filepath)
                 vars("ext") = ext
                 'turn on image flag if it's an image
-                If UploadUtils.is_upload_img_ext_allowed(ext) Then
+                If UploadUtils.isUploadImgExtAllowed(ext) Then
                     'if it's an image - turn on flag and resize for thumbs
                     vars("is_image") = 1
                     is_image = 1
 
-                    Utils.image_resize(filepath, model.get_upload_img_path(id, "s", ext), MAX_THUMB_W_S, MAX_THUMB_H_S)
-                    Utils.image_resize(filepath, model.get_upload_img_path(id, "m", ext), MAX_THUMB_W_M, MAX_THUMB_H_M)
+                    Utils.resizeImage(filepath, model.getUploadImgPath(id, "s", ext), MAX_THUMB_W_S, MAX_THUMB_H_S)
+                    Utils.resizeImage(filepath, model.getUploadImgPath(id, "m", ext), MAX_THUMB_W_M, MAX_THUMB_H_M)
                 End If
 
                 Dim where As New Hashtable
@@ -179,7 +179,7 @@ Public Class AdminAttController
             hf("success") = True
             hf("id") = id
             hf("iname") = itemdb("iname")
-            hf("url") = model.get_url_direct(id)
+            hf("url") = model.getUrlDirect(id)
             hf("is_image") = is_image
             hf("_json") = True
 
@@ -208,7 +208,7 @@ Public Class AdminAttController
         Dim itemdb As Hashtable
         If id > 0 Then
             itemdb = model.one(id)
-            result = result And validate_required(item, Utils.qw(required_fields))
+            result = result And validateRequired(item, Utils.qw(required_fields))
         Else
             itemdb = New Hashtable
             itemdb("fsize") = 0
@@ -273,7 +273,7 @@ Public Class AdminAttController
         Dim where As New Hashtable
         where("status") = 0
         If category_icode > "" Then
-            att_cat = fw.model(Of AttCategories).one_by_icode(category_icode)
+            att_cat = fw.model(Of AttCategories).oneByIcode(category_icode)
             If att_cat.Count > 0 Then
                 att_categories_id = att_cat("id")
                 where("att_categories_id") = att_categories_id
@@ -285,10 +285,10 @@ Public Class AdminAttController
 
         Dim rows As ArrayList = db.array(model.table_name, where, "add_time desc")
         For Each row As Hashtable In rows
-            row("direct_url") = model.get_url_direct(row)
+            row("direct_url") = model.getUrlDirect(row)
         Next
         hf("att_dr") = rows
-        hf("select_att_categories_id") = fw.model(Of AttCategories).get_select_options(att_categories_id)
+        hf("select_att_categories_id") = fw.model(Of AttCategories).getSelectOptions(att_categories_id)
 
         Return hf
     End Function

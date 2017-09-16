@@ -17,19 +17,19 @@ Public Class Users
         csv_export_headers = "id,First Name,Last Name,Email,Registered"
     End Sub
 
-    Public Function me_id() As Integer
+    Public Function meId() As Integer
         If IsNothing(fw.SESSION("user")) OrElse Not fw.SESSION("user").ContainsKey("id") Then Return 0
         Return Utils.f2int(fw.SESSION("user")("id"))
     End Function
 
-    Public Function one_by_email(email As String) As Hashtable
+    Public Function oneByEmail(email As String) As Hashtable
         Dim where As Hashtable = New Hashtable
         where("email") = email
         Dim hU As Hashtable = db.row(table_name, where)
         Return hU
     End Function
 
-    Public Function full_name(id As Object) As String
+    Public Function getFullName(id As Object) As String
         Dim result As String = ""
         id = Utils.f2int(id)
 
@@ -42,7 +42,7 @@ Public Class Users
     End Function
 
     'check if user exists for a given email
-    Public Overrides Function is_exists(uniq_key As Object, not_id As Integer) As Boolean
+    Public Overrides Function isExists(uniq_key As Object, not_id As Integer) As Boolean
         Dim val As String = db.value("select 1 from users where email=" & db.q(uniq_key) & " and id <>" & db.qi(not_id))
         If val = "1" Then
             Return True
@@ -52,14 +52,14 @@ Public Class Users
     End Function
 
     'fill the session and do all necessary things just user authenticated (and before redirect
-    Public Function do_login(id As Integer) As Boolean
+    Public Function doLogin(id As Integer) As Boolean
         fw.SESSION.Clear()
         fw.SESSION("is_logged", True)
-        fw.SESSION("XSS", Utils.get_rand_str(16))
+        fw.SESSION("XSS", Utils.getRandStr(16))
 
-        session_reload(id)
+        reloadSession(id)
 
-        fw.log_event("login", id)
+        fw.logEvent("login", id)
         'update login info
         Dim fields As New Hashtable
         fields("login_time") = Now()
@@ -67,8 +67,8 @@ Public Class Users
         Return True
     End Function
 
-    Public Function session_reload(Optional id As Integer = 0) As Boolean
-        If id = 0 Then id = me_id()
+    Public Function reloadSession(Optional id As Integer = 0) As Boolean
+        If id = 0 Then id = meId()
         Dim hU As Hashtable = one(id)
 
         fw.SESSION("login", hU("email"))
@@ -87,15 +87,15 @@ Public Class Users
         Return db.array(sql)
     End Function
 
-    Public Overrides Function get_select_options(sel_id As String) As String
-        Return FormUtils.select_options_db(Me.list(), sel_id)
+    Public Overrides Function getSelectOptions(sel_id As String) As String
+        Return FormUtils.selectOptions(Me.list(), sel_id)
     End Function
 
     ''' <summary>
     ''' check if current user acl is enough. throw exception or return false if user's acl is not enough
     ''' </summary>
     ''' <param name="acl">minimum required access level</param>
-    Public Function check_access(acl As Integer, Optional is_die As Boolean = True) As Boolean
+    Public Function checkAccess(acl As Integer, Optional is_die As Boolean = True) As Boolean
         Dim users_acl As Integer = Utils.f2int(fw.SESSION("access_level"))
 
         'check access

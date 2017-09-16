@@ -7,7 +7,7 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminEventsController
     Inherits FwController
-    Protected model As New Events
+    Protected model As New FwEvents
     Protected model_users As New Users
 
     Public Overrides Sub init(fw As FW)
@@ -23,7 +23,7 @@ Public Class AdminEventsController
         db.connect()
 
         'get filters
-        Dim f As Hashtable = get_filter()
+        Dim f As Hashtable = initFilter()
 
         If Not reqs("dofilter") > "" AndAlso f("date") = "" Then
             f("date") = DateUtils.Date2Str(Now())
@@ -73,7 +73,7 @@ Public Class AdminEventsController
                         " ORDER BY " & orderby
 
             hf("list_rows") = db.array(sql)
-            hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
+            hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))
 
             For Each row As Hashtable In hf("list_rows")
                 row("user") = model_users.one(row("add_users_id"))
@@ -81,8 +81,8 @@ Public Class AdminEventsController
             Next
         End If
         hf("f") = f
-        hf("filter_select_events") = model.get_select_options(f("events_id"))
-        hf("filter_select_users") = model_users.get_select_options(f("users_id"))
+        hf("filter_select_events") = model.getSelectOptions(f("events_id"))
+        hf("filter_select_users") = model_users.getSelectOptions(f("users_id"))
 
         Return hf
     End Function

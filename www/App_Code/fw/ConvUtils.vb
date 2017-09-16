@@ -10,27 +10,27 @@ Public Class ConvUtils
     'if out_filename cotains "\" or "/" - save pdf file to this path
     'options:
     '  landscape = True - will produce landscape output
-    Public Shared Function parse_page_pdf(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "", Optional options As Hashtable = Nothing) As String
+    Public Shared Function parsePagePdf(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "", Optional options As Hashtable = Nothing) As String
         Dim parser As ParsePage = New ParsePage(fw)
         hf("IS_PRINT_MODE") = True
         Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
 
         html_data = _replace_specials(html_data)
 
-        Dim html_file As String = Utils.get_tmp_filename() & ".html"
-        Dim pdf_file As String = Utils.get_tmp_filename() & ".pdf"
+        Dim html_file As String = Utils.getTmpFilename() & ".html"
+        Dim pdf_file As String = Utils.getTmpFilename() & ".pdf"
         'fw.logger("INFO", "html file = " & html_file)
         'fw.logger("INFO", "pdf file = " & pdf_file)
 
         'remove_old_files()
-        fw.set_file_content(html_file, html_data)
+        FW.set_file_content(html_file, html_data)
 
         If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
             html2pdf(fw, html_file, pdf_file, options)
 
             If out_filename = "" Then out_filename = "output"
             fw.file_response(pdf_file, out_filename & ".pdf")
-            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
+            Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             html2pdf(fw, html_file, out_filename, options)
         End If
@@ -77,28 +77,28 @@ Public Class ConvUtils
     'parse template and generate doc
     'if out_filename ="" or doesn't contain "\" or "/" - output pdf file to browser
     'if out_filename cotains "\" or "/" - save pdf file to this path
-    Public Shared Function parse_page_doc(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageDoc(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
         Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
 
         html_data = _replace_specials(html_data)
 
-        Dim html_file As String = Utils.get_tmp_filename() & ".html"
-        Dim doc_file As String = Utils.get_tmp_filename() & ".doc"
+        Dim html_file As String = Utils.getTmpFilename() & ".html"
+        Dim doc_file As String = Utils.getTmpFilename() & ".doc"
         'fw.logger("INFO", "html file = " & html_file)
         'fw.logger("INFO", "doc file = " & doc_file)
 
         'remove_old_files()
         'TODO fw.set_file_content(html_file, html_data)
         'TEMPORARY - store html right to .doc file
-        fw.set_file_content(doc_file, html_data)
+        FW.set_file_content(doc_file, html_data)
 
         If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/]") Then
             'TODO html2doc(fw, html_file, doc_file)
 
             If out_filename = "" Then out_filename = "output"
             fw.file_response(doc_file, out_filename & ".doc")
-            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
+            Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             'TODO html2doc(fw, html_file, out_filename)
             File.Delete(out_filename)
@@ -129,27 +129,27 @@ Public Class ConvUtils
     'Note: set IS_PRINT_MODE=True hf var which is become available in templates
     'if out_filename ="" or doesn't contain "\" or "/" - output pdf file to browser
     'if out_filename cotains "\" or "/" - save pdf file to this path
-    Public Shared Function parse_page_xls(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageExcel(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
         hf("IS_PRINT_MODE") = True
         Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
 
         html_data = _replace_specials(html_data)
 
-        Dim html_file As String = Utils.get_tmp_filename() & ".html"
-        Dim xls_file As String = Utils.get_tmp_filename() & ".xls"
+        Dim html_file As String = Utils.getTmpFilename() & ".html"
+        Dim xls_file As String = Utils.getTmpFilename() & ".xls"
         fw.logger(LogLevel.DEBUG, "html file = ", html_file)
         fw.logger(LogLevel.DEBUG, "xls file = ", xls_file)
 
         'remove_old_files()
-        fw.set_file_content(html_file, html_data)
+        FW.set_file_content(html_file, html_data)
 
         If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
             html2xls(fw, html_file, xls_file)
 
             If out_filename = "" Then out_filename = "output"
             fw.file_response(xls_file, out_filename & ".xls", "application/vnd.ms-excel")
-            Utils.cleanup_tmp_files() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
+            Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             html2xls(fw, html_file, out_filename)
         End If
@@ -160,7 +160,7 @@ Public Class ConvUtils
     End Function
 
     'simple version of parse_page_xls - i.e. it's usual html file, just output as xls (Excel opens it successfully, however displays a warning)
-    Public Shared Function parse_page_xls_simple(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageExcelSimple(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
         hf("IS_PRINT_MODE") = True
         Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)

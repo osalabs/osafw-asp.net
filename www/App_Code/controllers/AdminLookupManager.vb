@@ -20,7 +20,7 @@ Public Class AdminLookupManagerController
         dictionaries_url = base_url & "/(Dictionaries)"
 
         dict = reqs("d")
-        defs = model_tables.one_by_tname(dict)
+        defs = model_tables.oneByTname(dict)
         If defs.Count = 0 Then dict = ""
     End Sub
 
@@ -61,8 +61,8 @@ Public Class AdminLookupManagerController
 
         'if this is one-form dictionary - show edit form with first record
         If defs("is_one_form") = 1 Then
-            Dim id_fname As String = fw.model(Of LookupManagerTables).get_column_id(defs)
-            Dim row = model.top_by_tname(defs("tname"))
+            Dim id_fname As String = fw.model(Of LookupManagerTables).getColumnId(defs)
+            Dim row = model.topByTname(defs("tname"))
             'fw.redirect(base_url & "/" & row(id_fname) & "/edit/?d=" & dict)
             Dim args() As [String] = {row(id_fname)}
             fw.route_redirect("ShowForm", Nothing, args)
@@ -70,14 +70,14 @@ Public Class AdminLookupManagerController
         End If
 
         'get columns
-        Dim cols As ArrayList = model_tables.get_columns(defs)
+        Dim cols As ArrayList = model_tables.getColumns(defs)
         Dim list_table_name As String = defs("tname")
         'logger(defs)
         'logger(cols)
 
         Dim hf As Hashtable = New Hashtable
         hf("is_two_modes") = True
-        Dim f As Hashtable = get_filter("_filter_lookupmanager_" & list_table_name)
+        Dim f As Hashtable = initFilter("_filter_lookupmanager_" & list_table_name)
 
         'sorting
         If f("sortby") = "" Then f("sortby") = cols(0)("name") 'by default - sort by first column
@@ -108,7 +108,7 @@ Public Class AdminLookupManagerController
             If InStr(col("itype"), ".") > 0 Then
                 'lookup type
                 fh("type") = "lookup"
-                fh("select_options") = model_tables.get_lookup_select_options(col("itype"), "")
+                fh("select_options") = model_tables.getLookupSelectOptions(col("itype"), "")
             End If
 
             fields_headers.Add(fh)
@@ -167,7 +167,7 @@ Public Class AdminLookupManagerController
                         " ORDER BY " & orderby
 
             hf("list_rows") = db.array(sql)
-            hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
+            hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))
             If Not IsNothing(hf("pager")) Then
                 'add dict info for pager
                 For Each page As Hashtable In hf("pager")
@@ -179,10 +179,10 @@ Public Class AdminLookupManagerController
             For Each row As Hashtable In hf("list_rows")
                 'calc md5 first if in edit mode
                 If f("mode") = "edit" Then
-                    row("row_md5") = model.get_row_md5(row)
+                    row("row_md5") = model.getRowMD5(row)
                 End If
 
-                row("id") = row(model_tables.get_column_id(defs))
+                row("id") = row(model_tables.getColumnId(defs))
                 row("d") = dict
                 row("f") = f
 
@@ -202,7 +202,7 @@ Public Class AdminLookupManagerController
                     If InStr(col("itype"), ".") > 0 Then
                         'lookup type
                         fh("type") = "lookup"
-                        fh("select_options") = model_tables.get_lookup_select_options(col("itype"), fh("value"))
+                        fh("select_options") = model_tables.getLookupSelectOptions(col("itype"), fh("value"))
                     End If
 
                     fv.Add(fh)
@@ -226,11 +226,11 @@ Public Class AdminLookupManagerController
         Dim hf As Hashtable = New Hashtable
         Dim item As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
-        Dim cols As ArrayList = model_tables.get_columns(defs)
+        Dim cols As ArrayList = model_tables.getColumns(defs)
 
         If fw.cur_method = "GET" Then 'read from db
             If id > 0 Then
-                item = model.one_by_tname(dict, id)
+                item = model.oneByTname(dict, id)
             Else
                 'set defaults here
                 item = New Hashtable
@@ -238,9 +238,9 @@ Public Class AdminLookupManagerController
             End If
         Else
             'read from db
-            item = model.one_by_tname(dict, id)
+            item = model.oneByTname(dict, id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary            
         End If
 
@@ -265,7 +265,7 @@ Public Class AdminLookupManagerController
             If InStr(col("itype"), ".") > 0 Then
                 'lookup type
                 fh("type") = "lookup"
-                fh("select_options") = model_tables.get_lookup_select_options(col("itype"), fh("value"))
+                fh("select_options") = model_tables.getLookupSelectOptions(col("itype"), fh("value"))
             End If
 
             Dim igroup As String = Trim(col("igroup"))
@@ -287,8 +287,8 @@ Public Class AdminLookupManagerController
         'hf("multi_datarow") = fw.model(Of DemoDicts).get_multi_list(item("dict_link_multi"))
         'FormUtils.combo4date(item("fdate_combo"), hf, "fdate_combo")
 
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -303,7 +303,7 @@ Public Class AdminLookupManagerController
 
         Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
-        Dim cols As ArrayList = model_tables.get_columns(defs)
+        Dim cols As ArrayList = model_tables.getColumns(defs)
 
         Try
             Validate(id, item)
@@ -318,9 +318,9 @@ Public Class AdminLookupManagerController
             Next
 
             If id > 0 Then
-                If model.update_by_tname(dict, id, itemdb) Then fw.FLASH("updated", 1)
+                If model.updateByTname(dict, id, itemdb) Then fw.FLASH("updated", 1)
             Else
-                model.add_by_tname(dict, itemdb)
+                model.addByTname(dict, itemdb)
                 fw.FLASH("added", 1)
             End If
 
@@ -336,7 +336,7 @@ Public Class AdminLookupManagerController
 
     Public Function Validate(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw(required_fields))
+        result = result And validateRequired(item, Utils.qw(required_fields))
         If Not result Then fw.FERR("REQ") = 1
 
         'If result AndAlso Not SomeOtherValidation() Then
@@ -357,7 +357,7 @@ Public Class AdminLookupManagerController
 
         Dim hf As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
-        Dim item As Hashtable = model.one_by_tname(dict, id)
+        Dim item As Hashtable = model.oneByTname(dict, id)
         hf("i") = item
         hf("iname") = item.Values(0)
         hf("id") = id
@@ -371,7 +371,7 @@ Public Class AdminLookupManagerController
         _check_dict()
         Dim id As Integer = Utils.f2int(form_id)
 
-        model.delete_by_tname(dict, id)
+        model.deleteByTname(dict, id)
         fw.FLASH("onedelete", 1)
         fw.redirect(base_url & "/?d=" & dict)
     End Sub
@@ -387,7 +387,7 @@ Public Class AdminLookupManagerController
                 'multirecord delete
                 For Each id As String In cbses.Keys
                     If fw.FORM.ContainsKey("delete") Then
-                        model.delete_by_tname(dict, id)
+                        model.deleteByTname(dict, id)
                         del_ctr += 1
                     End If
                 Next
@@ -395,7 +395,7 @@ Public Class AdminLookupManagerController
 
             If reqs("mode") = "edit" Then
                 'multirecord save
-                Dim cols As ArrayList = model_tables.get_columns(defs)
+                Dim cols As ArrayList = model_tables.getColumns(defs)
 
                 'go thru all existing rows
                 Dim rows As Hashtable = reqh("row")
@@ -420,11 +420,11 @@ Public Class AdminLookupManagerController
                     Next
                     'check if this row need to be deleted
                     If rowsdel.ContainsKey(form_id) Then
-                        model.delete_by_tname(dict, id)
+                        model.deleteByTname(dict, id)
                         del_ctr += 1
                     Else
                         'existing row
-                        model.update_by_tname(dict, id, itemdb, md5)
+                        model.updateByTname(dict, id, itemdb, md5)
                         fw.FLASH("updated", 1)
                     End If
                 Next
@@ -450,7 +450,7 @@ Public Class AdminLookupManagerController
 
                     'add new row, but only if at least one value is not empty
                     If Not is_row_empty Then
-                        model.add_by_tname(dict, itemdb)
+                        model.addByTname(dict, itemdb)
                         fw.FLASH("updated", 1)
                     End If
                 Next
@@ -464,14 +464,14 @@ Public Class AdminLookupManagerController
         Catch ex As Exception
             Throw
             fw.G("err_msg") = ex.Message
-            fw.route_redirect("Index")
+            fw.routeRedirect("Index")
         End Try
 
     End Sub
 
     'TODO for lookup tables
     Public Function AutocompleteAction() As Hashtable
-        Dim items As ArrayList = model_tables.get_autocomplete_items(reqs("q"))
+        Dim items As ArrayList = model_tables.getAutocompleteList(reqs("q"))
 
         Return New Hashtable From {{"_json", items}}
     End Function

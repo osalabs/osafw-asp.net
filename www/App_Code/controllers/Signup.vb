@@ -18,7 +18,7 @@ Public Class SignupController
     End Sub
 
     Public Sub IndexAction()
-        fw.route_redirect("ShowForm")
+        fw.routeRedirect("ShowForm")
     End Sub
 
     Public Function ShowFormAction() As Hashtable
@@ -30,7 +30,7 @@ Public Class SignupController
             'item("field")='default value'
         Else
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -48,7 +48,7 @@ Public Class SignupController
             'load old record if necessary
             'Dim itemdb As Hashtable = model.one(id)
 
-            item = FormUtils.form2dbhash(item, Utils.qw("email pwd fname lname"))
+            item = FormUtils.filter(item, Utils.qw("email pwd fname lname"))
 
             If id > 0 Then
                 model.update(id, item)
@@ -60,7 +60,7 @@ Public Class SignupController
                 fw.FLASH("record_added", 1)
             End If
 
-            model.do_login(id)
+            model.doLogin(id)
             fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
 
         Catch ex As ApplicationException
@@ -73,14 +73,14 @@ Public Class SignupController
     Public Function Validate(item As Hashtable) As Boolean
         Dim msg As String = ""
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw(required_fields))
+        result = result And validateRequired(item, Utils.qw(required_fields))
         If Not result Then msg = "Please fill in all required fields"
 
-        If result AndAlso model.is_exists(item("email"), 0) Then
+        If result AndAlso model.isExists(item("email"), 0) Then
             result = False
             fw.FERR("email") = "EXISTS"
         End If
-        If result AndAlso Not FormUtils.is_email(item("email")) Then
+        If result AndAlso Not FormUtils.isEmail(item("email")) Then
             result = False
             fw.FERR("email") = "WRONG"
         End If

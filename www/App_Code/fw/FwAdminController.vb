@@ -25,17 +25,17 @@ Public Class FwAdminController
 
     Public Overridable Function IndexAction() As Hashtable
         'get filters from the search form
-        Dim f As Hashtable = Me.get_filter()
+        Dim f As Hashtable = Me.initFilter()
 
-        Me.set_list_sorting()
+        Me.setListSorting()
 
-        Me.set_list_search()
+        Me.setListSearch()
         'set here non-standard search
         'If f("field") > "" Then
         '    Me.list_where &= " and field=" & db.q(f("field"))
         'End If
 
-        Me.get_list_rows()
+        Me.getListRows()
         'add/modify rows from db if necessary
         'For Each row As Hashtable In Me.list_rows
         '    row("field") = "value"
@@ -49,6 +49,23 @@ Public Class FwAdminController
             {"related_id", Me.related_id},
             {"return_url", Me.return_url}
         }
+
+        Return ps
+    End Function
+
+    Public Overridable Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
+        Dim ps As New Hashtable
+        Dim id As Integer = Utils.f2int(form_id)
+        Dim item As Hashtable = model0.one(id)
+        If item.Count = 0 Then Throw New ApplicationException("Not Found")
+
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+
+        ps("id") = id
+        ps("i") = item
+        ps("return_url") = return_url
+        ps("related_id") = related_id
 
         Return ps
     End Function
@@ -76,19 +93,19 @@ Public Class FwAdminController
                 item = New Hashtable
                 'item = reqh("item") 'optionally set defaults from request params
                 If Me.form_new_defaults IsNot Nothing Then
-                    Utils.hash_merge(item, Me.form_new_defaults)
+                    Utils.mergeHash(item, Me.form_new_defaults)
                 End If
             End If
         Else
             'read from db
             item = model0.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         ps("id") = id
         ps("i") = item
@@ -111,22 +128,22 @@ Public Class FwAdminController
             'load old record if necessary
             'Dim item_old As Hashtable = model0.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Me.save_fields)
-            If Me.save_fields_checkboxes > "" Then FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
+            Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
+            If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
 
-            id = Me.model_add_or_update(id, itemdb)
+            id = Me.modelAddOrUpdate(id, itemdb)
         Catch ex As ApplicationException
             success = False
-            Me.set_form_error(ex)
+            Me.setFormError(ex)
         End Try
 
-        Return Me.save_check_result(success, id, is_new)
+        Return Me.saveCheckResult(success, id, is_new)
     End Function
 
     Public Overridable Sub Validate(id As Integer, item As Hashtable)
-        Dim result As Boolean = Me.validate_required(item, Me.required_fields)
+        Dim result As Boolean = Me.validateRequired(item, Me.required_fields)
 
-        'If result AndAlso model0.is_exists(item("iname"), id) Then
+        'If result AndAlso model0.isExists(item("iname"), id) Then
         '    fw.FERR("iname") = "EXISTS"
         'End If
 
@@ -134,25 +151,27 @@ Public Class FwAdminController
         '    FW.FERR("other field name") = "HINT_ERR_CODE"
         'End If
 
-        Me.validate_check_result()
+        Me.validateCheckResult()
     End Sub
 
-    Public Overridable Function ShowDeleteAction(ByVal form_id As String) As Hashtable
+    Public Overridable Sub ShowDeleteAction(ByVal form_id As String)
         Dim id As Integer = Utils.f2int(form_id)
 
-        Return New Hashtable From {
+        Dim ps = New Hashtable From {
             {"i", model0.one(id)},
             {"related_id", Me.related_id},
             {"return_url", Me.return_url}
         }
-    End Function
+
+        fw.parser("/common/form/showdelete", ps)
+    End Sub
 
     Public Overridable Function DeleteAction(ByVal form_id As String) As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
         model0.delete(id)
         fw.FLASH("onedelete", 1)
-        Return Me.save_check_result(True, id)
+        Return Me.saveCheckResult(True, id)
     End Function
 
     Public Overridable Function SaveMultiAction() As Hashtable
@@ -168,7 +187,7 @@ Public Class FwAdminController
         Next
 
         fw.FLASH("multidelete", ctr)
-        Return Me.save_check_result(True, New Hashtable From {{"ctr", ctr}})
+        Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
     End Function
 
 End Class

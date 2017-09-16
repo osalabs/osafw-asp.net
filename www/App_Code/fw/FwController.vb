@@ -71,16 +71,6 @@ Public MustInherit Class FwController
         Return Utils.f2date(fw.FORM(iname))
     End Function
 
-    Public Sub TestsomeAction(Optional ByVal id As String = "")
-        Dim hf As Hashtable = New Hashtable
-        logger("in the TestAction")
-        rw("here it is Test")
-        'fw.rw("id=" & id)
-        'fw.rw("more_action_name=" & FW.cur_action_more)
-
-        'fw.parser("/index", hf)
-    End Sub
-
     Public Sub rw(ByVal str As String)
         fw.resp.Write(str)
         fw.resp.Write("<br>" & vbCrLf)
@@ -95,7 +85,7 @@ Public MustInherit Class FwController
     'NOTE: automatically set to defaults - pagenum=0 and pagesize=MAX_PAGE_ITEMS
     'NOTE: if request param 'dofilter' passed - session filters cleaned
     'sample in IndexAction: me.get_filter()
-    Public Overridable Function get_filter(Optional session_key As String = Nothing) As Hashtable
+    Public Overridable Function initFilter(Optional session_key As String = Nothing) As Hashtable
         Dim f As Hashtable = fw.FORM("f")
         If f Is Nothing Then f = New Hashtable
 
@@ -107,7 +97,7 @@ Public MustInherit Class FwController
         'if not forced filter - merge form filters to session filters
         Dim is_dofilter As Boolean = fw.FORM.ContainsKey("dofilter")
         If Not is_dofilter Then
-            Utils.hash_merge(sfilter, f)
+            Utils.mergeHash(sfilter, f)
             f = sfilter
         End If
 
@@ -129,7 +119,7 @@ Public MustInherit Class FwController
     ''' <param name="fields">field names required to be non-empty (trim used)</param>
     ''' <returns>true if all required field names non-empty</returns>
     ''' <remarks>also set global fw.ERR[REQUIRED]=true in case of validation error</remarks>
-    Public Overloads Function validate_required(item As Hashtable, fields As Array) As Boolean
+    Public Overloads Function validateRequired(item As Hashtable, fields As Array) As Boolean
         Dim result As Boolean = True
         If item IsNot Nothing AndAlso IsArray(fields) AndAlso fields.Length > 0 Then
             For Each fld As String In fields
@@ -145,8 +135,8 @@ Public MustInherit Class FwController
         Return result
     End Function
     'same as above but fields param passed as a qw string
-    Public Overloads Function validate_required(item As Hashtable, fields As String) As Boolean
-        Return validate_required(item, Utils.qw(fields))
+    Public Overloads Function validateRequired(item As Hashtable, fields As String) As Boolean
+        Return validateRequired(item, Utils.qw(fields))
     End Function
 
     ''' <summary>
@@ -156,7 +146,7 @@ Public MustInherit Class FwController
     ''' <remarks>throw ValidationException exception if global ERR non-empty.
     ''' Also set global ERR[INVALID] if ERR non-empty, but ERR[REQUIRED] not true
     ''' </remarks>
-    Public Sub validate_check_result(Optional result As Boolean = True)
+    Public Sub validateCheckResult(Optional result As Boolean = True)
         If fw.FERR.ContainsKey("REQUIRED") AndAlso fw.FERR("REQUIRED") Then
             result = False
         End If
@@ -173,7 +163,7 @@ Public MustInherit Class FwController
     ''' Set list sorting fields - Me.list_orderby according to Me.list_filter filter and Me.list_sortmap and Me.list_sortdef
     ''' </summary>
     ''' <remarks></remarks>
-    Public Overridable Sub set_list_sorting()
+    Public Overridable Sub setListSorting()
         If Me.list_sortdef Is Nothing Then Throw New Exception("No default sort order defined, define in list_sortdef ")
         If Me.list_sortmap Is Nothing Then Throw New Exception("No sort order mapping defined, define in list_sortmap ")
 
@@ -212,7 +202,7 @@ Public MustInherit Class FwController
     ''' Add to Me.list_where search conditions from Me.list_filter("s") and based on fields in Me.search_fields
     ''' </summary>
     ''' <remarks>Sample: Me.search_fields="field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'</remarks>
-    Public Overridable Sub set_list_search()
+    Public Overridable Sub setListSearch()
         'Me.list_where = " status = 0" 'if initial where empty, use " 1=1 "
 
         Dim s As String = Trim(Me.list_filter("s"))
@@ -255,7 +245,7 @@ Public MustInherit Class FwController
     ''' Me.list_pager pager from FormUtils.get_pager
     ''' </summary>
     ''' <remarks></remarks>
-    Public Overridable Sub get_list_rows()
+    Public Overridable Sub getListRows()
         Dim list_table_name As String = list_view
         If list_table_name = "" Then list_table_name = model0.table_name
         Me.list_count = db.value("select count(*) from " & list_table_name & " where " & Me.list_where)
@@ -273,14 +263,14 @@ Public MustInherit Class FwController
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 
             Me.list_rows = db.array(sql)
-            Me.list_pager = FormUtils.get_pager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
+            Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
         Else
             Me.list_rows = New ArrayList
             Me.list_pager = New ArrayList
         End If
 
         If related_id > "" Then
-            Utils.dbarray_inject(list_rows, New Hashtable From {{"related_id", related_id}})
+            Utils.arrayInject(list_rows, New Hashtable From {{"related_id", related_id}})
         End If
 
         'add/modify rows from db - use in override child class
@@ -290,7 +280,7 @@ Public MustInherit Class FwController
 
     End Sub
 
-    Public Sub set_form_error(ex As Exception)
+    Public Sub setFormError(ex As Exception)
         'if Validation exception - don't set general error message - specific validation message set in templates
         If Not (TypeOf ex Is ValidationException) Then
             fw.G("err_msg") = ex.Message
@@ -304,7 +294,7 @@ Public MustInherit Class FwController
     ''' <param name="fields">hash of field/values</param>
     ''' <returns>new autoincrement id (if added) or old id (if update)</returns>
     ''' <remarks>Also set fw.FLASH</remarks>
-    Public Overridable Function model_add_or_update(id As Integer, fields As Hashtable) As Integer
+    Public Overridable Function modelAddOrUpdate(id As Integer, fields As Hashtable) As Integer
         If id > 0 Then
             model0.update(id, fields)
             fw.FLASH("record_updated", 1)
@@ -315,7 +305,7 @@ Public MustInherit Class FwController
         Return id
     End Function
 
-    Public Overridable Function get_return_location(Optional id As String = "") As String
+    Public Overridable Function getReturnLocation(Optional id As String = "") As String
         Dim result = ""
         Dim url As String
 
@@ -326,9 +316,9 @@ Public MustInherit Class FwController
         End If
 
         If return_url > "" Then
-            If fw.is_json_expected() Then
+            If fw.isJsonExpected() Then
                 'if json - it's usually autosave - don't redirect back to return url yet
-                result = url & "?return_url=" & Utils.escape_url(return_url) & IIf(related_id > "", "&related_id=" & related_id, "")
+                result = url & "?return_url=" & Utils.urlescape(return_url) & IIf(related_id > "", "&related_id=" & related_id, "")
             Else
                 result = return_url
             End If
@@ -349,10 +339,10 @@ Public MustInherit Class FwController
     ''' <param name="location">redirect to this location if success</param>
     ''' <param name="more_json">added to json response</param>
     ''' <returns></returns>
-    Public Overridable Overloads Function save_check_result(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
-        If location = "" Then location = Me.get_return_location(id)
+    Public Overridable Overloads Function saveCheckResult(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
+        If location = "" Then location = Me.getReturnLocation(id)
 
-        If fw.is_json_expected() Then
+        If fw.isJsonExpected() Then
             Dim ps = New Hashtable From {
                 {"_json", True},
                 {"success", success},
@@ -362,7 +352,7 @@ Public MustInherit Class FwController
                 {"err_msg", fw.G("err_msg")}
             }
             'TODO add ERR field errors to response if any
-            If Not IsNothing(more_json) Then Utils.hash_merge(ps, more_json)
+            If Not IsNothing(more_json) Then Utils.mergeHash(ps, more_json)
 
             Return ps
         Else
@@ -371,14 +361,14 @@ Public MustInherit Class FwController
             If success Then
                 fw.redirect(location)
             Else
-                fw.route_redirect(action, New String() {id})
+                fw.routeRedirect(action, New String() {id})
             End If
         End If
         Return Nothing
     End Function
 
-    Public Overridable Overloads Function save_check_result(success As Boolean, more_json As Hashtable) As Hashtable
-        Return save_check_result(success, "", False, "no_action", "", more_json)
+    Public Overridable Overloads Function saveCheckResult(success As Boolean, more_json As Hashtable) As Hashtable
+        Return saveCheckResult(success, "", False, "no_action", "", more_json)
     End Function
 
     '''''''''''''''''''''''''''''''''''''' Default Actions

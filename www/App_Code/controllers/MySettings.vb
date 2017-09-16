@@ -31,7 +31,7 @@ Public Class MySettingsController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -50,11 +50,11 @@ Public Class MySettingsController
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Utils.qw("email fname lname address1 address2 city state zip phone"))
+            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname address1 address2 city state zip phone"))
             model.update(id, itemdb)
             fw.FLASH("record_updated", 1)
 
-            If id = model.me_id Then model.session_reload()
+            If id = model.meId Then model.reloadSession()
 
             fw.redirect(base_url & "/" & id & "/edit")
         Catch ex As ApplicationException
@@ -66,14 +66,14 @@ Public Class MySettingsController
 
     Public Function Validate(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw(required_fields))
+        result = result And validateRequired(item, Utils.qw(required_fields))
         If Not result Then fw.FERR("REQ") = 1
 
-        If result AndAlso model.is_exists(item("email"), id) Then
+        If result AndAlso model.isExists(item("email"), id) Then
             result = False
             fw.FERR("email") = "EXISTS"
         End If
-        If result AndAlso Not FormUtils.is_email(item("email")) Then
+        If result AndAlso Not FormUtils.isEmail(item("email")) Then
             result = False
             fw.FERR("email") = "WRONG"
         End If

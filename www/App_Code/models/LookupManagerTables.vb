@@ -13,13 +13,13 @@ Public Class LookupManagerTables
 
     'just return first row by tname field (you may want to make it unique)
     'CACHED
-    Public Overridable Function one_by_tname(tname As String) As Hashtable
-        Dim item As Hashtable = fw.cache.get_request_value("LookupManagerTables_one_by_tname_" & table_name & "#" & tname)
+    Public Overridable Function oneByTname(tname As String) As Hashtable
+        Dim item As Hashtable = fw.cache.getRequestValue("LookupManagerTables_one_by_tname_" & table_name & "#" & tname)
         If IsNothing(item) Then
             Dim where As Hashtable = New Hashtable
             where("tname") = tname
             item = db.row(table_name, where)
-            fw.cache.set_request_value("LookupManagerTables_one_by_tname_" & table_name & "#" & tname, item)
+            fw.cache.setRequestValue("LookupManagerTables_one_by_tname_" & table_name & "#" & tname, item)
         End If
         Return item
     End Function
@@ -29,7 +29,7 @@ Public Class LookupManagerTables
     'no timestamp, image, varbinary returned (as not supported by UI)
     'filtered by defs(columns)
     'added custom names, types and grouping info - if defined
-    Public Function get_columns(defs As Hashtable) As ArrayList
+    Public Function getColumns(defs As Hashtable) As ArrayList
         Dim result As New ArrayList
 
         Dim custom_columns As New Hashtable
@@ -87,7 +87,7 @@ Public Class LookupManagerTables
                     'skip this field as not custom defined
                     Continue For
                 Else
-                    Utils.hash_merge(col, cc)
+                    Utils.mergeHash(col, cc)
                 End If
             Else
                 'defaults
@@ -117,7 +117,7 @@ Public Class LookupManagerTables
     End Function
 
     'return "id" or customer column_id defined in defs
-    Public Function get_column_id(defs As Hashtable) As String
+    Public Function getColumnId(defs As Hashtable) As String
         If defs("column_id") > "" Then
             Return defs("column_id")
         Else
@@ -125,11 +125,11 @@ Public Class LookupManagerTables
         End If
     End Function
 
-    Public Function get_lookup_select_options(itype_lookup As String, sel_id As Object) As String
+    Public Function getLookupSelectOptions(itype_lookup As String, sel_id As Object) As String
         Dim lutable As String = "", lufield As String = ""
         Utils.split2("\.", itype_lookup, lutable, lufield)
 
         Dim sql As String = "select " & db.q_ident(lufield) & " as id, " & db.q_ident(lufield) & " as iname from " & db.q_ident(lutable) & " order by 1"
-        Return FormUtils.select_options_db(db.array(sql), sel_id)
+        Return FormUtils.selectOptions(db.array(sql), sel_id)
     End Function
 End Class

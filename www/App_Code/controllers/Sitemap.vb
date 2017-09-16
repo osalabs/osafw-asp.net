@@ -21,7 +21,7 @@ Public Class SitemapController
     Public Function IndexAction() As Hashtable
         Dim ps As Hashtable = New Hashtable
 
-        Dim item As Hashtable = model.one_by_full_url(base_url)
+        Dim item As Hashtable = model.oneByFullUrl(base_url)
 
         Dim pages_tree As ArrayList = model.tree(" status=0 ", "parent_id, prio desc, iname")
         _add_full_url(pages_tree)

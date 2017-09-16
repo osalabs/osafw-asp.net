@@ -12,7 +12,7 @@ Public Class AttCategories
     End Sub
 
     'just return first row by iname field (you may want to make it unique)
-    Public Overridable Function one_by_icode(icode As String) As Hashtable
+    Public Overridable Function oneByIcode(icode As String) As Hashtable
         Dim where As Hashtable = New Hashtable
         where("icode") = icode
         Return db.row(table_name, where)

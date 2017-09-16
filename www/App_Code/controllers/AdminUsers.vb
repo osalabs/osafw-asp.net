@@ -24,7 +24,7 @@ Public Class AdminUsersController
         End If
 
         'get filters
-        Dim f As Hashtable = get_filter()
+        Dim f As Hashtable = initFilter()
 
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"
@@ -61,7 +61,7 @@ Public Class AdminUsersController
                         " ORDER BY " & orderby
 
             hf("list_rows") = db.array(sql)
-            hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
+            hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))
         End If
         hf("f") = f
 
@@ -86,12 +86,12 @@ Public Class AdminUsersController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -108,7 +108,7 @@ Public Class AdminUsersController
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Utils.qw("email fname lname phone pwd access_level status"))
+            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname phone pwd access_level status"))
 
             If id > 0 Then
                 If Not itemdb("pwd") > "" Then itemdb.Remove("pwd")
@@ -119,7 +119,7 @@ Public Class AdminUsersController
                 fw.FLASH("record_added", 1)
             End If
 
-            If id = model.me_id() Then model.session_reload()
+            If id = model.meId() Then model.reloadSession()
 
             fw.redirect(base_url & "/" & id & "/edit")
         Catch ex As ApplicationException
@@ -131,14 +131,14 @@ Public Class AdminUsersController
 
     Public Function Validate(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw(required_fields))
+        result = result And validateRequired(item, Utils.qw(required_fields))
         If Not result Then fw.FERR("REQ") = 1
 
-        If result AndAlso model.is_exists(item("email"), id) Then
+        If result AndAlso model.isExists(item("email"), id) Then
             result = False
             fw.FERR("email") = "EXISTS"
         End If
-        If result AndAlso Not FormUtils.is_email(item("email")) Then
+        If result AndAlso Not FormUtils.isEmail(item("email")) Then
             result = False
             fw.FERR("email") = "WRONG"
         End If
@@ -192,7 +192,7 @@ Public Class AdminUsersController
         fw.resp.AppendHeader("Content-type", "text/csv")
         fw.resp.AppendHeader("Content-Disposition", "attachment; filename=""" & model.table_name & ".csv""")
 
-        fw.resp.Write(model.get_csv_export())
+        fw.resp.Write(model.getCSVExport())
     End Sub
 
     'cleanup session for current user and re-login as user from id
@@ -204,9 +204,9 @@ Public Class AdminUsersController
         If user.Count = 0 Then Throw New ApplicationException("Wrong User ID")
         If user("access_level") >= fw.SESSION("access_level") Then Throw New ApplicationException("Access Denied. Cannot simulate user with higher access level")
 
-        fw.log_event("simulate", id, model.me_id)
+        fw.logEvent("simulate", id, model.meId)
 
-        If model.do_login(id) Then
+        If model.doLogin(id) Then
             fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
         End If
 

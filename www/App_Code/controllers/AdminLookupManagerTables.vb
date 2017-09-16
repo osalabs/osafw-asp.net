@@ -40,7 +40,7 @@ Public Class AdminLookupManagerTablesController
                 'set defaults here
                 item = New Hashtable
                 If Me.form_new_defaults IsNot Nothing Then
-                    Utils.hash_merge(item, Me.form_new_defaults)
+                    Utils.mergeHash(item, Me.form_new_defaults)
                 End If
             End If
         Else
@@ -54,12 +54,12 @@ Public Class AdminLookupManagerTablesController
             item("column_groups") = Utils.commastr2nlstr(item("column_groups"))
 
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        ps("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         ps("id") = id
         ps("i") = item
@@ -82,8 +82,8 @@ Public Class AdminLookupManagerTablesController
             'load old record if necessary
             'Dim item_old As Hashtable = model0.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Me.save_fields)
-            If Me.save_fields_checkboxes > "" Then FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
+            Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
+            If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
 
             'convert from newline to comma str
             itemdb("list_columns") = Utils.nlstr2commastr(itemdb("list_columns"))
@@ -92,13 +92,13 @@ Public Class AdminLookupManagerTablesController
             itemdb("column_types") = Utils.nlstr2commastr(itemdb("column_types"))
             itemdb("column_groups") = Utils.nlstr2commastr(itemdb("column_groups"))
 
-            id = Me.model_add_or_update(id, itemdb)
+            id = Me.modelAddOrUpdate(id, itemdb)
 
         Catch ex As ApplicationException
             success = False
-            Me.set_form_error(ex)
+            Me.setFormError(ex)
         End Try
 
-        Return Me.save_check_result(success, id, is_new)
+        Return Me.saveCheckResult(success, id, is_new)
     End Function
 End Class

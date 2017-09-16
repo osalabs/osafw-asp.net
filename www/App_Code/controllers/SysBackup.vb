@@ -58,8 +58,8 @@ Public Class SysBackupController
         Dim ps As New Hashtable
         Dim outfile = get_latest_backup_file()
         If outfile > "" Then
-            ps("latest_backup") = Utils.file_name(outfile)
-            ps("latest_backup_size") = Utils.bytes2str(Utils.file_size(outfile))
+            ps("latest_backup") = Utils.fileName(outfile)
+            ps("latest_backup_size") = Utils.bytes2str(Utils.fileSize(outfile))
         Else
             ps("latest_backup") = "none"
         End If

@@ -15,20 +15,20 @@ Public Class FwConfig
         If settings IsNot Nothing AndAlso settings.Count>0 Then Exit Sub
 
         FwConfig.hostname = hostname
-        init_defaults(req, hostname)
-        read_settings()
-        special_settings()
+        initDefaults(req, hostname)
+        readSettings()
+        specialSettings()
     End Sub
 
     'reload settings
     Public Shared Sub reload()
-        init_defaults(HttpContext.Current.Request, FwConfig.hostname)
-        read_settings()
-        special_settings()
+        initDefaults(HttpContext.Current.Request, FwConfig.hostname)
+        readSettings()
+        specialSettings()
     End Sub
 
     'init default settings
-    Private Shared Sub init_defaults(req As System.Web.HttpRequest, Optional ByVal hostname As String = "")
+    Private Shared Sub initDefaults(req As System.Web.HttpRequest, Optional ByVal hostname As String = "")
         settings = New Hashtable
 
         If hostname = "" Then hostname = req.ServerVariables("HTTP_HOST")
@@ -50,18 +50,18 @@ Public Class FwConfig
     End Sub
 
     'read setting into appSettings
-    Private Shared Sub read_settings()
+    Private Shared Sub readSettings()
         Dim appSettings As NameValueCollection = ConfigurationManager.AppSettings()
 
         Dim keys() As String = appSettings.AllKeys
         For Each key As String In keys
-            parse_setting(key, appSettings(key))
+            parseSetting(key, appSettings(key))
         Next
     End Sub
-    Private Shared Sub parse_setting(key As String, ByRef value As String)
+    Private Shared Sub parseSetting(key As String, ByRef value As String)
         Dim delim As String = "|"
         If InStr(key, delim) = 0 Then
-            settings(key) = parse_setting_value(value)
+            settings(key) = parseSettingValue(value)
         Else
             Dim keys() As String = Split(key, delim)
 
@@ -77,14 +77,14 @@ Public Class FwConfig
                 End If
             Next
             'assign value to key element in deepest hashtree
-            ptr(keys(keys.Length - 1)) = parse_setting_value(value)
+            ptr(keys(keys.Length - 1)) = parseSettingValue(value)
         End If
     End Sub
     'parse value to type, supported:
     'boolean
     'int
     'qh - using Utils.qh()
-    Private Shared Function parse_setting_value(ByRef value As String) As Object
+    Private Shared Function parseSettingValue(ByRef value As String) As Object
         Dim result As Object
         Dim m As Match = Regex.Match(value, "^~(.*?)~")
         If m.Success Then 'if value contains type = "~int~25" - then cast value to the type
@@ -111,13 +111,13 @@ Public Class FwConfig
     End Function
 
     'set special settings after we read config
-    Private Shared Sub special_settings()
+    Private Shared Sub specialSettings()
         Dim hostname As String = settings("hostname")
 
         Dim overs As Hashtable = settings("override")
         For Each over_name As String In overs.Keys
             If Regex.IsMatch(hostname, overs(over_name)("hostname_match")) Then
-                Utils.hash_merge_deep(settings, overs(over_name))
+                Utils.mergeHashDeep(settings, overs(over_name))
                 Exit For
             End If
         Next
@@ -134,7 +134,7 @@ Public Class FwConfig
 
     'prefixes used so Dispatcher will know that url starts not with a full controller name, but with a prefix, need to be added to controller name
     'return regexp str that cut the prefix from the url, second capturing group captures rest of url after the prefix
-    Public Shared Function get_route_prefixes_rx() As String
+    Public Shared Function getRoutePrefixesRX() As String
         If route_prefixes_rx Is Nothing Then
             'prepare regexp - escape all prefixes
             Dim r As New ArrayList()

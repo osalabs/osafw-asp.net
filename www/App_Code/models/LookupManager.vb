@@ -12,48 +12,48 @@ Public Class LookupManager
     End Sub
 
     'return top X rows (default 1) from table tname
-    Public Overridable Function top_by_tname(tname As String, Optional top_number As Integer = 1) As Hashtable
+    Public Overridable Function topByTname(tname As String, Optional top_number As Integer = 1) As Hashtable
         If tname = "" Then Throw New ApplicationException("Wrong one_by_tname params")
 
         Return db.row("select TOP " & top_number & " * from " & tname)
     End Function
 
 
-    Public Overridable Function one_by_tname(tname As String, id As Integer) As Hashtable
+    Public Overridable Function oneByTname(tname As String, id As Integer) As Hashtable
         If tname = "" OrElse id = 0 Then Throw New ApplicationException("Wrong one_by_tname params")
 
-        Dim defs As Hashtable = fw.model(Of LookupManagerTables).one_by_tname(tname)
+        Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
 
         Dim where As New Hashtable
-        where(fw.model(Of LookupManagerTables).get_column_id(defs)) = id
+        where(fw.model(Of LookupManagerTables).getColumnId(defs)) = id
         Return db.row(tname, where)
     End Function
 
 
     'add new record and return new record id
-    Public Overridable Function add_by_tname(tname As String, item As Hashtable) As Integer
+    Public Overridable Function addByTname(tname As String, item As Hashtable) As Integer
         If tname = "" Then Throw New ApplicationException("Wrong update_by_tname params")
-        Dim defs As Hashtable = fw.model(Of LookupManagerTables).one_by_tname(tname)
+        Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
 
         Dim id As Integer = db.insert(tname, item)
-        fw.log_event(tname & "_add", id)
+        fw.logEvent(tname & "_add", id)
         Return id
     End Function
 
     'update exising record
-    Public Overridable Function update_by_tname(tname As String, id As Integer, item As Hashtable, Optional md5 As String = "") As Boolean
+    Public Overridable Function updateByTname(tname As String, id As Integer, item As Hashtable, Optional md5 As String = "") As Boolean
         If tname = "" OrElse id = 0 Then Throw New ApplicationException("Wrong update_by_tname params")
-        Dim defs As Hashtable = fw.model(Of LookupManagerTables).one_by_tname(tname)
+        Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
-        Dim id_fname As String = fw.model(Of LookupManagerTables).get_column_id(defs)
+        Dim id_fname As String = fw.model(Of LookupManagerTables).getColumnId(defs)
 
         'also we need include old fields into where just because id by sort is not robust enough
-        Dim itemold = one_by_tname(tname, id)
+        Dim itemold = oneByTname(tname, id)
         If md5 > "" Then
             'additionally check we got right record by comparing md5
-            If md5 <> get_row_md5(itemold) Then Throw New ApplicationException("Cannot update database. Wrong checksum. Probably someone else already updated data you are trying to edit.")
+            If md5 <> getRowMD5(itemold) Then Throw New ApplicationException("Cannot update database. Wrong checksum. Probably someone else already updated data you are trying to edit.")
         End If
 
         itemold.Remove(id_fname)
@@ -80,7 +80,7 @@ Public Class LookupManager
 
             db.update(tname, item_save, where)
 
-            fw.log_event(tname & "_upd", id)
+            fw.logEvent(tname & "_upd", id)
             Return True
         Else
             Return False
@@ -88,29 +88,29 @@ Public Class LookupManager
     End Function
 
     ' delete from db
-    Public Overridable Sub delete_by_tname(tname As String, id As Integer, Optional md5 As String = "")
+    Public Overridable Sub deleteByTname(tname As String, id As Integer, Optional md5 As String = "")
         If tname = "" OrElse id = 0 Then Throw New ApplicationException("Wrong update_by_tname params")
-        Dim defs As Hashtable = fw.model(Of LookupManagerTables).one_by_tname(tname)
+        Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
-        Dim id_fname As String = fw.model(Of LookupManagerTables).get_column_id(defs)
+        Dim id_fname As String = fw.model(Of LookupManagerTables).getColumnId(defs)
 
         'also we need include old fields into where just because id by sort is not robust enough
-        Dim itemold = one_by_tname(tname, id)
+        Dim itemold = oneByTname(tname, id)
         If md5 > "" Then
             'additionally check we got right record by comparing md5
-            If md5 <> get_row_md5(itemold) Then Throw New ApplicationException("Cannot delete from database. Wrong checksum. Probably someone else already updated data you are trying to edit.")
+            If md5 <> getRowMD5(itemold) Then Throw New ApplicationException("Cannot delete from database. Wrong checksum. Probably someone else already updated data you are trying to edit.")
         End If
 
         Dim where As New Hashtable
         where(id_fname) = id
         db.del(tname, where)
 
-        fw.log_event(tname & "_del", id)
+        fw.logEvent(tname & "_del", id)
     End Sub
 
     'calculate md5 for all values from hashtable
     'values sorted by keyname before calculating
-    Friend Function get_row_md5(row As Hashtable) As String
+    Friend Function getRowMD5(row As Hashtable) As String
         'sort with LINQ
         Dim sorted_keys = From k In row.Keys
                           Order By k

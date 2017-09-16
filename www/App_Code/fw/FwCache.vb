@@ -8,11 +8,11 @@ Public Class FwCache
     Public Shared cache As New Hashtable 'app level cache
     Public request_cache As New Hashtable 'request level cache
 
-    Public Shared Function get_value(key As String) As Object
+    Public Shared Function getValue(key As String) As Object
         Return cache(key)
     End Function
 
-    Public Shared Sub set_value(key As String, value As Object)
+    Public Shared Sub setValue(key As String, value As Object)
         cache(key) = value
     End Sub
 
@@ -28,18 +28,18 @@ Public Class FwCache
 
     '******** request-level cache ***********
 
-    Public Function get_request_value(key As String) As Object
+    Public Function getRequestValue(key As String) As Object
         Return request_cache(key)
     End Function
-    Public Sub set_request_value(key As String, value As Object)
+    Public Sub setRequestValue(key As String, value As Object)
         request_cache(key) = value
     End Sub
     'remove one key from request cache
-    Public Sub request_remove(key As String)
+    Public Sub requestRemove(key As String)
         request_cache.Remove(key)
     End Sub
     'clear whole request cache
-    Public Sub request_clear()
+    Public Sub requestClear()
         request_cache.Clear()
     End Sub
 

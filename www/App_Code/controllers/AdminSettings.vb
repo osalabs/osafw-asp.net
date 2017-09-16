@@ -24,9 +24,9 @@ Public Class AdminSettingsController
         list_sortmap = Utils.qh("id|id iname|iname upd_time|upd_time")
     End Sub
 
-    Public Overrides Sub set_list_search()
+    Public Overrides Sub setListSearch()
         Me.list_where = " 1=1 "
-        MyBase.set_list_search()
+        MyBase.setListSearch()
 
         If list_filter("s") > "" Then list_where &= " and icat=" & db.qi(list_filter("s"))
     End Sub
@@ -59,7 +59,7 @@ Public Class AdminSettingsController
             'load old record if necessary
             'Dim item_old As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, Me.save_fields)
+            Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
             'TODO - checkboxes
             'FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
             'itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
@@ -75,18 +75,18 @@ Public Class AdminSettingsController
             location = base_url
         Catch ex As ApplicationException
             success = False
-            Me.set_form_error(ex)
+            Me.setFormError(ex)
         End Try
 
-        Return Me.save_check_result(success, id, is_new, "ShowForm", location)
+        Return Me.saveCheckResult(success, id, is_new, "ShowForm", location)
     End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)
-        Dim result As Boolean = Me.validate_required(item, Me.required_fields)
+        Dim result As Boolean = Me.validateRequired(item, Me.required_fields)
 
         If id = 0 Then Throw New ApplicationException("Wrong Settings ID")
 
-        Me.validate_check_result()
+        Me.validateCheckResult()
     End Sub
 
     Public Overrides Function DeleteAction(ByVal form_id As String) As Hashtable

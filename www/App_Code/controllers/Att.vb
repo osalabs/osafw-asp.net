@@ -23,7 +23,7 @@ Public Class AttController
         Dim id As Integer = Utils.f2int(form_id)
         If id = 0 Then Throw New ApplicationException("404 File Not Found")
         Dim size As String = reqs("size")
-        model.transmit_file(Utils.f2int(form_id), size)
+        model.transmitFile(Utils.f2int(form_id), size)
     End Sub
 
     Public Sub ShowAction(Optional ByVal form_id As String = "")
@@ -35,16 +35,16 @@ Public Class AttController
         If is_preview Then
             Dim item As Hashtable = model.one(id)
             If item("is_image") Then
-                model.transmit_file(id, size, "inline")
+                model.transmitFile(id, size, "inline")
             Else
                 'if it's not an image and requested preview - return std image
                 Dim filepath As String = fw.config("site_root") & "/img/att_file.png" ' TODO move to web.config or to model? and no need for transfer file - just redirect TODO
-                Dim ext As String = UploadUtils.get_upload_file_ext(filepath)
-                fw.resp.AppendHeader("Content-type", model.get_mime4ext(ext))
+                Dim ext As String = UploadUtils.getUploadFileExt(filepath)
+                fw.resp.AppendHeader("Content-type", model.getMimeForExt(ext))
                 fw.resp.TransmitFile(filepath)
             End If
         Else
-            model.transmit_file(id, size, "inline")
+            model.transmitFile(id, size, "inline")
         End If
 
     End Sub

@@ -64,7 +64,7 @@ Public Class LoginController
                 Throw New ApplicationException("User Authentication Error")
             End If
 
-            model.do_login(hU("id"))
+            model.doLogin(hU("id"))
 
             If gourl > "" AndAlso Not Regex.IsMatch(gourl, "^http", RegexOptions.IgnoreCase) Then 'if url set and not external url (hack!) given
                 fw.redirect(gourl)
@@ -75,7 +75,7 @@ Public Class LoginController
         Catch ex As ApplicationException
             fw.G("err_ctr") = reqi("err_ctr") + 1
             fw.G("err_msg") = ex.Message
-            fw.route_redirect("Index")
+            fw.routeRedirect("Index")
         End Try
 
     End Sub

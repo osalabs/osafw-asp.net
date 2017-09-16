@@ -77,7 +77,7 @@ Public Class FW
         Dim fw As New FW(context)
         FW.Current = fw
 
-        FwHooks.request_init(fw)
+        FwHooks.initRequest(fw)
         fw.dispatch()
         fw.Finalize()
     End Sub
@@ -159,7 +159,7 @@ Public Class FW
     ''' return true if browser requests json response
     ''' </summary>
     ''' <returns></returns>
-    Public Function is_json_expected() As Boolean
+    Public Function isJsonExpected() As Boolean
         Return get_response_expected_format() = "json"
     End Function
 
@@ -209,7 +209,7 @@ Public Class FW
                         'it's a direct class-method to call, no further REST processing required
                         is_routes_found = True
                         Dim sroute As String() = Split(m1.Groups(2).Value, "::", 2)
-                        cur_controller = Utils.route_fix_chars(sroute(0))
+                        cur_controller = Utils.routeFixChars(sroute(0))
                         If UBound(sroute) > 0 Then cur_action_raw = sroute(1)
                         Exit For
                     End If
@@ -221,12 +221,12 @@ Public Class FW
 
         If Not is_routes_found Then
             'TODO move prefix cut to separate func
-            Dim prefix_rx As String = FwConfig.get_route_prefixes_rx()
+            Dim prefix_rx As String = FwConfig.getRoutePrefixesRX()
             cur_controller_path = ""
             Dim m_prefix As Match = Regex.Match(url, prefix_rx)
             If m_prefix.Success Then
                 'convert from /Some/Prefix to SomePrefix
-                controller_prefix = Utils.route_fix_chars(m_prefix.Groups(1).Value)
+                controller_prefix = Utils.routeFixChars(m_prefix.Groups(1).Value)
                 cur_controller_path = "/" & controller_prefix
                 url = m_prefix.Groups(2).Value
             End If
@@ -246,7 +246,7 @@ Public Class FW
             ' /controller/(Action)              Action    call for arbitrary action from the controller
             Dim m As Match = Regex.Match(url, "^/([^/]+)(?:/(new|\.\w+)|/([\d\w_-]+)(?:\.(\w+))?(?:/(edit|delete))?)?/?$")
             If m.Success Then
-                cur_controller = Utils.route_fix_chars(m.Groups(1).Value)
+                cur_controller = Utils.routeFixChars(m.Groups(1).Value)
                 If cur_controller = "" Then Throw New Exception("Wrong request")
 
                 'capitalize first letter - TODO - URL-case-insensitivity should be an option!
@@ -308,7 +308,7 @@ Public Class FW
                 Dim parts As Array = Split(url, "/")
                 'logger(parts)
                 Dim ub As Integer = UBound(parts)
-                If ub >= 1 Then cur_controller = Utils.route_fix_chars(parts(1))
+                If ub >= 1 Then cur_controller = Utils.routeFixChars(parts(1))
                 If ub >= 2 Then cur_action_raw = parts(2)
                 If ub >= 3 Then cur_id = parts(3)
                 If ub >= 4 Then cur_action_more = parts(4)
@@ -318,7 +318,7 @@ Public Class FW
         cur_controller_path = cur_controller_path & "/" & cur_controller
         'add controller prefix if any
         cur_controller = controller_prefix & cur_controller
-        cur_action = Utils.route_fix_chars(cur_action_raw)
+        cur_action = Utils.routeFixChars(cur_action_raw)
         If cur_action = "" Then cur_action = "Index"
 
         Dim args() As [String] = {cur_id} 'TODO - add rest of possible params from parts
@@ -798,7 +798,7 @@ Public Class FW
 
     End Sub
     'same as above just with default controller
-    Public Overloads Sub route_redirect(ByVal action As String, Optional ByVal args As Object = Nothing)
+    Public Overloads Sub routeRedirect(ByVal action As String, Optional ByVal args As Object = Nothing)
         route_redirect(action, cur_controller, args)
     End Sub
 
@@ -828,7 +828,7 @@ Public Class FW
         logger(LogLevel.DEBUG, "sending file response  = ", filepath, " as ", attname)
         attname = Regex.Replace(attname, "[^\w. \-]+", "_")
         resp.AppendHeader("Content-type", ContentType)
-        resp.AppendHeader("Content-Length", Utils.file_size(filepath))
+        resp.AppendHeader("Content-Length", Utils.fileSize(filepath))
         resp.AppendHeader("Content-Disposition", ContentDisposition & "; filename=""" & attname & """")
         resp.TransmitFile(filepath)
         resp.OutputStream.Close()
@@ -881,7 +881,7 @@ Public Class FW
                 If reply_to > "" Then message.ReplyToList.Add(reply_to) '.net>=4
 
                 'mail_to may contain several emails delimited by ;
-                Dim amail_to As ArrayList = Utils.email_split(mail_to)
+                Dim amail_to As ArrayList = Utils.splitEmails(mail_to)
                 For Each email As String In amail_to
                     email = Trim(email)
                     If email = "" Then Continue For
@@ -1002,9 +1002,9 @@ Public Class FW
         Return models(model_name)
     End Function
 
-    Public Sub log_event(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0)
+    Public Sub logEvent(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0)
         If Not is_log_events Then Return
-        Me.model(Of Events).log_event(ev_icode, item_id, item_id2, iname, records_affected)
+        Me.model(Of FwEvents).log(ev_icode, item_id, item_id2, iname, records_affected)
     End Sub
 
 #Region "IDisposable Support"

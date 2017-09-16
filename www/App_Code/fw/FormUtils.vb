@@ -6,22 +6,22 @@
 Imports Utils
 
 Public Class FormUtils
-    Public Shared Function get_yesno_arr() As Array
+    Public Shared Function getYesNo() As Array
         Return qw("No|No Yes|Yes")
     End Function
 
-    Public Shared Function get_yn_arr() As Array
+    Public Shared Function getYN() As Array
         Return qw("N|No Y|Yes")
     End Function
 
-    Public Shared Function get_state_arr() As Array
+    Public Shared Function getStates() As Array
         Return qw("AL|Alabama AK|Alaska AZ|Arizona AR|Arkansas CA|California CO|Colorado CT|Connecticut DE|Delaware DC|District&nbsp;of&nbsp;Columbia FL|Florida GA|Georgia HI|Hawaii ID|Idaho IL|Illinois IN|Indiana IA|Iowa KS|Kansas KY|Kentucky LA|Louisiana ME|Maine MD|Maryland MA|Massachusetts MI|Michigan MN|Minnesota MS|Mississippi MO|Missouri MT|Montana NE|Nebraska NV|Nevada NH|New&nbsp;Hampshire NJ|New&nbsp;Jersey NM|New&nbsp;Mexico NY|New&nbsp;York NC|North&nbsp;Carolina ND|North&nbsp;Dakota OH|Ohio OK|Oklahoma OR|Oregon PA|Pennsylvania RI|Rhode&nbsp;Island SC|South&nbsp;Carolina SD|South&nbsp;Dakota TN|Tennessee TX|Texas UT|Utah VT|Vermont VA|Virginia WA|Washington WV|West&nbsp;Virgina WI|Wisconsin WY|Wyoming")
     End Function
 
     'return radio inputs
     ' arr can contain strings or strings with separator "|" for value/text ex: Jan|January,Feb|February
     ' separator - what to put after each radio (for ex - "<br>")
-    Public Shared Function radio_options(ByVal iname As String, ByVal arr As Array, ByVal isel As String, Optional ByVal separator As String = "") As String
+    Public Shared Function radioOptions(ByVal iname As String, ByVal arr As Array, ByVal isel As String, Optional ByVal separator As String = "") As String
         Dim result As New StringBuilder
 
         isel = Trim(isel)
@@ -47,54 +47,10 @@ Public Class FormUtils
         Return result.ToString()
     End Function
 
-    'select options for rows returned from db.array('select id, iname from ...')
-    Public Shared Function select_options_db(ByVal rows As ArrayList, ByVal isel As String, Optional is_multi As Boolean = False) As String
-        Return select_options_al(rows, isel, is_multi)
-    End Function
-
-    ' arr can contain strings or strings with separator "|" for value/text ex: Jan|January,Feb|February
-    ' isel may contain multiple comma-separated values
-    Public Shared Function select_options(ByVal arr As Array, ByVal isel As String, Optional is_multi As Boolean = False) As String
-        If isel Is Nothing Then isel = ""
-
-        Dim asel(1) As String
-        If is_multi Then
-            asel = Split(isel, ",")
-        Else
-            asel(0) = isel
-        End If
-
-        Dim i As Integer
-        'trim all elements, so it would be simplier to compare
-        For i = LBound(asel) To UBound(asel)
-            asel(i) = Trim(asel(i))
-        Next
-
-        Dim av() As String, val As String, text As String, result As New StringBuilder
-        For i = LBound(arr) To UBound(arr)
-            If (InStr(arr(i), "|")) Then
-                av = Split(arr(i), "|")
-                val = av(0)
-                text = av(1)
-            Else
-                val = arr(i)
-                text = arr(i)
-            End If
-
-            result.Append("<option value=""" & val & """")
-            If Array.IndexOf(asel, Trim(val)) <> -1 Then
-                result.Append(" selected ")
-            End If
-            result.Append(">" & text & "</option>" & vbCrLf)
-        Next
-
-        Return result.ToString()
-    End Function
-
-    ' arr is ArrayList of Hashes with "id" and "iname" keys
+    ' arr is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
     ' "id" key is optional, if not present - iname will be used for values too
     ' isel may contain multiple comma-separated values
-    Public Shared Function select_options_al(ByVal arr As ArrayList, ByVal isel As String, Optional is_multi As Boolean = False) As String
+    Public Shared Function selectOptions(ByVal arr As ArrayList, ByVal isel As String, Optional is_multi As Boolean = False) As String
         If isel Is Nothing Then isel = ""
 
         Dim asel(1) As String
@@ -131,13 +87,13 @@ Public Class FormUtils
 
     ''' <summary>
     ''' get name for the value fromt the select template
-    ''' ex: select_tpl_name('/common/sel/status.sel', 127) => 'Deleted'
+    ''' ex: selectTplName('/common/sel/status.sel', 127) => 'Deleted'
     ''' TODO: refactor to make common code with ParsePage?
     ''' </summary>
     ''' <param name="tpl_path"></param>
     ''' <param name="sel_id"></param>
     ''' <returns></returns>
-    Public Shared Function select_tpl_name(ByVal tpl_path As String, ByVal sel_id As String) As String
+    Public Shared Function selectTplName(ByVal tpl_path As String, ByVal sel_id As String) As String
         Dim result As String = ""
         If sel_id Is Nothing Then sel_id = ""
 
@@ -161,13 +117,13 @@ Public Class FormUtils
         Return result
     End Function
 
-    Public Shared Function clean_input(ByVal strIn As String) As String
+    Public Shared Function cleanInput(ByVal strIn As String) As String
         ' Replace invalid characters with empty strings.
         Return Regex.Replace(strIn, "[^\w\.\,\:\\\%@\-\/ ]", "")
     End Function
 
     '********************************* validators
-    Public Shared Function is_email(ByVal email As String) As Boolean
+    Public Shared Function isEmail(ByVal email As String) As Boolean
         Dim re As String = "^[\w\.\-\+\=]+\@(?:\w[\w-]*\.?){1,4}[a-zA-Z]{2,16}$"
         Return Regex.IsMatch(email, re)
     End Function
@@ -177,13 +133,13 @@ Public Class FormUtils
     ' xxx xxx xx xx
     ' xxx-xxx-xx-xx
     ' xxxxxxxxxx
-    Public Shared Function is_phone(ByVal phone As String) As Boolean
+    Public Shared Function isPhone(ByVal phone As String) As Boolean
         Dim re As String = "^\(?\d{3}\)?[\- ]?\d{3}[\- ]?\d{2}[\- ]?\d{2}$"
         Return Regex.IsMatch(phone, re)
     End Function
 
     'return pager or Nothing if no paging required
-    Public Shared Function get_pager(count As Integer, pagenum As Integer, Optional pagesize As Object = Nothing) As ArrayList
+    Public Shared Function getPager(count As Integer, pagenum As Integer, Optional pagesize As Object = Nothing) As ArrayList
         If pagesize Is Nothing Then pagesize = 25 'TODO get from  FW.config("MAX_PAGE_ITEMS")
         Dim pager As ArrayList = Nothing
 
@@ -203,7 +159,7 @@ Public Class FormUtils
     End Function
 
     'if is_exists (default true) - only values actually exists in input hash returned
-    Public Overloads Shared Function form2dbhash(item As Hashtable, fields As Array, Optional is_exists As Boolean = True) As Hashtable
+    Public Overloads Shared Function filter(item As Hashtable, fields As Array, Optional is_exists As Boolean = True) As Hashtable
         Dim result As New Hashtable
         If item IsNot Nothing Then
             For Each fld As String In fields
@@ -213,13 +169,13 @@ Public Class FormUtils
         Return result
     End Function
     'save as above but fields can be passed as qw string
-    Public Overloads Shared Function form2dbhash(item As Hashtable, fields As String, Optional is_exists As Boolean = True) As Hashtable
-        Return form2dbhash(item, Utils.qw(fields), is_exists)
+    Public Overloads Shared Function filter(item As Hashtable, fields As String, Optional is_exists As Boolean = True) As Hashtable
+        Return filter(item, Utils.qw(fields), is_exists)
     End Function
 
     'similar to form2dbhash, but for checkboxes (as unchecked checkboxes doesn't passed from form)
     'RETURN: by ref itemdb - add fields with default_value or form value
-    Public Overloads Shared Function form2dbhash_checkboxes(itemdb As Hashtable, item As Hashtable, fields As Array, Optional default_value As String = "0") As Boolean
+    Public Overloads Shared Function filterCheckboxes(itemdb As Hashtable, item As Hashtable, fields As Array, Optional default_value As String = "0") As Boolean
         If item IsNot Nothing Then
             For Each fld As String In fields
                 If item.ContainsKey(fld) Then
@@ -233,7 +189,7 @@ Public Class FormUtils
     End Function
     'same as above, but fields is qw string with default values: "field|def_value field2|def_value2"
     'default value = "0"
-    Public Overloads Shared Function form2dbhash_checkboxes(itemdb As Hashtable, item As Hashtable, fields As String) As Boolean
+    Public Overloads Shared Function filterCheckboxes(itemdb As Hashtable, item As Hashtable, fields As String) As Boolean
         If item IsNot Nothing Then
             Dim hfields As Hashtable = Utils.qh(fields, "0")
             For Each fld As String In hfields.Keys
@@ -290,7 +246,7 @@ Public Class FormUtils
     ' <select name="item[fdate_combo_mon]">
     ' <select name="item[fdate_combo_year]">
     ' itemdb("fdate_combo") = FormUtils.date4combo(item, "fdate_combo")
-    Public Shared Function date4combo(item As Hashtable, field_prefix As String) As Object
+    Public Shared Function dateForCombo(item As Hashtable, field_prefix As String) As Object
         Dim result As Object = Nothing
         Dim day As String = f2int(item(field_prefix & "_day"))
         Dim mon As String = f2int(item(field_prefix & "_mon"))
@@ -307,7 +263,7 @@ Public Class FormUtils
         Return result
     End Function
 
-    Public Shared Function combo4date(value As String, item As Hashtable, field_prefix As String) As Boolean
+    Public Shared Function comboForDate(value As String, item As Hashtable, field_prefix As String) As Boolean
         Dim dt As DateTime
         If DateTime.TryParse(value, dt) Then
             item(field_prefix & "_day") = dt.Day()
@@ -322,7 +278,7 @@ Public Class FormUtils
 
     'input: 0-86400 (daily time in seconds)
     'output: HH:MM
-    Public Shared Function int2timestr(i As Integer) As String
+    Public Shared Function intToTimeStr(i As Integer) As String
         Dim h As Integer = Math.Floor(i / 3600)
         Dim m As Integer = Math.Floor((i - h * 3600) / 60)
         Return h & ":" & m
@@ -330,7 +286,7 @@ Public Class FormUtils
 
     'input: HH:MM
     'output: 0-86400 (daily time in seconds)
-    Public Shared Function timestr2int(hhmm As String) As Integer
+    Public Shared Function timeStrToInt(hhmm As String) As Integer
         Dim a() As String = Split(hhmm, ":", 2)
         Dim result As Integer = 0
         Try
@@ -341,7 +297,7 @@ Public Class FormUtils
         Return result
     End Function
 
-    Public Shared Function get_id_from_autocomplete(s As String) As Integer
+    Public Shared Function getIdFromAutocomplete(s As String) As Integer
         Dim result As Integer = 0
         Dim a() As String = Split(s, " - ", 2)
         Try
@@ -354,7 +310,7 @@ Public Class FormUtils
     'convert time from field to 2 form fields with HH and MM suffixes
     'IN: hashtable to make changes in, field_name
     'OUT: false if item(field_name) wrong datetime
-    Shared Function time2form(item As Hashtable, field_name As String) As Boolean
+    Shared Function timeToForm(item As Hashtable, field_name As String) As Boolean
         Dim dt As DateTime
         If DateTime.TryParse(item(field_name), dt) Then
             item(field_name & "_hh") = dt.Hour()
@@ -368,7 +324,7 @@ Public Class FormUtils
 
     'opposite to time2from
     'OUT: false if can't create time from input item
-    Shared Function form2time(item As Hashtable, field_name As String) As Boolean
+    Shared Function formToTime(item As Hashtable, field_name As String) As Boolean
         Dim result As Boolean = True
         Dim hh As String = f2int(item(field_name & "_hh"))
         Dim mm As String = f2int(item(field_name & "_mm"))

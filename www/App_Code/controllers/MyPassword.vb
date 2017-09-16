@@ -38,7 +38,7 @@ Public Class MyPasswordController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
@@ -57,7 +57,7 @@ Public Class MyPasswordController
             'load old record if necessary
             'Dim itemdb As Hashtable = Users.one(id)
 
-            item = FormUtils.form2dbhash(reqh("item"), Utils.qw("email pwd"))
+            item = FormUtils.filter(reqh("item"), Utils.qw("email pwd"))
 
             If id > 0 Then
                 'update
@@ -68,26 +68,26 @@ Public Class MyPasswordController
                 where("id") = id
                 db.update("users", item, where)
 
-                fw.log_event("chpwd")
+                fw.logEvent("chpwd")
                 fw.FLASH("record_updated", 1)
             End If
 
             fw.redirect("/My/Password/" & id & "/edit")
         Catch ex As ApplicationException
-            fw.route_redirect("ShowForm")
+            fw.routeRedirect("ShowForm")
         End Try
     End Sub
 
     Public Function Validate(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw("email old_pwd pwd pwd2"))
+        result = result And validateRequired(item, Utils.qw("email old_pwd pwd pwd2"))
         If Not result Then fw.FERR("REQ") = 1
 
-        If result AndAlso model.is_exists(item("email"), id) Then
+        If result AndAlso model.isExists(item("email"), id) Then
             result = False
             fw.FERR("email") = "EXISTS"
         End If
-        If result AndAlso Not FormUtils.is_email(item("email")) Then
+        If result AndAlso Not FormUtils.isEmail(item("email")) Then
             result = False
             fw.FERR("email") = "WRONG"
         End If

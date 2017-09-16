@@ -20,7 +20,7 @@ Public Class AdminCategoriesController
         Dim hf As Hashtable = New Hashtable
 
         'get filters
-        Dim f As Hashtable = get_filter()
+        Dim f As Hashtable = initFilter()
 
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"
@@ -53,7 +53,7 @@ Public Class AdminCategoriesController
             '$sql = "SELECT * FROM $table $where ORDER BY $orderby LIMIT " . ($start == 0 ? '' : "$start,") . " $limit";
 
             hf("list_rows") = db.array(sql)
-            hf("pager") = FormUtils.get_pager(hf("count"), f("pagenum"), f("pagesize"))
+            hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))
         End If
         hf("f") = f
 
@@ -78,12 +78,12 @@ Public Class AdminCategoriesController
             'read from db
             item = model.one(id)
             'and merge new values from the form
-            Utils.hash_merge(item, reqh("item"))
+            Utils.mergeHash(item, reqh("item"))
             'here make additional changes if necessary
         End If
 
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
-        hf("add_users_id_name") = fw.model(Of Users).full_name(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -100,7 +100,7 @@ Public Class AdminCategoriesController
             'load old record if necessary
             'Dim itemdb As Hashtable = model.one(id)
 
-            item = FormUtils.form2dbhash(item, Utils.qw("iname idesc status"))
+            item = FormUtils.filter(item, Utils.qw("iname idesc status"))
 
             If id > 0 Then
                 model.update(id, item)
@@ -121,10 +121,10 @@ Public Class AdminCategoriesController
     Public Function Validate(id As String, item As Hashtable) As Boolean
         Dim msg As String = ""
         Dim result As Boolean = True
-        result = result And validate_required(item, Utils.qw(required_fields))
+        result = result And validateRequired(item, Utils.qw(required_fields))
         If Not result Then msg = "Please fill in all required fields"
 
-        If result AndAlso model.is_exists(item("iname"), id) Then
+        If result AndAlso model.isExists(item("iname"), id) Then
             result = False
             fw.FERR("iname") = "EXISTS"
         End If

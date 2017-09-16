@@ -20,7 +20,7 @@ Public Class Settings
     ''' <returns></returns>
     ''' <remarks></remarks>
     Public Shared Function read(icode As String) As String
-        Return fw.Current.model(Of Settings).get_value(icode)
+        Return FW.Current.model(Of Settings).getValue(icode)
     End Function
     ''' <summary>
     ''' Read integer value from site settings
@@ -47,22 +47,22 @@ Public Class Settings
     ''' <param name="icode"></param>
     ''' <remarks></remarks>
     Public Shared Sub write(icode As String, value As String)
-        fw.Current.model(Of Settings).set_value(icode, value)
+        FW.Current.model(Of Settings).setValue(icode, value)
     End Sub
 
 
     'just return first row by icode field
-    Public Function one_by_icode(icode As String) As Hashtable
+    Public Function oneByIcode(icode As String) As Hashtable
         Dim where As Hashtable = New Hashtable
         where("icode") = icode
         Return db.row(table_name, where)
     End Function
 
-    Public Function get_value(icode As String) As String
-        Return one_by_icode(icode)("ivalue")
+    Public Function getValue(icode As String) As String
+        Return oneByIcode(icode)("ivalue")
     End Function
-    Public Sub set_value(icode As String, ivalue As String)
-        Dim item As Hashtable = Me.one_by_icode(icode)
+    Public Sub setValue(icode As String, ivalue As String)
+        Dim item As Hashtable = Me.oneByIcode(icode)
         Dim fields As New Hashtable
         If item.ContainsKey("id") Then
             'exists - update
@@ -77,21 +77,9 @@ Public Class Settings
         End If
     End Sub
 
-    Public Function full_name(id As Object) As String
-        Dim result As String = ""
-        id = Utils.f2int(id)
-
-        If id > 0 Then
-            Dim hU As Hashtable = one(id)
-            result = hU("iname")
-        End If
-
-        Return result
-    End Function
-
     'check if item exists for a given icode
-    Public Overrides Function is_exists(uniq_key As Object, not_id As Integer) As Boolean
-        Return is_exists_byfield(uniq_key, not_id, "icode")
+    Public Overrides Function isExists(uniq_key As Object, not_id As Integer) As Boolean
+        Return isExistsByField(uniq_key, not_id, "icode")
     End Function
 
 End Class

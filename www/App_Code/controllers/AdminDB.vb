@@ -59,7 +59,7 @@ Public Class AdminDBController
     End Function
 
     Public Sub SaveAction()
-        fw.route_redirect("Index")
+        fw.routeRedirect("Index")
     End Sub
 
     Private Function sth2table(sth As DbDataReader) As ArrayList

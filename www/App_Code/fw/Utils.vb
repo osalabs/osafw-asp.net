@@ -48,7 +48,7 @@ Public Class Utils
     End Function
 
     'remove elements from hash, leave only those which keys passed
-    Public Shared Sub hashfilter(hash As Hashtable, keys As String())
+    Public Shared Sub hashFilter(hash As Hashtable, keys As String())
         Dim al_keys As New ArrayList(keys)
         Dim to_remove As New ArrayList
         For Each key As String In hash.Keys
@@ -63,7 +63,7 @@ Public Class Utils
     End Sub
 
     'leave just allowed chars in string - for routers: controller, action or for route ID
-    Public Shared Function route_fix_chars(ByVal str As String) As String
+    Public Shared Function routeFixChars(ByVal str As String) As String
         Return Regex.Replace(str, "[^A-Za-z0-9_-]+", "")
     End Function
 
@@ -85,7 +85,7 @@ Public Class Utils
 
     'IN: email addresses delimited with ; space or newline
     'OUT: arraylist of email addresses
-    Public Shared Function email_split(emails As String) As ArrayList
+    Public Shared Function splitEmails(emails As String) As ArrayList
         Dim result As New ArrayList
         Dim arr As String() = Regex.Split(emails, "[; \n\r]+")
         For Each email As String In arr
@@ -164,17 +164,17 @@ Public Class Utils
     End Function
 
     'just return false if input cannot be converted to float
-    Public Shared Function is_float(ByVal AField As Object) As Boolean
+    Public Shared Function isFloat(ByVal AField As Object) As Boolean
         Dim result As Double = 0
         Return Double.TryParse(AField, result)
     End Function
 
-    Public Shared Function strim(ByVal str As String, ByVal size As Integer) As String
+    Public Shared Function sTrim(ByVal str As String, ByVal size As Integer) As String
         If Len(str) > size Then str = Left(str, size) & "..."
         Return str
     End Function
 
-    Public Shared Function get_rand_str(ByVal size As Integer) As String
+    Public Shared Function getRandStr(ByVal size As Integer) As String
         Dim result As New StringBuilder
         Dim chars() As String = qw("A B C D E F a b c d e f 0 1 2 3 4 5 6 7 8 9")
 
@@ -186,7 +186,7 @@ Public Class Utils
         Return result.ToString()
     End Function
 
-    Public Shared Function to_csv_row(row As Hashtable, fields As Array) As String
+    Public Shared Function toCSVRow(row As Hashtable, fields As Array) As String
         Dim result As New StringBuilder
         For Each fld As String In fields
             If result.Length > 0 Then result.Append(",")
@@ -203,7 +203,7 @@ Public Class Utils
     End Function
 
     'standard function for exporting to csv
-    Public Shared Function get_csv_export(csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As StringBuilder
+    Public Shared Function getCSVExport(csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As StringBuilder
         Dim headers_str As String = csv_export_headers
         Dim csv As New StringBuilder
         Dim fields() As String = Nothing
@@ -219,18 +219,18 @@ Public Class Utils
 
         csv.Append(headers_str & vbLf)
         For Each row As Hashtable In rows
-            csv.Append(Utils.to_csv_row(row, fields) & vbLf)
+            csv.Append(Utils.toCSVRow(row, fields) & vbLf)
         Next
         Return csv
     End Function
 
-    Public Shared Function write_csv_export(response As HttpResponse, filename As String, csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As Boolean
+    Public Shared Function writeCSVExport(response As HttpResponse, filename As String, csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As Boolean
         filename = Replace(filename, """", "'") 'quote doublequotes
 
         response.AppendHeader("Content-type", "text/csv")
         response.AppendHeader("Content-Disposition", "attachment; filename=""" & filename & """")
 
-        response.Write(Utils.get_csv_export(csv_export_headers, csv_export_fields, rows))
+        response.Write(Utils.getCSVExport(csv_export_headers, csv_export_fields, rows))
         Return True
     End Function
 
@@ -238,7 +238,7 @@ Public Class Utils
     'resize image in from_file to w/h and save to to_file
     'w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
     'return false if no resize performed (if image already smaller than necessary). Note if to_file is not same as from_file - to_file will have a copy of the from_file
-    Public Shared Function image_resize(ByVal from_file As String, ByVal to_file As String, ByVal w As Long, ByVal h As Long) As Boolean
+    Public Shared Function resizeImage(ByVal from_file As String, ByVal to_file As String, ByVal w As Long, ByVal h As Long) As Boolean
         Dim stream As New FileStream(from_file, FileMode.Open, FileAccess.Read)
 
         ' Create new image.
@@ -286,7 +286,7 @@ Public Class Utils
         gr.Dispose()
 
         ' Save the scaled image.
-        Dim ext As String = UploadUtils.get_upload_file_ext(to_file)
+        Dim ext As String = UploadUtils.getUploadFileExt(to_file)
         Dim out_format As ImageFormat = image.RawFormat
         Dim EncoderParameters As EncoderParameters = Nothing
         Dim ImageCodecInfo As ImageCodecInfo = Nothing
@@ -347,13 +347,13 @@ Public Class Utils
 
     End Function 'GetEncoderInfo
 
-    Public Shared Function file_size(filepath As String) As Long
+    Public Shared Function fileSize(filepath As String) As Long
         Dim fi As FileInfo = New FileInfo(filepath)
         Return fi.Length
     End Function
 
     'extract just file name (with ext) from file path
-    Public Shared Function file_name(filepath As String) As String
+    Public Shared Function fileName(filepath As String) As String
         Return System.IO.Path.GetFileName(filepath)
     End Function
 
@@ -363,7 +363,7 @@ Public Class Utils
     ''' <param name="hash1"></param>
     ''' <param name="hash2"></param>
     ''' <remarks></remarks>
-    Public Shared Sub hash_merge(ByRef hash1 As Hashtable, ByRef hash2 As Hashtable)
+    Public Shared Sub mergeHash(ByRef hash1 As Hashtable, ByRef hash2 As Hashtable)
         If hash2 IsNot Nothing Then
             Dim keys As New ArrayList(hash2.Keys) 'make static copy of hash2.keys, so even if hash2.keys changing (ex: hash1 is same as hash2) it will not affect the loop
             For Each key As String In keys
@@ -374,7 +374,7 @@ Public Class Utils
 
     'deep hash merge, i.e. if hash2 contains values that is hash value - go in it and copy such values to hash2 at same place accordingly
     'recursive
-    Public Shared Sub hash_merge_deep(ByRef hash1 As Hashtable, ByRef hash2 As Hashtable)
+    Public Shared Sub mergeHashDeep(ByRef hash1 As Hashtable, ByRef hash2 As Hashtable)
         If hash2 IsNot Nothing Then
             Dim keys As New ArrayList(hash2.Keys)
             For Each key As String In keys
@@ -382,7 +382,7 @@ Public Class Utils
                     If Not (TypeOf hash1(key) Is Hashtable) Then
                         hash1(key) = New Hashtable
                     End If
-                    hash_merge_deep(hash1(key), hash2(key))
+                    mergeHashDeep(hash1(key), hash2(key))
                 Else
                     hash1(key) = hash2(key)
                 End If
@@ -434,7 +434,7 @@ Public Class Utils
     End Function
 
     'return Hashtable keys as an array
-    Public Shared Function hash_keys(h As Hashtable) As String()
+    Public Shared Function hashKeys(h As Hashtable) As String()
         Return New ArrayList(h.Keys).ToArray(GetType(String))
     End Function
 
@@ -454,7 +454,7 @@ Public Class Utils
     End Function
 
     'repeat string num times
-    Shared Function str_repeat(str As String, num As Integer) As String
+    Shared Function strRepeat(str As String, num As Integer) As String
         Dim result As New StringBuilder
         For i As Integer = 1 To num
             result.Append(str)
@@ -463,17 +463,17 @@ Public Class Utils
     End Function
 
     'return unique file name in form UUID (without extension)
-    Public Shared Function get_uuid() As String
+    Public Shared Function uuid() As String
         Return System.Guid.NewGuid().ToString()
     End Function
 
     'return path to tmp filename WITHOUT extension
-    Public Shared Function get_tmp_filename(Optional prefix As String = "osafw") As String
-        Return Path.GetTempPath & "\" & prefix & Utils.get_uuid()
+    Public Shared Function getTmpFilename(Optional prefix As String = "osafw") As String
+        Return Path.GetTempPath & "\" & prefix & Utils.uuid()
     End Function
 
     'scan tmp directory, find all tmp files created by website and delete older than 1 hour
-    Public Shared Sub cleanup_tmp_files(Optional prefix As String = "osafw")
+    Public Shared Sub cleanupTmpFiles(Optional prefix As String = "osafw")
         Dim files As String() = Directory.GetFiles(Path.GetTempPath(), prefix & "*")
         For Each file As String In files
             Dim fi As FileInfo = New FileInfo(file)
@@ -568,7 +568,7 @@ Public Class Utils
 
     'IN: orderby string for default asc sorting, ex: "id", "id desc", "prio desc, id"
     'OUT: orderby or inversed orderby (if sortdir="desc"), ex: "id desc", "id asc", "prio asc, id desc"
-    Shared Function orderby_apply_sortdir(orderby As String, sortdir As String) As String
+    Shared Function orderbyApplySortdir(orderby As String, sortdir As String) As String
         Dim result As String = orderby
 
         If sortdir = "desc" Then
@@ -631,7 +631,7 @@ Public Class Utils
     ''' </summary>
     ''' <param name="rows">db array</param>
     ''' <param name="fields">keys/values to add</param>
-    Public Shared Sub dbarray_inject(rows As ArrayList, fields As Hashtable)
+    Public Shared Sub arrayInject(rows As ArrayList, fields As Hashtable)
         For Each row As Hashtable In rows
             'array merge
             For Each key In fields.Keys
@@ -645,7 +645,7 @@ Public Class Utils
     ''' </summary>
     ''' <param name="str"></param>
     ''' <returns></returns>
-    Public Shared Function escape_url(str As String) As String
+    Public Shared Function urlescape(str As String) As String
         Return HttpUtility.UrlEncode(str)
     End Function
 

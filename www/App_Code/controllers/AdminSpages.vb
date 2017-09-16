@@ -26,12 +26,12 @@ Public Class AdminSpagesController
 
     Public Overrides Function IndexAction() As Hashtable
         'get filters from the search form
-        Dim f As Hashtable = Me.get_filter()
+        Dim f As Hashtable = Me.initFilter()
 
-        Me.set_list_sorting()
+        Me.setListSorting()
 
         Me.list_where = " 1=1 "
-        Me.set_list_search()
+        Me.setListSearch()
         'set here non-standard search
         If f("status") > "" Then
             Me.list_where &= " and status=" & db.qi(f("status"))
@@ -44,7 +44,7 @@ Public Class AdminSpagesController
             If Me.list_count > 0 Then
                 'build pages tree
                 Dim pages_tree As ArrayList = model.tree(Me.list_where, "parent_id, prio desc, iname")
-                Me.list_rows = model.get_pages_tree_list(pages_tree, 0)
+                Me.list_rows = model.getPagesTreeList(pages_tree, 0)
 
                 'apply LIMIT
                 If Me.list_count > Me.list_filter("pagesize") Then
@@ -57,19 +57,19 @@ Public Class AdminSpagesController
                     Me.list_rows = subset
                 End If
 
-                Me.list_pager = FormUtils.get_pager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
+                Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
             Else
                 Me.list_rows = New ArrayList
                 Me.list_pager = New ArrayList
             End If
         Else
             'if order not by iname or search performed - display plain page list using  Me.get_list_rows()
-            Me.get_list_rows()
+            Me.getListRows()
         End If
 
         'add/modify rows from db if necessary
         For Each row As Hashtable In Me.list_rows
-            row("full_url") = model.get_full_url(row("id"))
+            row("full_url") = model.getFullUrl(row("id"))
         Next
 
         Dim ps As Hashtable = New Hashtable
@@ -93,19 +93,19 @@ Public Class AdminSpagesController
         Dim id As Integer = item("id")
         Dim where As String = " status<>127 "
         Dim pages_tree As ArrayList = model.tree(where, "parent_id, prio desc, iname")
-        ps("select_options_parent_id") = model.get_pages_tree_select_html(item("parent_id"), pages_tree)
+        ps("select_options_parent_id") = model.getPagesTreeSelectHtml(item("parent_id"), pages_tree)
 
-        ps("parent_url") = model.get_full_url(Utils.f2int(item("parent_id")))
-        ps("full_url") = model.get_full_url(Utils.f2int(item("id")))
+        ps("parent_url") = model.getFullUrl(Utils.f2int(item("parent_id")))
+        ps("full_url") = model.getFullUrl(Utils.f2int(item("id")))
 
         ps("parent") = model.one(Utils.f2int(item("parent_id")))
 
         If item("head_att_id") > "" Then
-            ps("head_att_id_url_s") = fw.model(Of Att).get_url_direct(item("head_att_id"), "s")
+            ps("head_att_id_url_s") = fw.model(Of Att).getUrlDirect(item("head_att_id"), "s")
         End If
 
         If id > 0 Then
-            ps("subpages") = model.list_children(id)
+            ps("subpages") = model.listChildren(id)
         End If
 
         Return ps
@@ -131,23 +131,23 @@ Public Class AdminSpagesController
             Validate(id, item)
             'load old record if necessary
 
-            Dim itemdb As Hashtable = FormUtils.form2dbhash(item, save_fields2)
-            If Me.save_fields_checkboxes > "" Then FormUtils.form2dbhash_checkboxes(itemdb, item, save_fields_checkboxes)
+            Dim itemdb As Hashtable = FormUtils.filter(item, save_fields2)
+            If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
             itemdb("prio") = Utils.f2int(itemdb("prio"))
 
             'if no publish time defined - publish it now
             If itemdb("pub_time") = "" Then itemdb("pub_time") = Now()
 
-            id = Me.model_add_or_update(id, itemdb)
+            id = Me.modelAddOrUpdate(id, itemdb)
 
             If item_old("is_home") = "1" Then FwCache.remove("home_page") 'reset home page cache if Home page changed
 
         Catch ex As ApplicationException
             success = False
-            Me.set_form_error(ex)
+            Me.setFormError(ex)
         End Try
 
-        Return Me.save_check_result(success, id, is_new)
+        Return Me.saveCheckResult(success, id, is_new)
     End Function
 
 End Class

@@ -23,7 +23,7 @@ Public Class Spages
     End Sub
 
     'retun one latest record by url (i.e. with most recent pub_time if there are more than one page with such url)
-    Public Function one_by_url(url As String, parent_id As Integer) As Hashtable
+    Public Function oneByUrl(url As String, parent_id As Integer) As Hashtable
         Dim where As New Hashtable
         where("parent_id") = parent_id
         where("url") = url
@@ -31,12 +31,12 @@ Public Class Spages
     End Function
 
     'return one latest record by full_url (i.e. relative url from root, without domain)
-    Public Function one_by_full_url(full_url As String) As Hashtable
+    Public Function oneByFullUrl(full_url As String) As Hashtable
         Dim url_parts As String() = Split(full_url, "/")
         Dim parent_id As Integer = 0
         Dim item As Hashtable = Nothing
         For i As Integer = 1 To url_parts.GetUpperBound(0)
-            item = one_by_url(url_parts(i), parent_id)
+            item = oneByUrl(url_parts(i), parent_id)
             If item.Count = 0 Then
                 item = Nothing
                 Exit For
@@ -48,7 +48,7 @@ Public Class Spages
             If item("head_att_id") > "" Then
                 'item("head_att_id_url_s") = fw.model(Of Att).get_url_direct(item("head_att_id"), "s")
                 'item("head_att_id_url_m") = fw.model(Of Att).get_url_direct(item("head_att_id"), "m")
-                item("head_att_id_url") = fw.model(Of Att).get_url_direct(item("head_att_id"))
+                item("head_att_id_url") = fw.model(Of Att).getUrlDirect(item("head_att_id"))
             End If
 
         End If
@@ -61,7 +61,7 @@ Public Class Spages
         Return item
     End Function
 
-    Public Function list_children(parent_id As Integer) As ArrayList
+    Public Function listChildren(parent_id As Integer) As ArrayList
         Return db.array("select * from " & table_name & " where status<>127 and parent_id=" & db.qi(parent_id) & " order by iname")
     End Function
 
@@ -74,13 +74,13 @@ Public Class Spages
     ''' <remarks></remarks>
     Public Function tree(where As String, orderby As String) As ArrayList
         Dim rows As ArrayList = db.array("select * from " & table_name & " where " & where & " order by " & orderby)
-        Dim pages_tree As ArrayList = get_pages_tree(rows, 0)
+        Dim pages_tree As ArrayList = getPagesTree(rows, 0)
         Return pages_tree
     End Function
 
     'return parsepage array list of rows with hierarcy (children rows added to parents as "children" key)
     'RECURSIVE!
-    Public Function get_pages_tree(rows As ArrayList, parent_id As Integer, Optional level As Integer = 0) As ArrayList
+    Public Function getPagesTree(rows As ArrayList, parent_id As Integer, Optional level As Integer = 0) As ArrayList
         Dim result As New ArrayList
 
         For Each row As Hashtable In rows
@@ -88,7 +88,7 @@ Public Class Spages
                 Dim row2 As Hashtable = row.Clone()
                 row2("_level") = level
                 'row2("_level1") = level + 1 'to easier use in templates
-                row2("children") = get_pages_tree(rows, row("id"), level + 1)
+                row2("children") = getPagesTree(rows, row("id"), level + 1)
                 result.Add(row2)
             End If
         Next
@@ -103,7 +103,7 @@ Public Class Spages
     ''' <param name="level">optional, used in recursive calls</param>
     ''' <returns>parsepage AL with "leveler" array added to each row with level>0</returns>
     ''' <remarks>RECURSIVE</remarks>
-    Public Function get_pages_tree_list(pages_tree As ArrayList, Optional level As Integer = 0) As ArrayList
+    Public Function getPagesTreeList(pages_tree As ArrayList, Optional level As Integer = 0) As ArrayList
         Dim result As New ArrayList
 
         If pages_tree IsNot Nothing Then
@@ -118,7 +118,7 @@ Public Class Spages
                     row("leveler") = leveler
                 End If
                 'subpages
-                result.AddRange(get_pages_tree_list(row("children"), level + 1))
+                result.AddRange(getPagesTreeList(row("children"), level + 1))
             Next
         End If
 
@@ -133,14 +133,14 @@ Public Class Spages
     ''' <param name="level">optional, used in recursive calls</param>
     ''' <returns>HTML with options</returns>
     ''' <remarks>RECURSIVE</remarks>
-    Public Function get_pages_tree_select_html(selected_id As String, pages_tree As ArrayList, Optional level As Integer = 0) As String
+    Public Function getPagesTreeSelectHtml(selected_id As String, pages_tree As ArrayList, Optional level As Integer = 0) As String
         Dim result As New StringBuilder
         If pages_tree IsNot Nothing Then
             For Each row As Hashtable In pages_tree
 
-                result.AppendLine("<option value=""" & row("id") & """" & IIf(row("id") = selected_id, " selected=""selected"" ", "") & ">" & Utils.str_repeat("&#8212; ", level) & row("iname") & "</option>")
+                result.AppendLine("<option value=""" & row("id") & """" & IIf(row("id") = selected_id, " selected=""selected"" ", "") & ">" & Utils.strRepeat("&#8212; ", level) & row("iname") & "</option>")
                 'subpages
-                result.Append(get_pages_tree_select_html(selected_id, row("children"), level + 1))
+                result.Append(getPagesTreeSelectHtml(selected_id, row("children"), level + 1))
             Next
         End If
 
@@ -153,19 +153,19 @@ Public Class Spages
     ''' <param name="id">record id</param>
     ''' <returns>URL like /page/subpage/subsubpage</returns>
     ''' <remarks></remarks>
-    Public Function get_full_url(id As Integer) As String
+    Public Function getFullUrl(id As Integer) As String
         If id = 0 Then Return ""
 
         Dim item As Hashtable = one(id)
-        Return get_full_url(Utils.f2int(item("parent_id"))) & "/" & item("url")
+        Return getFullUrl(Utils.f2int(item("parent_id"))) & "/" & item("url")
     End Function
 
 
     'render page by full url
-    Public Sub show_page_by_full_url(full_url As String)
+    Public Sub showPageByFullUrl(full_url As String)
         Dim ps As New Hashtable
 
-        Dim item As Hashtable = one_by_full_url(full_url)
+        Dim item As Hashtable = oneByFullUrl(full_url)
         If IsNothing(item) Then
             ps("hide_sidebar") = True
             fw.parser("/error/404", ps)
@@ -180,12 +180,12 @@ Public Class Spages
 
 
     'check if item exists for a given email
-    'Public Overrides Function is_exists(uniq_key As Object, not_id As Integer) As Boolean
-    '    Return is_exists_byfield(uniq_key, not_id, "email")
+    'Public Overrides Function isExists(uniq_key As Object, not_id As Integer) As Boolean
+    '    Return isExistsByField(uniq_key, not_id, "email")
     'End Function
 
     'return correct url - TODO
-    Public Function get_url(id As Integer, icode As String, Optional url As String = Nothing) As String
+    Public Function getUrl(id As Integer, icode As String, Optional url As String = Nothing) As String
         If url IsNot Nothing AndAlso url > "" Then
             If Regex.IsMatch(url, "^/") Then url = fw.config("ROOT_URL") & url
             Return url

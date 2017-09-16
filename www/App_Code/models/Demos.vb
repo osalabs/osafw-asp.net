@@ -11,20 +11,14 @@ Public Class Demos
         table_name = "demos"
     End Sub
 
-    Public Function full_name(id As Object) As String
-        Dim result As String = ""
-        id = Utils.f2int(id)
-
-        If id > 0 Then
-            Dim hU As Hashtable = one(id)
-            result = hU("iname")
-        End If
-
-        Return result
-    End Function
-
     'check if item exists for a given email
-    Public Overrides Function is_exists(uniq_key As Object, not_id As Integer) As Boolean
-        Return is_exists_byfield(uniq_key, not_id, "email")
+    Public Overrides Function isExists(uniq_key As Object, not_id As Integer) As Boolean
+        Return isExistsByField(uniq_key, not_id, "email")
     End Function
+
+    Public Overridable Function getSelectOptionsParent(sel_id As String) As String
+        Dim rows = db.array("select id, iname from " & Me.table_name & " where parent_id= and status<>127 order by iname")
+        Return FormUtils.selectOptions(rows, sel_id)
+    End Function
+
 End Class

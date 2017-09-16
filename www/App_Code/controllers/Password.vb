@@ -49,7 +49,7 @@ Public Class PasswordController
             fw.redirect(base_url & "/(Sent)")
         Catch ex As Exception
             fw.G("err_msg") = ex.Message
-            fw.route_redirect("Index")
+            fw.routeRedirect("Index")
         End Try
 
     End Sub

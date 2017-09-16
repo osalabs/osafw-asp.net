@@ -16,10 +16,10 @@ Public Class Att
     End Sub
 
     'add/update att_table_links
-    Public Sub update_att_links(table_name As String, id As Integer, form_att As Hashtable)
+    Public Sub updateAttLinks(table_name As String, id As Integer, form_att As Hashtable)
         If form_att Is Nothing Then Exit Sub
 
-        Dim me_id As Integer = fw.model(Of Users).me_id()
+        Dim me_id As Integer = fw.model(Of Users).meId()
 
         '1. set status=1 (under update)
         Dim fields As New Hashtable
@@ -69,7 +69,7 @@ Public Class Att
 
 
     'return correct url
-    Public Function get_url(id As Integer, Optional size As String = "") As String
+    Public Function getUrl(id As Integer, Optional size As String = "") As String
         'Dim item As Hashtable = one(id)
         'Return get_upload_url(id, item("ext"), size)
         If id = 0 Then Return ""
@@ -83,22 +83,22 @@ Public Class Att
     End Function
 
     'return correct url - direct, i.e. not via /Att
-    Public Overloads Function get_url_direct(id As Integer, Optional size As String = "") As String
+    Public Overloads Function getUrlDirect(id As Integer, Optional size As String = "") As String
         Dim item As Hashtable = one(id)
         If item.Count = 0 Then Return ""
 
-        Return get_url_direct(item, size)
+        Return getUrlDirect(item, size)
     End Function
 
     'if you already have item, must contain: item("id"), item("ext")
-    Public Overloads Function get_url_direct(item As Hashtable, Optional size As String = "") As String
-        Return get_upload_url(item("id"), item("ext"), size)
+    Public Overloads Function getUrlDirect(item As Hashtable, Optional size As String = "") As String
+        Return getUploadUrl(item("id"), item("ext"), size)
     End Function
 
 
     'IN: extension - doc, jpg, ... (dot is optional)
     'OUT: mime type or application/octetstream if not found
-    Public Function get_mime4ext(ext As String) As String
+    Public Function getMimeForExt(ext As String) As String
         Dim result As String = ""
         Dim map As Hashtable = Utils.qh(MIME_MAP)
         ext = Regex.Replace(ext, "^\.", "") 'remove dot if any
@@ -116,14 +116,14 @@ Public Class Att
     Public Overrides Sub delete(id As Integer, Optional is_perm As Boolean = False)
         'remove files first
         Dim item As Hashtable = one(id)
-        Dim filepath As String = get_upload_img_path(id, "", item("ext"))
-        If filepath>"" then File.Delete(filepath)
+        Dim filepath As String = getUploadImgPath(id, "", item("ext"))
+        If filepath > "" Then File.Delete(filepath)
         'for images - also delete s/m thumbnails
         If item("is_image") = 1 Then
-            filepath=get_upload_img_path(id, "s", item("ext"))
-            If filepath>"" then File.Delete(filepath)
-            filepath=get_upload_img_path(id, "m", item("ext"))
-            If filepath>"" then File.Delete(filepath)
+            filepath = getUploadImgPath(id, "s", item("ext"))
+            If filepath > "" Then File.Delete(filepath)
+            filepath = getUploadImgPath(id, "m", item("ext"))
+            If filepath > "" Then File.Delete(filepath)
         End If
 
         MyBase.delete(id, is_perm)
@@ -131,7 +131,7 @@ Public Class Att
 
     'check access rights for current user for the file by id
     'generate exception
-    Public Sub check_access_rights(id As Integer)
+    Public Sub checkAccessRights(id As Integer)
         Dim result As Boolean = True
         Dim item As Hashtable = one(id)
 
@@ -153,17 +153,17 @@ Public Class Att
     'transimt file by id/size to user's browser, optional disposition - attachment(default)/inline
     'also check access rights - throws ApplicationException if file not accessible by cur user
     'if no file found - throws ApplicationException
-    Public Sub transmit_file(id As Integer, Optional size As String = "", Optional disposition As String = "attachment")
+    Public Sub transmitFile(id As Integer, Optional size As String = "", Optional disposition As String = "attachment")
         Dim item As Hashtable = one(id)
         If size <> "s" AndAlso size <> "m" Then size = ""
 
         If item("id") > 0 Then
-            check_access_rights(item("id"))
+            checkAccessRights(item("id"))
             fw.resp.Cache.SetCacheability(HttpCacheability.Private) 'use public only if all uploads are public
             fw.resp.Cache.SetExpires(DateTime.Now.AddDays(30)) 'cache for 30 days, this allows browser not to send any requests to server during this period (unless F5)
             fw.resp.Cache.SetMaxAge(New TimeSpan(30, 0, 0, 0))
 
-            Dim filepath As String = get_upload_img_path(id, size, item("ext"))
+            Dim filepath As String = getUploadImgPath(id, size, item("ext"))
             Dim filetime As Date = System.IO.File.GetLastWriteTime(filepath)
             filetime = New Date(filetime.Year, filetime.Month, filetime.Day, filetime.Hour, filetime.Minute, filetime.Second) 'remove any milliseconds
 
@@ -177,9 +177,9 @@ Public Class Att
             Else
                 fw.logger(LogLevel.INFO, "Transmit(", disposition, ") filepath [", filepath, "]")
                 Dim filename As String = Replace(item("fname"), """", "'")
-                Dim ext As String = UploadUtils.get_upload_file_ext(filename)
+                Dim ext As String = UploadUtils.getUploadFileExt(filename)
 
-                fw.resp.AppendHeader("Content-type", get_mime4ext(ext))
+                fw.resp.AppendHeader("Content-type", getMimeForExt(ext))
                 fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
 
                 fw.resp.TransmitFile(filepath)
@@ -191,34 +191,34 @@ Public Class Att
 
     'return all att files linked via att_table_link
     ' is_image = -1 (all - files and images), 0 (files only), 1 (images only)
-    Public Function get_all_linked(table_name As String, id As Integer, Optional is_image As Integer = -1) As ArrayList
+    Public Function getAllLinked(table_name As String, id As Integer, Optional is_image As Integer = -1) As ArrayList
         Dim where As String = ""
         If is_image > -1 Then
             where &= " and a.is_image=" & is_image
         End If
-        Return db.array("select a.* " & _
-                    " from " & att_table_link & " atl, att a " & _
-                    " where atl.table_name=" & db.q(table_name) & _
-                    " and atl.item_id=" & db.qi(id) & _
-                    " and a.id=atl.att_id" & _
-                    where & _
+        Return db.array("select a.* " &
+                    " from " & att_table_link & " atl, att a " &
+                    " where atl.table_name=" & db.q(table_name) &
+                    " and atl.item_id=" & db.qi(id) &
+                    " and a.id=atl.att_id" &
+                    where &
                     " order by a.id ")
     End Function
 
 
     'return first att image linked via att_table_link
-    Public Function get_first_linked_image(table_name As String, id As Integer) As Hashtable
-        Return db.row("select top 1 a.* " & _
-                    " from " & att_table_link & " atl, att a " & _
-                    " where atl.table_name=" & db.q(table_name) & _
-                    " and atl.item_id=" & db.qi(id) & _
-                    " and a.id=atl.att_id" & _
-                    " and a.is_image=1 " & _
+    Public Function getFirstLinkedImage(table_name As String, id As Integer) As Hashtable
+        Return db.row("select top 1 a.* " &
+                    " from " & att_table_link & " atl, att a " &
+                    " where atl.table_name=" & db.q(table_name) &
+                    " and atl.item_id=" & db.qi(id) &
+                    " and a.id=atl.att_id" &
+                    " and a.is_image=1 " &
                     " order by a.id ")
     End Function
 
     'return all att images linked via att_table_link
-    Public Function get_all_linked_images(table_name As String, id As Integer) As ArrayList
-        Return get_all_linked(table_name, id, 1)
+    Public Function getAllLinkedImages(table_name As String, id As Integer) As ArrayList
+        Return getAllLinked(table_name, id, 1)
     End Function
 End Class

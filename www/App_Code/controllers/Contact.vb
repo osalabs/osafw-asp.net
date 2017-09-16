@@ -18,7 +18,7 @@ Public Class ContactController
     Public Function IndexAction() As Hashtable
         Dim ps As Hashtable = New Hashtable
 
-        Dim page As Hashtable = fw.model(Of Spages).one_by_full_url(base_url)
+        Dim page As Hashtable = fw.model(Of Spages).oneByFullUrl(base_url)
         ps("page") = page
         Return ps
     End Function
@@ -26,7 +26,7 @@ Public Class ContactController
     Public Function SentAction(Optional url As String = "") As Hashtable
         Dim ps As Hashtable = New Hashtable
 
-        Dim page As Hashtable = fw.model(Of Spages).one_by_full_url(base_url & "/Sent")
+        Dim page As Hashtable = fw.model(Of Spages).oneByFullUrl(base_url & "/Sent")
         ps("page") = page
         Return ps
     End Function
