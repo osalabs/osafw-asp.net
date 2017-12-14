@@ -66,7 +66,7 @@ Public Class Spages
     End Function
 
     ''' <summary>
-    ''' Read ALL rows from db according to where, then apply get_pages_tree to return tree structure 
+    ''' Read ALL rows from db according to where, then apply getPagesTree to return tree structure 
     ''' </summary>
     ''' <param name="where">where to apply in sql</param>
     ''' <param name="orderby">order by fields to apply in sql</param>
@@ -97,7 +97,7 @@ Public Class Spages
     End Function
 
     ''' <summary>
-    ''' Generate parsepage AL of plain list with levelers based on tree structure from get_pages_tree()
+    ''' Generate parsepage AL of plain list with levelers based on tree structure from getPagesTree()
     ''' </summary>
     ''' <param name="pages_tree">result of get_pages_tree()</param>
     ''' <param name="level">optional, used in recursive calls</param>
@@ -129,7 +129,7 @@ Public Class Spages
     ''' Generate HTML with options for select with indents for hierarcy
     ''' </summary>
     ''' <param name="selected_id">selected id</param>
-    ''' <param name="pages_tree">result of get_pages_tree()</param>
+    ''' <param name="pages_tree">result of getPagesTree()</param>
     ''' <param name="level">optional, used in recursive calls</param>
     ''' <returns>HTML with options</returns>
     ''' <remarks>RECURSIVE</remarks>
@@ -152,7 +152,7 @@ Public Class Spages
     ''' </summary>
     ''' <param name="id">record id</param>
     ''' <returns>URL like /page/subpage/subsubpage</returns>
-    ''' <remarks></remarks>
+    ''' <remarks>RECURSIVE!</remarks>
     Public Function getFullUrl(id As Integer) As String
         If id = 0 Then Return ""
 
