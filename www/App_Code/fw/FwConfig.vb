@@ -129,6 +129,11 @@ Public Class FwConfig
         End If
         settings("log_level") = log_level
 
+        'default settings that depend on other settings
+        If Not settings.ContainsKey("ASSETS_URL") Then
+            settings("ASSETS_URL") = settings("ROOT_URL") & "/assets"
+        End If
+
     End Sub
 
 

@@ -1,4 +1,4 @@
-<form class="form-horizontal" method="post" data-check-changes <~das if="id" inline>data-autosave</~das>  action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das>  action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
 
@@ -7,17 +7,18 @@
 
     <~/common/form/group_id>
 
-    <div class="form-group <~/common/error if="ERR[iname]">">
-      <label class="control-label col-md-3 required" for="iname">`Title`</label>
+    <div class="form-group row <~/common/error if="ERR[iname]">">
+      <label class="col-form-label col-md-3 required" for="iname">`Title`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required>
-        <~err_iname_EXISTS ifeq="ERR[iname]" value="EXISTS" inline><p class="help-block">`Such title already exists in our database`</p></~err_iname_EXISTS>
+        <~err_iname_EXISTS ifeq="ERR[iname]" value="EXISTS" inline><p class="invalid-feedback">`Such title already exists in our database`</p></~err_iname_EXISTS>
+        <p class="invalid-feedback">`Such title already exists in our database`</p>
       </div>
     </div>
-    <div class="form-group <~/common/error if="ERR[idesc]">">
-      <label class="control-label col-md-3" for="idesc">`Description`</label>
+    <div class="form-group row <~/common/error if="ERR[idesc]">">
+      <label class="col-form-label col-md-3" for="idesc">`Description`</label>
       <div class="col-md-9">
-        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control"><~i[idesc]></textarea>
+        <textarea id="idesc" name="item[idesc]" rows="5" class="form-control" data-noautosave><~i[idesc]></textarea>
       </div>
     </div>
 

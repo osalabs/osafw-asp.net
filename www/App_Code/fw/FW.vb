@@ -45,7 +45,7 @@ Public Class FW
     Private floggerSW As System.IO.StreamWriter
 
     Private models As New Hashtable
-    Public Shared Current As FW 'store FW current "singleton", set in run
+    Public Shared Current As FW 'store FW current "singleton", set in run WARNING - avoid to use as if 2 parallel requests come, a bit later one will overwrite this
     Public cache As New FwCache 'request level cache
 
     Public FORM As Hashtable

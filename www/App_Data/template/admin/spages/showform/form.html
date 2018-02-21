@@ -1,8 +1,8 @@
-<form class="form-horizontal" method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
 
-    <div class="pull-right">
+    <div class="float-right">
         <span class="form-saved-status"></span>
         <button type="submit" class="btn btn-primary">`Submit`</button>
         <button type="button" class="btn btn-default on-cancel" data-href="<~/common/form/cancel_url>">`Cancel`</button>
@@ -12,7 +12,9 @@
         <a class="btn btn-default" href="<~../url><~/common/list/relid>"><i class="glyphicon glyphicon-menu-left"></i> `Return back to list`</a>
         <a class="btn btn-default" href="<~../url>/new<~/common/list/relid>"><i class="glyphicon glyphicon-plus"></i> `Add New`</a>
         <~add_sub if="id" inline>
-          <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add New Sub-Page`</a>
+          <~add_sub2 unless="i[is_home]" inline>
+            <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add New Sub-Page`</a>
+          </~add_sub2>
         </~add_sub>
      </div>
     </div>
@@ -21,51 +23,51 @@
   <fieldset>
     <~/common/form/msg>
 
-    <div class="form-group form-group-lg <~/common/error if="ERR[iname]">">
-      <label class="control-label col-md-3 required" for="iname">`Page Title`</label>
+    <div class="form-group row form-control-lg <~/common/error if="ERR[iname]">">
+      <label class="col-form-label col-md-3 required" for="iname">`Page Title`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required>
       </div>
     </div>
-    <div class="form-group form-group-sm <~/common/error if="ERR[url]">">
-      <label class="control-label col-md-3 <~/common/required unless="i[is_home]">" for="url">`Url`</label>
+    <div class="form-group row form-control-sm <~/common/error if="ERR[url]">">
+      <label class="col-form-label col-md-3 <~/common/required unless="i[is_home]">" for="url">`Url`</label>
       <div class="col-md-9">
         <div class="input-group">
-            <span class="input-group-addon"><~parent_url>/</span>
+            <div class="input-group-prepend"><span class="input-group-text"><~parent_url>/</span></div>
             <input id="url" name="item[url]" maxlength="255" value="<~i[url]>" type="text" class="form-control" <~/common/required unless="i[is_home]"> <~/common/disabled if="i[is_home]">>
-            <span class="input-group-btn">
+            <div class="input-group-append">
                 <!--button class="btn btn-default" type="button">Go!</button-->
-                <a href="<~full_url>" target="_blank" class="btn btn-default btn-sm">View <i class="glyphicon glyphicon-new-window"></i></a>
-            </span>
+                <a href="<~full_url>" target="_blank" class="btn btn-outline-secondary" title="View"><i class="glyphicon glyphicon-new-window"></i></a>
+            </div>
         </div>
       </div>
     </div>
 
-    <div class="form-group <~/common/error if="ERR[idesc]">">
+    <div class="form-group row <~/common/error if="ERR[idesc]">">
       <div class="col-md-12">
-        <label class="control-label" for="idesc">`Page Content`:
+        <label class="col-form-label" for="idesc">`Page Content`:
             <span class="nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown syntax</a> supported</span>
         </label>
         <textarea id="idesc" name="item[idesc]" rows="5" class="form-control markdown autoresize"><~i[idesc]></textarea>
       </div>
     </div>
 
-    <div class="form-group <~/common/error if="ERR[head_att_id]">">
-      <label class="control-label col-md-3" for="head_att_id">`Banner`</label>
+    <div class="form-group row <~/common/error if="ERR[head_att_id]">">
+      <label class="col-form-label col-md-3" for="head_att_id">`Banner`</label>
       <div class="col-md-3">
         <input id="head_att_id" name="item[head_att_id]" value="<~i[head_att_id]>" type="hidden">
         <p><button type="button" class="btn btn-default on-select-att" data-att-category="spage_banner">Select/Upload image</button></p>
         <p><button type="button" class="btn btn-default on-remove-att" <~/common/display_none unless="head_att_id_url_s">>Remove image</button></p>
-        <p class="help-block">best: 960x315 px</p>
+        <small class="form-text text-muted">best: 960x315 px</small>
       </div>
       <div class="col-md-6">
         <div class="img"><img src="<~head_att_id_url_s>" <~/common/display_none unless="head_att_id_url_s">></div>
       </div>
     </div>
 
-    <div class="form-group <~/common/error if="ERR[idesc_right]">">
-      <label class="control-label col-md-3" for="idesc_right">`Right aside column`
-        <p class="help-block nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown syntax</a> supported</p>
+    <div class="form-group row <~/common/error if="ERR[idesc_right]">">
+      <label class="col-form-label col-md-3" for="idesc_right">`Right aside column`
+        <small class="form-text text-muted nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown syntax</a> supported</small>
       </label>
       <div class="col-md-9">
         <textarea id="idesc_right" name="item[idesc_right]" rows="5" class="form-control markdown autoresize"><~i[idesc_right]></textarea>
@@ -75,11 +77,11 @@
     <fieldset>
         <legend>Page Attributes</legend>
 
-        <div class="form-group <~/common/error if="ERR[parent_id]">">
-          <label class="control-label col-md-3" for="parent_id">`Parent page`</label>
+        <div class="form-group row <~/common/error if="ERR[parent_id]">">
+          <label class="col-form-label col-md-3" for="parent_id">`Parent page`</label>
           <div class="col-md-9">
             <~parent_a_home if="i[is_home]" inline>
-                <p class="form-control-static">Home Page is Always a Top page</p>
+                <p class="form-control-plaintext">Home Page is Always a Top page</p>
             </~parent_a_home>
             <~parent_not_a_home unless="i[is_home]" inline>
             <select id="parent_id" name="item[parent_id]" class="form-control">
@@ -90,8 +92,8 @@
           </div>
         </div>
 
-        <!--div class="form-group <~/common/error if="ERR[template]">">
-          <label class="control-label col-md-3" for="template">`Template`</label>
+        <!--div class="form-group row <~/common/error if="ERR[template]">">
+          <label class="col-form-label col-md-3" for="template">`Template`</label>
           <div class="col-md-3">
             <select id="template" name="item[template]" class="form-control">
               <option value="">-default-</option>
@@ -100,24 +102,24 @@
           </div>
         </div-->
 
-        <div class="form-group <~/common/error if="ERR[prio]">">
-          <label class="control-label col-md-3" for="prio">`Priority`</label>
+        <div class="form-group row <~/common/error if="ERR[prio]">">
+          <label class="col-form-label col-md-3" for="prio">`Priority`</label>
           <div class="col-md-2">
             <input id="prio" name="item[prio]" maxlength="13" value="<~i[prio]>" type="text" class="form-control">
           </div>
           <div class="col-md-2">
-            <p class="help-block">0 - lowest priority</p>
+            <small class="form-text text-muted">0 - lowest priority</small>
           </div>
         </div>
 
-        <div class="form-group <~/common/error if="ERR[custom_css]">">
-          <label class="control-label col-md-3" for="custom_css">`Custom CSS`</label>
+        <div class="form-group row <~/common/error if="ERR[custom_css]">">
+          <label class="col-form-label col-md-3" for="custom_css">`Custom CSS`</label>
           <div class="col-md-9">
             <textarea id="custom_css" name="item[custom_css]" rows="3" class="form-control autoresize"><~i[custom_css]></textarea>
           </div>
         </div>
-        <div class="form-group <~/common/error if="ERR[custom_js]">">
-          <label class="control-label col-md-3" for="custom_js">`Custom JS`</label>
+        <div class="form-group row <~/common/error if="ERR[custom_js]">">
+          <label class="col-form-label col-md-3" for="custom_js">`Custom JS`</label>
           <div class="col-md-9">
             <textarea id="custom_js" name="item[custom_js]" rows="3" class="form-control autoresize"><~i[custom_js]></textarea>
           </div>
@@ -129,22 +131,22 @@
         <legend>Publish</legend>
 
         <~publish_not_a_home unless="i[is_home]" inline>
-        <div class="form-group <~/common/error if="ERR[pub_time]">">
-          <label class="control-label col-md-3" for="pub_time">`Publish date`</label>
+        <div class="form-group row <~/common/error if="ERR[pub_time]">">
+          <label class="col-form-label col-md-3" for="pub_time">`Publish date`</label>
           <div class="col-md-3">
             <div class="input-group date">
-              <input id="pub_time" name="item[pub_time]" maxlength="10" value="<~i[pub_time] date>" type="text" class="form-control">
+              <input id="pub_time" name="item[pub_time]" maxlength="10" value="<~i[pub_time] date="m/d/Y">" type="text" class="form-control">
               <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
             </div>
           </div>
         </div>
         </~publish_not_a_home>
 
-        <div class="form-group">
-          <label class="control-label col-md-3" for="status">`Status`</label>
+        <div class="form-group row">
+          <label class="col-form-label col-md-3" for="status">`Status`</label>
           <div class="col-md-4">
                 <~status_a_home if="i[is_home]" inline>
-                    <p class="form-control-static">Home Page is Always Published</p>
+                    <p class="form-control-plaintext">Home Page is Always Published</p>
                 </~status_a_home>
                 <~status_not_a_home unless="i[is_home]" inline>
                 <select id="status" name="item[status]" class="form-control">
@@ -163,6 +165,7 @@
 </form>
 
 <~sub_block if="id" inline>
+ <~sub_block2 unless="i[is_home]" inline>
 <h3>Sub-Pages</h3>
 
 <p>
@@ -174,4 +177,5 @@
   <li><a href="<~../url>/<~id>/edit"><~iname></a></li>
   </~subpages>
 </ul>
+ </~sub_block2>
 </~sub_block>

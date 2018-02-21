@@ -1,9 +1,9 @@
-<div class="form-group <~/common/error if="ERR[ivalue]">">
-  <label class="control-label col-md-3" for="ivalue">`Setting content`</label>
+<div class="form-group row <~/common/error if="ERR[ivalue]">">
+  <label class="col-form-label col-md-3" for="ivalue">`Setting content`</label>
   <div class="col-md-9">
         <div class="input-group date">
           <input id="ivalue" name="item[ivalue]" maxlength="10" value="<~i[ivalue] date>" type="text" class="form-control">
-          <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+          <div class="input-group-append"><button class="btn btn-outline-secondary" type="button"><i class="glyphicon glyphicon-calendar"></i></button></div>
         </div>
   </div>
 </div>

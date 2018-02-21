@@ -2,7 +2,7 @@
 <input type="hidden" name="XSS" value="<~SESSION[XSS]>">
 <input type="hidden" name="_method" value="PUT">
 
-<table class="table table-striped table-condensed table-hover list">
+<table class="table table-striped table-sm table-hover list">
     <thead>
         <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
             <th><input type="checkbox" name="all" value="1" class="on-list-chkall"></th>
@@ -19,12 +19,9 @@
         <tr data-url="<~row_click_url>">
             <td><input class="multicb" type="checkbox" name="cb[<~id>]" value="1"></td>
             <td><~cat[iname]></td>
-            <td>
-                <~uploaded_img if="is_image" inline>
-                  <div class="pull-right" style="max-width:100px"><a href="<~url_direct>" target="_blank"><img src="<~url_s>" class="img-responsive"></a></div>
-                </~uploaded_img>
+            <td <~uploaded_img if="is_image" inline>style="background: transparent url('<~url_s>') no-repeat top right;background-size:contain"</~uploaded_img>>
                 <~iname>
-                <div class="help-block">
+                <div class="form-text text-muted">
                     Original file name: <~fname>
                 </div>
             </td>

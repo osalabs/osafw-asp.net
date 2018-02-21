@@ -1,5 +1,5 @@
 <div class="modal fade" id="modal-att" data-load-url="<~/admin/att/url>/(Select)">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
     </div>
   </div>
@@ -27,7 +27,7 @@ function modal_att_open($att_category, on_select_callback){
         modal_att_open($this.data('att-category'), function (e, id, iname, url, is_image) {
             var $attinfo;
             if ($att_list.length){//multi att
-                $attinfo = $att_list.find('.tpl').clone().removeClass('tpl hide').appendTo($att_list);
+                $attinfo = $att_list.find('.tpl').clone().removeClass('tpl d-none').appendTo($att_list);
                 $attinfo.find(':input:hidden').prop('name', 'att['+id+']');
             }else{
                 $attinfo = $fg.find('.att-info').show();

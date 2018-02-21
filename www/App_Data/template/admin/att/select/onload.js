@@ -17,7 +17,7 @@ $modal.find('select[name="item[att_categories_id]"]').on('change', function(e){
 });
 
 $modal.find('input[type=file]').on('change', function(e){
-    $modal.find('.msg-uploading').removeClass('hide');
+    $modal.find('.msg-uploading').removeClass('d-none');
     $modal.find('form').submit();
 });
 

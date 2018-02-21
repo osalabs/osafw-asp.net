@@ -6,7 +6,7 @@ $(document).on('click', '.on-change-pwd', on_change_pwd);
 if (!id){
     //workaround for Chrome autofill
     setTimeout(function (e) {
-        $('#pwd').removeClass('hide');
+        $('#pwd').removeClass('d-none');
     },200);
 }
 
@@ -22,5 +22,5 @@ function on_send_pwd(e) {
 
 function on_change_pwd (e) {
     $(this).hide();
-    $('#pwd').removeClass('hide').focus();
+    $('#pwd').removeClass('d-none').focus();
 }

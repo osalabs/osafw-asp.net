@@ -1,26 +1,26 @@
 <form action="<~ROOT_URL>/Admin/DB" data-check-changes method="POST" style="margin-bottom:5px">
   <input type="hidden" name="XSS" value="<~SESSION[XSS]>">
 
-  <fieldset style="">
+  <fieldset>
     <legend><~title>: <~GLOBAL[db_name]></legend>
     <~/common/form/msg>
     <div class="form-group">
-      <label class="control-label" for="sql">SQL query</label>
+      <label class="col-form-label" for="sql">SQL query</label>
       <div>
         <textarea type="text" id="sql" name="sql" rows="15" class="form-control"><~sql></textarea>
-        <p class="help-block">run one query at a time</p>
+        <small class="form-text text-muted">run one query at a time</small>
       </div>
     </div>
     <~pwd_check unless="SESSION[admindb_pwd_checked]" inline>
-    <div class="form-group">
-      <label class="control-label col-md-3" for="pwd">Password</label>
+    <div class="form-group row">
+      <label class="col-form-label col-md-3" for="pwd">Password</label>
       <div class="col-md-9">
         <input type="password" id="pwd" name="pwd" class="form-control">
-        <p class="help-block">additional protection password</p>
+        <small class="form-text text-muted">additional protection password</small>
       </div>
     </div>
     </~pwd_check>
-    <div class="form-group" style="margin-bottom:0px">
+    <div>
             <button type="submit" class="btn btn-primary">Run query</button>
             <button class="btn btn-default" onclick="$('#sql').val('');return false">Clear</button>
             <button class="btn btn-default" onclick="$('#sql').val('show tables');">Show All Tables</button>
@@ -28,7 +28,7 @@
   </fieldset>
 </form>
 
-<p class="help-block" style="padding:5px 0 10px 0">
+<p class="text-muted" style="padding:5px 0 10px 0">
     <strong><~sql_ctr></strong> queries in <strong><~sql_time> s</strong>
 </p>
 <~results if="is_results">

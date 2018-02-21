@@ -1,4 +1,4 @@
-<form class="form-horizontal" method="post" action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form method="post" data-check-changes <~das if="id" inline>data-autosaveX</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="d" value="<~d>">
 
@@ -8,14 +8,14 @@
 
     <~fields repeat inline>
         <~group_block if="is_group" inline>
-            <div class="form-group">
+            <div class="form-group row">
                 <div class="col-md-9 col-md-offset-3">
                     <h4><~igroup></h4>
                 </div>
             </div>
         </~group_block>
-        <div class="form-group <~/common/error if="is_error">">
-          <label class="control-label col-md-3" for="<~colname>"><~iname></label>
+        <div class="form-group row <~/common/error if="is_error">">
+          <label class="col-form-label col-md-3" for="<~colname>"><~iname></label>
           <div class="col-md-9">
             <~type_input unless="type">
             <~type_checkbox ifeq="type" value="checkbox">
@@ -25,7 +25,10 @@
         </div>
     </~fields>
 
-    <div class="form-group">
+    <div class="form-group row">
+      <div class="col-md-3 text-right">
+        <p class="form-control-plaintext"><span class="form-saved-status"></span></p>
+      </div>
       <div class="col-md-offset-3 col-md-9">
         <button type="submit" class="btn btn-primary">`Submit`</button>
         <button type="button" class="btn btn-default" onclick="cancel_form(this.form, '<~../url>?d=<~d>')">`Cancel`</button>

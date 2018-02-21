@@ -2,7 +2,7 @@
 
 <div class="clearfix btn-std">
 <~mode_switch if="is_two_modes" inline>
-<div class="btn-group pull-right on-mode-switch" data-toggle="buttons">
+<div class="btn-group btn-group-toggle pull-right on-mode-switch" data-toggle="buttons">
   <label class="btn btn-default <~/common/active unless="f[mode]">">
     <input type="radio" name="f[mode]" value="" id="option1" autocomplete="off" <~/common/checked unless="f[mode]">> <i class="glyphicon glyphicon-th-list"></i> Browse
   </label>
@@ -29,6 +29,6 @@
 
 <~/common/form/msg>
 
-<~list_filter>
+<~/common/list/filter_std>
 <~list_table unless="f[mode]">
 <~list_table_edit if="f[mode]">

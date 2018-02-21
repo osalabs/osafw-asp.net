@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="<~ROOT_URL>/img/error.png">
+<img src="<~GLOBAL[ASSETS_URL]>/img/error.png">
 <h2>`Server Error Occured`</h2>
 As of <~err_time date="yyyy-MM-dd hh:mm:ss"> we know the following:
 <div class="alert alert-danger">
@@ -12,17 +12,17 @@ As of <~err_time date="yyyy-MM-dd hh:mm:ss"> we know the following:
     <h3>Debug info</h3>
     <div class="dropinfo">
         <a href="#" class="on-dropinfo"><strong>Stack trace:</strong> <i class="glyphicon glyphicon-menu-up"></i></a>
-        <pre class="alert alert-info"><~DUMP_STACK nl2br></pre>
+        <pre class="alert alert-info"><~DUMP_STACK></pre>
     </div>
 
     <div class="dropinfo">
         <a href="#" class="on-dropinfo"><strong>Form:</strong> <i class="glyphicon glyphicon-menu-up"></i></a>
-        <pre class="alert alert-info"><~DUMP_FORM nl2br></pre>
+        <pre class="alert alert-info"><~DUMP_FORM></pre>
     </div>
 
     <div class="dropinfo">
         <a href="#" class="on-dropinfo"><strong>Session:</strong> <i class="glyphicon glyphicon-menu-up"></i></a>
-        <pre class="alert alert-info"><~DUMP_SESSION nl2br></pre>
+        <pre class="alert alert-info"><~DUMP_SESSION></pre>
     </div>
 </div>
 </~dump>

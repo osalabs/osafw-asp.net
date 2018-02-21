@@ -1,44 +1,44 @@
-<form class="form-horizontal" method="post" action="<~../url>">
+<form method="post" action="<~../url>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
 
   <fieldset>
     <~/common/form/msg>
 
-    <div class="form-group <~/common/error if="ERR[email]">">
-      <label class="control-label col-md-3 required" for="email">`Email`</label>
+    <div class="form-group row <~/common/error if="ERR[email]">">
+      <label class="col-form-label col-md-3 required" for="email">`Email`</label>
       <div class="col-md-9">
-        <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="text" class="form-control" required>
+        <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="email" class="form-control" required>
         <~err_email_EXISTS ifeq="ERR[email]" value="EXISTS" inline><p class="help-block">`Such email already exists in our database`</p></~err_email_EXISTS>
         <~err_email_WRONG ifeq="ERR[email]" value="WRONG" inline><p class="help-block">`Invalid Email`</p></~err_email_WRONG>
       </div>
     </div>
 
-    <div class="form-group <~/common/error if="ERR[pwd]">">
-      <label class="control-label col-md-3 required" for="pwd">`Password`</label>
+    <div class="form-group row <~/common/error if="ERR[pwd]">">
+      <label class="col-form-label col-md-3 required" for="pwd">`Password`</label>
       <div class="col-md-4">
-        <input id="pwd" name="item[pwd]" maxlength="32" value="" type="password" class="form-control" required>
+        <input id="pwd" name="item[pwd]" maxlength="64" value="" type="password" class="form-control" required>
       </div>
       <div class="col-md-4">
-        <input id="pwd2" name="item[pwd2]" maxlength="32" value="" type="password" class="form-control" required placeholder="confirm password">
+        <input id="pwd2" name="item[pwd2]" maxlength="64" value="" type="password" class="form-control" required placeholder="confirm password">
         <~err_pwd_WRONG ifeq="ERR[pwd]" value="WRONG" inline><p class="help-block">`Passwords not equal`</p></~err_pwd_WRONG>
       </div>
     </div>
 
-    <div class="form-group <~/common/error if="ERR[fname]">">
-      <label class="control-label col-md-3" for="fname">`First name`</label>
+    <div class="form-group row <~/common/error if="ERR[fname]">">
+      <label class="col-form-label col-md-3" for="fname">`First name`</label>
       <div class="col-md-9">
         <input id="fname" name="item[fname]" maxlength="32" value="<~i[fname]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group <~/common/error if="ERR[lname]">">
-      <label class="control-label col-md-3" for="lname">`Last name`</label>
+    <div class="form-group row <~/common/error if="ERR[lname]">">
+      <label class="col-form-label col-md-3" for="lname">`Last name`</label>
       <div class="col-md-9">
         <input id="lname" name="item[lname]" maxlength="32" value="<~i[lname]>" type="text" class="form-control">
       </div>
     </div>
 
-    <div class="form-group">
-      <div class="col-md-offset-3 col-md-9">
+    <div class="form-group row">
+      <div class="col-md-9 ml-md-auto">
         <button type="submit" class="btn btn-primary">`Sign Up`</button>
         <button type="button" class="btn btn-default on-cancel" data-href="<~/login/url>">`Cancel`</button>
       </div>

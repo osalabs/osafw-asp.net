@@ -1,11 +1,14 @@
 <div id="fb-root"></div>
 
-<form class="form-horizontal" method="post" action="<~ROOT_URL>/Login">
+<form class="form-login" method="post" action="<~ROOT_URL>/Login">
   <input type="hidden" name="err_ctr" value="<~GLOBAL[err_ctr]>" >
 
-  <fieldset>
-    <legend><~title></legend>
+  <div class="text-center mb-4">
+    <h1 class="display-4"><~/site_name></h1>
+    <h4><~title></h4>
+  </div>
 
+  <fieldset>
 <~/common/form/msg>
     <~err_REGISTER if="ERR[REGISTER]" inline>
     <div class="alert alert-warning">
@@ -16,32 +19,32 @@
     </div>
     </~err_REGISTER>
 
-    <div class="form-group">
-      <label class="control-label col-md-3" for="login">`Your Email`</label>
-      <div class="col-md-9">
-        <input id="login" name="item[login]" maxlength="128" value="<~i[login]>" type="text" class="form-control">
+    <div class="form-label-group">
+      <input type="email" id="login" class="form-control" placeholder="`Your Email`" autofocus name="item[login]" value="<~i[login]>">
+      <label for="login">`Your Email`</label>
+    </div>
+
+    <div class="form-label-group">
+      <input type="text" id="pwd" class="form-control" placeholder="Password" style="display:none" name="item[pwd]" maxlength="64" value="">
+      <input type="password" id="pwdh" class="form-control" placeholder="Password" name="item[pwdh]" maxlength="64" value="">
+      <label for="pwdh">Password</label>
+    </div>
+
+    <div class="checkbox mb-3">
+      <div class="custom-control custom-checkbox custom-control-inline">
+        <input class="custom-control-input on-pwd-hideshow" type="checkbox" id="chpwd" name="item[chpwd]" value="1" <~/common/checked if="i[chpwd]">>
+        <label class="custom-control-label" for="chpwd">`show characters`</label>
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="control-label col-md-3" for="input01">`Password`</label>
-      <div class="col-md-9">
-        <input id="pwd" type="text" name="item[pwd]" maxlength="32" value="" class="form-control" style="display:none">
-        <input id="pwdh" type="password" name="item[pwdh]" maxlength="32" value="" class="form-control">
+    <button class="btn btn-lg btn-primary btn-block" type="submit">`Log Me In`</button>
 
-        <label class="checkbox-inline"><input type="checkbox" id="chpwd" name="item[chpwd]" value="1" onclick="pwd_hideshow()" <~/common/checked if="i[chpwd]">>`show characters`</label>
-      </div>
-    </div>
-
-    <div class="form-group">
-        <div class="col-md-offset-3 col-md-9">
-            <button type="submit" class="btn btn-primary">`Log Me In`</button>
-            <a class="btn btn-link" href="<~/password/url>">`Forgotten Password`</a>
-            <~btn_signup if="GLOBAL[IS_SIGNUP]" inline>
-              <a class="btn btn-link" href="<~/signup/url>">`Sign Up`</a>
-            </~btn_signup>
-        </div>
-    </div>
+    <p class="text-center mt-3">
+      <a class="btn btn-link" href="<~/password/url>">`Forgotten Password`</a>
+      <~btn_signup if="GLOBAL[IS_SIGNUP]" inline>
+        <a class="btn btn-link" href="<~/signup/url>">`Sign Up`</a>
+      </~btn_signup>
+    </p>
 
   </fieldset>
 </form>

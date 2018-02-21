@@ -1,62 +1,65 @@
-body{
-    padding-top: 0px;
-    padding-bottom: 0px;
-
+.navbar {
+  margin-bottom: 20px;
 }
 
-.main-container {
-    background-color: #fff;
-/*
-    padding-top: 20px;
-    padding-bottom: 20px;
-*/
+/*default button appearance*/
+.btn-default {
+  color: #111111;
+  background-color: #F8F9FA;
+  border-color: #E2E6EA;
 }
 
-.main-container-fluid {
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 15px;
-    padding-right: 15px;
-    width: auto;
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active,
+.btn-default.active,
+.open .dropdown-toggle.btn-default {
+  color: #111111;
+  background-color: #E2E6EA;
+  border-color: #E2E6EA;
 }
 
-.site-navbar {
-/*    margin-bottom: 0px; */
-}
-.navbar-brand > img {
-    display: inline-block;
-}
-
-.site-footer {
-    margin-top:20px;
+.btn-default:active,
+.btn-default.active,
+.open .dropdown-toggle.btn-default {
+  background-image: none;
 }
 
-@media print {
-     .hide-print {
-        display: none;
-    }
-
-    a:link:after,
-    a:visited:after {
-        content: "";
-    }
+.btn-default.disabled,
+.btn-default[disabled],
+fieldset[disabled] .btn-default,
+.btn-default.disabled:hover,
+.btn-default[disabled]:hover,
+fieldset[disabled] .btn-default:hover,
+.btn-default.disabled:focus,
+.btn-default[disabled]:focus,
+fieldset[disabled] .btn-default:focus,
+.btn-default.disabled:active,
+.btn-default[disabled]:active,
+fieldset[disabled] .btn-default:active,
+.btn-default.disabled.active,
+.btn-default[disabled].active,
+fieldset[disabled] .btn-default.active {
+  background-color: #F8F9FA;
+  border-color: #E2E6EA;
 }
+
+.btn-default .badge {
+  color: #F8F9FA;
+  background-color: #111111;
+}
+
 /************ fw
 */
-
-table.list {background-color: #fff}
-table.list tr.list-header th {background-color:#f5f5f5;}
-tr.even td {background-color:#eeeeee}
-tr.odd td {background-color:#ffffff}
-tr.hover td {background-color:#CCCCFF !important; cursor: pointer;}
 table.list .sortable {
-    color: #0088cc;
+    color: #007bff;
     text-decoration: underline;
     cursor: pointer;
 }
 .sortable.active-sort{
     background-color: #ffffcc !important;
 }
+
 .btn-fileinput {
     overflow: hidden;
     position: relative;
@@ -86,19 +89,31 @@ table.list .sortable {
     width: 100px;
     display: inline;
 }
-/*
-.datepicker .form-control {
-    width: 100px;
-}
-*/
 
 .pagination .active a {font-weight:bold}
+
+.pagination select {
+    display: inline-block;
+    width: auto;
+    vertical-align: top;
+}
 
 form .required:before {
     content: "*";
     color:#ff0000;
     font-family: Menlo, Monaco, "Courier New", monospace;
 }
+
+form .has-danger label {
+    color: #dc3545;
+}
+    form .has-danger input,
+    form .has-danger select {
+        border-color: #dc3545;
+    }
+    form .has-danger .invalid-feedback {
+        display: block;
+    }
 
 .a_visited a:visited {
     color: #800080;
@@ -128,12 +143,14 @@ form .required:before {
 }
 
 .twitter-typeahead {
- width:100%
+    width:100%
 }
-.pagination select {
-    display: inline-block;
-    width: auto;
-    vertical-align: top;
+.twitter-typeahead .tt-hint {
+    top: -3px !important;
+}
+
+.filter_option label {
+    text-align: right;
 }
 
 .sidebar-nav {
@@ -147,6 +164,11 @@ form .required:before {
     .sidebar-nav .nav > li.active > a {
         background-color:#eee;
     }
+    .sidebar-nav .nav > .nav-header {
+        padding: 5px 10px;
+        color: #868e96;
+    }
+
 
 .btn-std {
     margin-bottom: 20px;
@@ -249,5 +271,5 @@ div.jGrowl div.jGrowl-notification
 
 /*** end of fw ***/
 
-/*** site specific ***/
+/*** add site specific css below ***/
 
