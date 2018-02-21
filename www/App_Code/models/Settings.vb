@@ -1,7 +1,7 @@
 ﻿' Settings model class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2015 Oleg Savchuk www.osalabs.com
+' (c) 2009-2018 Oleg Savchuk www.osalabs.com
 
 Imports Microsoft.VisualBasic
 
@@ -14,13 +14,13 @@ Public Class Settings
     End Sub
 
     ''' <summary>
-    ''' Return site setting by icode, static function for easier use: Settings.read('icode')
+    ''' Return site setting by icode, simplified alias of getValue, use: fw.model(Of Settings).read('icode')
     ''' </summary>
     ''' <param name="icode"></param>
     ''' <returns></returns>
     ''' <remarks></remarks>
-    Public Shared Function read(icode As String) As String
-        Return FW.Current.model(Of Settings).getValue(icode)
+    Public Function read(icode As String) As String
+        Return Me.getValue(icode)
     End Function
     ''' <summary>
     ''' Read integer value from site settings
@@ -28,7 +28,7 @@ Public Class Settings
     ''' <param name="icode"></param>
     ''' <returns></returns>
     ''' <remarks></remarks>
-    Public Shared Function readi(icode As String) As Integer
+    Public Function readi(icode As String) As Integer
         Return Utils.f2int(read(icode))
     End Function
     ''' <summary>
@@ -37,7 +37,7 @@ Public Class Settings
     ''' <param name="icode"></param>
     ''' <returns></returns>
     ''' <remarks></remarks>
-    Public Shared Function readd(icode As String) As Object
+    Public Function readd(icode As String) As Object
         Return Utils.f2date(read(icode))
     End Function
 
@@ -46,8 +46,8 @@ Public Class Settings
     ''' </summary>
     ''' <param name="icode"></param>
     ''' <remarks></remarks>
-    Public Shared Sub write(icode As String, value As String)
-        FW.Current.model(Of Settings).setValue(icode, value)
+    Public Sub write(icode As String, value As String)
+        Me.setValue(icode, value)
     End Sub
 
 
