@@ -63,8 +63,8 @@ Public Class AdminDemosController
 
         'read dropdowns lists from db
         Dim item As Hashtable = ps("i")
-        ps("select_options_parent_id") = model.getSelectOptionsParent(Utils.f2int(item("parent_id")))
-        ps("select_options_demo_dicts_id") = model_related.getSelectOptions(item("demo_dicts_id"))
+        ps("select_options_parent_id") = model.listSelectOptionsParent()
+        ps("select_options_demo_dicts_id") = model_related.listSelectOptions()
         ps("dict_link_auto_id_iname") = model_related.iname(item("dict_link_auto_id"))
         ps("multi_datarow") = model_related.getMultiList(item("dict_link_multi"))
         FormUtils.comboForDate(item("fdate_combo"), ps, "fdate_combo")

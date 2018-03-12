@@ -13,7 +13,7 @@
     <div class="col-sm-6">
       <select name="f[events_id]" class="form-control">
         <option value=""> - all - </option>
-        <~filter_select_events noescape>
+        <~filter_select_events select="f[events_id]">
       </select>
     </div>
   </div>
@@ -23,7 +23,7 @@
     <div class="col-sm-6">
       <select name="f[users_id]" class="form-control">
         <option value=""> - all - </option>
-        <~filter_select_users noescape>
+        <~filter_select_users select="f[users_id]">
       </select>
     </div>
   </div>

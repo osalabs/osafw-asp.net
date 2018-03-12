@@ -16,9 +16,8 @@ Public Class Demos
         Return isExistsByField(uniq_key, not_id, "email")
     End Function
 
-    Public Overridable Function getSelectOptionsParent(sel_id As String) As String
-        Dim rows = db.array("select id, iname from " & Me.table_name & " where parent_id=0 and status<>127 order by iname")
-        Return FormUtils.selectOptions(rows, sel_id)
+    Public Overridable Function listSelectOptionsParent() As ArrayList
+        Return db.array("select id, iname from " & Me.table_name & " where parent_id=0 and status<>127 order by iname")
     End Function
 
 End Class

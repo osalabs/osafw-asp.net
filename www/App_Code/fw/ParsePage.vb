@@ -65,10 +65,12 @@
 'session - this tag is a $_SESSION var, not in $hf hash
 ' session[var] - also possible
 'TODO parent - this tag is a $parent_hf var, not in current $hf hash
-'select="var" - this tag tell parser to load file and use it as value|display for <select> tag, example:
+'select="var" - this tag tell parser to either load file with tag name and use it as value|display for <select> tag
+'               or if variable with tag name exists - use it as arraylist of hashtables with id/iname keys
+'     , example:
 '     <select name="item[fcombo]">
 '     <option value=""> - select -
-'     <~./fcombo.sel select="fcombo">
+'     <~./fcombo.sel select="fcombo">  or <~fcombo_options select="fcombo">
 '     </select>
 'radio="var" name="YYY" [delim="inline"]- this tag tell parser to load file and use it as value|display for <input type=radio> tags, Bootsrtrap 3 style, example:
 '     <~./fradio.sel radio="fradio" name="item[fradio]" delim="inline">
@@ -216,6 +218,13 @@ Public Class ParsePage
                             Dim value As String
                             If attrs.ContainsKey("repeat") Then
                                 value = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl)
+                            ElseIf attrs.ContainsKey("select") Then
+                                ' this is special case for '<select>' HTML tag when options passed as ArrayList
+                                value = _attr_select(tag, tpl_name, hf, attrs)
+                            ElseIf attrs.ContainsKey("selvalue") Then
+                                '    # this is special case for '<select>' HTML tag
+                                value = _attr_select_name(tag, tpl_name, hf, attrs)
+                                If Not attrs.ContainsKey("noescape") Then value = Utils.htmlescape(value)
                             ElseIf attrs.ContainsKey("sub") Then
                                 If Not TypeOf (tag_value) Is Hashtable Then
                                     fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag)
@@ -235,11 +244,11 @@ Public Class ParsePage
                             tag_replace(page, tag_full, "", attrs)
                         ElseIf attrs.ContainsKey("select") Then
                             '    # this is special case for '<select>' HTML tag
-                            v = _attr_select(tag_tplpath(tag, tpl_name), hf, attrs)
+                            v = _attr_select(tag, tpl_name, hf, attrs)
                             tag_replace(page, tag_full, v, attrs)
                         ElseIf attrs.ContainsKey("selvalue") Then
                             '    # this is special case for '<select>' HTML tag
-                            v = _attr_select_name(tag_tplpath(tag, tpl_name), hfvalue(attrs("selvalue"), hf))
+                            v = _attr_select_name(tag, tpl_name, hf, attrs)
                             If Not attrs.ContainsKey("noescape") Then v = Utils.htmlescape(v)
                             tag_replace(page, tag_full, v, attrs)
                         ElseIf attrs.ContainsKey("radio") Then
@@ -773,7 +782,7 @@ Public Class ParsePage
     End Sub
 
     'attrs("select") can contain strings with separator "," for multiple select
-    Private Function _attr_select(ByVal tpl_path As String, ByRef hf As Hashtable, ByRef attrs As Hashtable) As String
+    Private Function _attr_select(tag As String, tpl_name As String, ByRef hf As Hashtable, ByRef attrs As Hashtable) As String
         Dim result As New StringBuilder
 
         Dim sel_value As String = hfvalue(attrs("select"), hf)
@@ -785,32 +794,63 @@ Public Class ParsePage
             asel(i) = Trim(asel(i))
         Next
 
-        If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
+        If hf.ContainsKey(tag) Then
+            ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
+            ' "id" key is optional, if not present - iname will be used for values too
+            If Not (TypeOf hf(tag) Is ICollection) Then
+                fw.logger(LogLevel.DEBUG, "ParsePage - not an ArrayList or Hashtables passed for a select tag=", tag)
+                Return ""
+            End If
 
-        Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
-        Dim line As String
-        Dim selected As String = ""
-        For Each line In lines
-            If line.Length < 2 Then Continue For
-            '            line.chomp()
-            Dim arr() As String = Split(line, "|", 2)
-            Dim value As String = Trim(arr(0))
-            Dim desc As String = arr(1)
-
-            If desc.Length < 1 Then Continue For
-            _replace_commons(desc)
-            If Not attrs.ContainsKey("noescape") Then
+            Dim value As String, desc As String
+            For Each item As Hashtable In hf(tag)
+                desc = Utils.htmlescape(item("iname"))
+                If item.ContainsKey("id") Then
+                    value = Trim(item("id"))
+                Else
+                    value = Trim(item("iname"))
+                End If
                 value = Utils.htmlescape(value)
-                desc = Utils.htmlescape(desc)
-            End If
+                _replace_commons(desc)
 
-            If Array.IndexOf(asel, value) <> -1 Then
-                selected = " selected"
-            Else
-                selected = ""
-            End If
-            result.Append("<option value=""").Append(value).Append("""").Append(selected).Append(">").Append(desc).Append("</option>")
-        Next
+                result.Append("<option value=""").Append(value).Append("""")
+                If Array.IndexOf(asel, value) <> -1 Then
+                    result.Append(" selected ")
+                End If
+                result.Append(">").Append(desc).Append("</option>" & vbCrLf)
+            Next
+
+        Else
+            'just read from the plain text file
+            Dim tpl_path = tag_tplpath(tag, tpl_name)
+            If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
+
+            Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+            Dim line As String
+            Dim selected As String = ""
+            For Each line In lines
+                If line.Length < 2 Then Continue For
+                '            line.chomp()
+                Dim arr() As String = Split(line, "|", 2)
+                Dim value As String = Trim(arr(0))
+                Dim desc As String = arr(1)
+
+                If desc.Length < 1 Then Continue For
+                _replace_commons(desc)
+                If Not attrs.ContainsKey("noescape") Then
+                    value = Utils.htmlescape(value)
+                    desc = Utils.htmlescape(desc)
+                End If
+
+                If Array.IndexOf(asel, value) <> -1 Then
+                    selected = " selected"
+                Else
+                    selected = ""
+                End If
+                result.Append("<option value=""").Append(value).Append("""").Append(selected).Append(">").Append(desc).Append("</option>")
+            Next
+        End If
+
         Return result.ToString
     End Function
 
@@ -865,27 +905,56 @@ Public Class ParsePage
         Next
         Return result.ToString
     End Function
-    Private Function _attr_select_name(ByVal tpl_path As String, ByVal name As String) As String
+    Private Function _attr_select_name(tag As String, tpl_name As String, ByRef hf As Hashtable, ByRef attrs As Hashtable) As String
         Dim result As String = ""
-        If name Is Nothing Then name = ""
+        Dim sel_value As String = hfvalue(attrs("selvalue"), hf)
+        If sel_value Is Nothing Then sel_value = ""
 
-        If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
-        Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+        If hf.ContainsKey(tag) Then
+            ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
+            ' "id" key is optional, if not present - iname will be used for values too
+            If Not (TypeOf hf(tag) Is ICollection) Then
+                fw.logger(LogLevel.DEBUG, "ParsePage - not an ArrayList or Hashtables passed for a selvalue tag=", tag)
+                Return ""
+            End If
 
-        Dim line As String
-        For Each line In lines
-            If line.Length < 2 Then Continue For
-            '            line.chomp()
-            Dim arr() As String = Split(line, "|", 2)
-            Dim value As String = arr(0)
-            Dim desc As String = arr(1)
+            Dim value As String, desc As String
+            For Each item As Hashtable In hf(tag)
+                If item.ContainsKey("id") Then
+                    value = Trim(item("id"))
+                Else
+                    value = Trim(item("iname"))
+                End If
+                desc = item("iname")
 
-            If desc.Length < 1 Or value <> name Then Continue For
-            _replace_commons(desc)
+                If desc.Length < 1 Or value <> sel_value Then Continue For
+                _replace_commons(desc)
 
-            result = desc
-            Exit For
-        Next
+                result = desc
+                Exit For
+            Next
+
+        Else
+
+            Dim tpl_path = tag_tplpath(tag, tpl_name)
+            If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
+            Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
+
+            Dim line As String
+            For Each line In lines
+                If line.Length < 2 Then Continue For
+                '            line.chomp()
+                Dim arr() As String = Split(line, "|", 2)
+                Dim value As String = arr(0)
+                Dim desc As String = arr(1)
+
+                If desc.Length < 1 Or value <> sel_value Then Continue For
+                _replace_commons(desc)
+
+                result = desc
+                Exit For
+            Next
+        End If
 
         Return result
     End Function

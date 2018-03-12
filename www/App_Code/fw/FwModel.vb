@@ -46,6 +46,12 @@ Public MustInherit Class FwModel
         Return db.array(sql)
     End Function
 
+    'override if id/iname differs in table 
+    Public Overridable Function listSelectOptions() As ArrayList
+        Dim sql As String = "select id, iname from " & table_name & " where status=0 order by iname"
+        Return db.array(sql)
+    End Function
+
     'just return first row by iname field (you may want to make it unique)
     Public Overridable Function oneByIname(iname As String) As Hashtable
         Dim where As Hashtable = New Hashtable
@@ -159,7 +165,7 @@ Public MustInherit Class FwModel
 
 
     Public Overridable Function getSelectOptions(sel_id As String) As String
-        Return FormUtils.selectOptions(Me.list(), sel_id)
+        Return FormUtils.selectOptions(Me.listSelectOptions(), sel_id)
     End Function
 
     Public Overridable Function getAutocompleteList(q As String) As ArrayList

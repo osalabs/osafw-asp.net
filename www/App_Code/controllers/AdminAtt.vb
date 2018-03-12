@@ -76,7 +76,7 @@ Public Class AdminAttController
         End If
         hf("f") = f
 
-        hf("select_att_categories_ids") = fw.model(Of AttCategories).getSelectOptions(f("att_categories_id"))
+        hf("select_att_categories_ids") = fw.model(Of AttCategories).listSelectOptions()
 
         Return hf
     End Function
@@ -105,7 +105,7 @@ Public Class AdminAttController
         hf("url") = model.getUrl(id)
         If item("is_image") = 1 Then hf("url_m") = model.getUrl(id, "m")
 
-        hf("select_options_att_categories_id") = fw.model(Of AttCategories).getSelectOptions(item("att_categories_id"))
+        hf("select_options_att_categories_id") = fw.model(Of AttCategories).listSelectOptions()
 
         hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
         hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
@@ -288,7 +288,8 @@ Public Class AdminAttController
             row("direct_url") = model.getUrlDirect(row)
         Next
         hf("att_dr") = rows
-        hf("select_att_categories_id") = fw.model(Of AttCategories).getSelectOptions(att_categories_id)
+        hf("select_att_categories_id") = fw.model(Of AttCategories).listSelectOptions()
+        hf("att_categories_id") = att_categories_id
 
         Return hf
     End Function

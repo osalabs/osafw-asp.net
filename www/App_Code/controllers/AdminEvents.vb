@@ -81,8 +81,8 @@ Public Class AdminEventsController
             Next
         End If
         hf("f") = f
-        hf("filter_select_events") = model.getSelectOptions(f("events_id"))
-        hf("filter_select_users") = model_users.getSelectOptions(f("users_id"))
+        hf("filter_select_events") = model.listSelectOptions()
+        hf("filter_select_users") = model_users.listSelectOptions()
 
         Return hf
     End Function
