@@ -28,6 +28,8 @@ Public Class TestController
         hf("booltrue") = True
         hf("boolfalse") = False
 
+        hf("now") = Now()
+
 
         Dim al As New ArrayList
         For i As Integer = 1 To 3

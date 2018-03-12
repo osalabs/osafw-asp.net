@@ -83,7 +83,11 @@
 '           english string === lang string
 'support modifiers:
 ' htmlescape
-' date          - sample "d M yyyy HH:mm", see https://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.80).aspx
+' date          - format as datetime, sample "d M yyyy HH:mm", see https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
+'       <~var date>         output "m/d/yyyy" - date only (TODO - should be formatted per user settings actually)
+'       <~var date="short"> output "m/d/yyyy hh:mm" - date and time short (to mins)
+'       <~var date="long">  output "m/d/yyyy hh:mm:ss" - date and time long
+'       <~var date="sql">   output "yyyy-mm-dd hh:mm:ss" - sql date and time
 ' url           - add http:// to begin of string if absent
 ' number_format - FormatNumber(value, 2) => 12345.12
 ' truncate      - truncate with options <~tag truncate="80" trchar="..." trword="1" trend="1">
@@ -117,7 +121,10 @@ Public Class ParsePage
     Private Shared FILE_CACHE As New Hashtable
     Private Shared IFOPERS() As String = {"if", "unless", "ifne", "ifeq", "ifgt", "iflt", "ifge", "ifle"}
 
-    Private Shared DEF_DATE_FORMAT As String = "M/d/yyyy" ' for US
+    Private Shared DATE_FORMAT_DEF As String = "M/d/yyyy" ' for US, TODO make based on user settigns (with fallback to server's settings)
+    Private Shared DATE_FORMAT_SHORT As String = "M/d/yyyy HH:mm"
+    Private Shared DATE_FORMAT_LONG As String = "M/d/yyyy HH:mm:ss"
+    Private Shared DATE_FORMAT_SQL As String = "yyyy-MM-dd HH:mm:ss"
     '"d M yyyy HH:mm"
 
     'for dynamic load of CommonMark markdown converter
@@ -254,9 +261,9 @@ Public Class ParsePage
                             tag_replace(page, tag_full, v, attrs)
                         End If
 
-                        Else
-                            tag_replace(page, tag_full, "", attrs)
-                        End If
+                    Else
+                        tag_replace(page, tag_full, "", attrs)
+                    End If
 
                 Next tag_match
             End If
@@ -293,12 +300,12 @@ Public Class ParsePage
         'fw.logger("try load file " & filename)
         'get from fs(if not in cache)
         If File.Exists(filename) Then
-            file_data = fw.get_file_content(filename)
+            file_data = FW.get_file_content(filename)
             If is_check_file_modifications AndAlso modtime = "" Then modtime = File.GetLastWriteTime(filename)
         End If
 
         'get from fs(if not in cache)
-        file_data = fw.get_file_content(filename)
+        file_data = FW.get_file_content(filename)
         Dim cache As Hashtable = New Hashtable
         cache("data") = file_data
         cache("modtime") = modtime
@@ -659,12 +666,20 @@ Public Class ParsePage
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("date") Then
                     Dim dformat As String = hattrs("date")
-                    'If dformat = "" Then dformat = "d M yyyy HH:mm"
-                    If dformat = "" Then dformat = DEF_DATE_FORMAT
-                        Dim dt As DateTime
-                        If DateTime.TryParse(value, dt) Then
-                            value = dt.ToString(dformat, System.Globalization.DateTimeFormatInfo.InvariantInfo)
-                        End If
+                    Select Case dformat
+                        Case ""
+                            dformat = DATE_FORMAT_DEF
+                        Case "short"
+                            dformat = DATE_FORMAT_SHORT
+                        Case "long"
+                            dformat = DATE_FORMAT_LONG
+                        Case "sql"
+                            dformat = DATE_FORMAT_SQL
+                    End Select
+                    Dim dt As DateTime
+                    If DateTime.TryParse(value, dt) Then
+                        value = dt.ToString(dformat, System.Globalization.DateTimeFormatInfo.InvariantInfo)
+                    End If
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("trim") Then
