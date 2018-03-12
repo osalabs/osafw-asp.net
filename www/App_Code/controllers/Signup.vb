@@ -15,6 +15,8 @@ Public Class SignupController
         model.init(fw)
         required_fields = "email pwd"
         base_url = "/Signup"
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     Public Sub IndexAction()
@@ -22,7 +24,7 @@ Public Class SignupController
     End Sub
 
     Public Function ShowFormAction() As Hashtable
-        Dim hf As Hashtable = New Hashtable
+        Dim ps As Hashtable = New Hashtable
         Dim item As New Hashtable
 
         If fw.cur_method = "GET" Then 'read from db
@@ -34,9 +36,9 @@ Public Class SignupController
             'here make additional changes if necessary
         End If
 
-        hf("i") = item
-
-        Return hf
+        ps("i") = item
+        ps("hide_sidebar") = True
+        Return ps
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")

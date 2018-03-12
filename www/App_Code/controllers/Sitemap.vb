@@ -16,6 +16,8 @@ Public Class SitemapController
         model = model0
 
         base_url = "/sitemap"
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     Public Function IndexAction() As Hashtable

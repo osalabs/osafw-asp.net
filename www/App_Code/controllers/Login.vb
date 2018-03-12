@@ -10,6 +10,8 @@ Public Class LoginController
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
         model.init(fw)
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     Public Function IndexAction() As Hashtable

@@ -13,6 +13,8 @@ Public Class ContactController
         MyBase.init(fw)
 
         base_url = "/Contact"
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     Public Function IndexAction() As Hashtable
@@ -20,6 +22,7 @@ Public Class ContactController
 
         Dim page As Hashtable = fw.model(Of Spages).oneByFullUrl(base_url)
         ps("page") = page
+        ps("hide_sidebar") = True
         Return ps
     End Function
 
@@ -28,6 +31,7 @@ Public Class ContactController
 
         Dim page As Hashtable = fw.model(Of Spages).oneByFullUrl(base_url & "/Sent")
         ps("page") = page
+        ps("hide_sidebar") = True
         Return ps
     End Function
 

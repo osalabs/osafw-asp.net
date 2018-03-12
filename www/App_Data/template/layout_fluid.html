@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <~/layout/sys_head>
+  </head>
+  <body class="fwlayout-fluid <~body_class>">
+    <div class="container-fluid main-container">
+        <~pre_main>
+        <div class="row">
+          <nav class="col-md-2 d-none d-md-block sidebar d-print-none">
+            <div class="sidebar-nav">
+              <~/layout/sidebar unless="hide_std_sidebar">
+              <~sidebar>
+            </div>
+            <footer class="site-footer">
+              <~/layout/footer>
+            </footer>
+          </nav>
+          <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4 main">
+            <~main>
+          </main>
+        </div>
+    </div><!--/.fluid-container-->
+
+    <~/layout/sys_footer>
+  </body>
+</html>

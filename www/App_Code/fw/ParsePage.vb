@@ -832,22 +832,19 @@ Public Class ParsePage
                 desc = Utils.htmlescape(desc)
             End If
 
-            'FW.logger("BBB" + name)
-            Dim name_id As String = name + i.ToString
-            'name_id = Regex.Replace(name_id, "[\[\]]", "_")
-            name_id = Replace(name_id, "[", "_")
-            name_id = Replace(name_id, "]", "_")
-
+            Dim name_id As String = name & "$" & i.ToString
             str_checked = ""
             If value = sel_value Then str_checked = " checked='checked' "
 
-            'Bootstrap 3 style
-            If delim = "inline" Then
-                result.Append("<label class='radio-inline'><input type='radio' name=""").Append(name).Append(""" id=""").Append(name_id).Append(""" value=""").Append(value).Append("""").Append(str_checked).Append(">").Append(desc).Append("</label>")
-            Else
-                result.Append("<div class='radio'><label><input type='radio' name=""").Append(name).Append(""" id=""").Append(name_id).Append(""" value=""").Append(value).Append("""").Append(str_checked).Append(">").Append(desc).Append("</label></div>")
-            End If
+            ''Bootstrap 3 style
+            'If delim = "inline" Then
+            '    result.Append("<label class='radio-inline'><input type='radio' name=""").Append(name).Append(""" id=""").Append(name_id).Append(""" value=""").Append(value).Append("""").Append(str_checked).Append(">").Append(desc).Append("</label>")
+            'Else
+            '    result.Append("<div class='radio'><label><input type='radio' name=""").Append(name).Append(""" id=""").Append(name_id).Append(""" value=""").Append(value).Append("""").Append(str_checked).Append(">").Append(desc).Append("</label></div>")
+            'End If
 
+            'Bootstrap 4 style
+            result.Append("<div class='custom-control custom-radio ").Append(delim).Append("'><input class='custom-control-input' type='radio' name=""").Append(name).Append(""" id=""").Append(name_id).Append(""" value=""").Append(value).Append("""").Append(str_checked).Append("><label class='custom-control-label' for='").Append(name_id).Append("'>").Append(desc).Append("</label></div>")
 
             i += 1
         Next

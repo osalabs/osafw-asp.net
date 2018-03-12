@@ -1,0 +1,28 @@
+<div class="list_filter hidden-print">
+<form method="GET" id="FFilter" name="FFilter" class="form-horizontal">
+  <input type="hidden" name="dofilter" value="1">
+  <input type="hidden" name="f[pagesize]" value="<~f[pagesize]>">
+
+    <div class="filter_option form-group row">
+        <label class="col-form-label col-sm-3" for="from_date">`From/To Dates`</label>
+        <div class="col-sm-2">
+            <div class="input-group date">
+              <input id="from_date" name="f[from_date]" maxlength="10" value="<~f[from_date] date>" type="text" class="form-control" placeholder="from">
+              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="input-group date">
+              <input id="to_date" name="f[to_date]" maxlength="10" value="<~f[to_date] date>" type="text" class="form-control" placeholder="to">
+              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <button class="btn btn-primary"><i class="glyphicon glyphicon-refresh"></i> Apply/Reload</button>
+            <button type="button" class="btn btn-default on-print"><i class="glyphicon glyphicon-print"></i> Print</button>
+        </div>
+    </div>
+
+    <~/admin/reports/common/filter_format>
+</form>
+</div>

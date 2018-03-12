@@ -9,6 +9,8 @@ Public Class HomeController
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     'CACHED as home_page
@@ -28,9 +30,9 @@ Public Class HomeController
     End Function
 
     Public Sub ShowAction(Optional ByVal id As String = "")
-        Dim hf As Hashtable = New Hashtable
-
-        fw.parser("/home/" & Utils.routeFixChars(LCase(id)), fw.config("PAGE_LAYOUT_USER"), hf)
+        Dim ps As Hashtable = New Hashtable
+        ps("hide_sidebar") = True 'TODO control via pages
+        fw.parser("/home/" & Utils.routeFixChars(LCase(id)), fw.config("PAGE_LAYOUT_PUBLIC"), ps)
     End Sub
 
     'called if fw.dispatch can't find controller

@@ -1,0 +1,1 @@
+<~/admin/reports/common/body_onload.js>

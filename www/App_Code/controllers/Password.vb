@@ -11,6 +11,8 @@ Public Class PasswordController
         MyBase.init(fw)
         model.init(fw)
         base_url = "/Password" 'base url for the controller
+        'override layout
+        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
     End Sub
 
 
