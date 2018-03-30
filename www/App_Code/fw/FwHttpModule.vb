@@ -12,8 +12,49 @@ Public Class FwHttpModule
     Implements IHttpModule
 
     Public Sub Init(application As HttpApplication) Implements IHttpModule.Init
+        AddHandler application.BeginRequest, AddressOf Application_BeginRequest
         AddHandler application.PostAcquireRequestState, AddressOf Application_PostAcquireRequestState
         AddHandler application.PostResolveRequestCache, AddressOf Application_PostResolveRequestCache
+    End Sub
+
+    'for OPTIONS preflight request
+    'also requires in web.config: runAllManagedModulesForAllRequests="true"
+    Private Sub Application_BeginRequest(source As Object, e As EventArgs)
+        Dim app As HttpApplication = DirectCast(source, HttpApplication)
+        Dim context As HttpContext = app.Context
+        Dim response = context.Response
+
+        'preflight request
+        If context.Request.HttpMethod.ToUpper() = "OPTIONS" Then
+            ' clear any response
+            response.ClearHeaders()
+            response.ClearContent()
+            response.Clear()
+
+            ' Set allowed method And headers
+            response.AddHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+            'allow any custom headers
+            Dim requestHeaders = context.Request.Headers("Access-Control-Request-Headers")
+            If Not IsNothing(requestHeaders) Then response.AppendHeader("Access-Control-Allow-Headers", requestHeaders)
+            'response.AppendHeader("Access-Control-Allow-Headers", "*")
+            'response.AppendHeader("Access-Control-Expose-Headers", "*")
+
+            'allow credentials
+            response.AddHeader("Access-Control-Allow-Credentials", "true")
+
+            ' Set allowed origin
+            Dim origin = context.Request.Headers("Origin")
+            If Not IsNothing(origin) Then
+                response.AppendHeader("Access-Control-Allow-Origin", origin)
+            Else
+                response.AppendHeader("Access-Control-Allow-Origin", "*")
+            End If
+
+            ' end request
+            context.ApplicationInstance.CompleteRequest()
+        End If
+
     End Sub
 
     Private Sub Application_PostResolveRequestCache(source As Object, e As EventArgs)

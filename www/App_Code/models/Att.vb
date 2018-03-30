@@ -177,7 +177,7 @@ Public Class Att
             Else
                 fw.logger(LogLevel.INFO, "Transmit(", disposition, ") filepath [", filepath, "]")
                 Dim filename As String = Replace(item("fname"), """", "'")
-                Dim ext As String = UploadUtils.getUploadFileExt(filename)
+                Dim ext As String = UploadUtils.getUploadFileExt(item("ext"))
 
                 fw.resp.AppendHeader("Content-type", getMimeForExt(ext))
                 fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
@@ -221,4 +221,20 @@ Public Class Att
     Public Function getAllLinkedImages(table_name As String, id As Integer) As ArrayList
         Return getAllLinked(table_name, id, 1)
     End Function
+
+    'return all att files linked via att.table_name and att.item_id
+    ' is_image = -1 (all - files and images), 0 (files only), 1 (images only)
+    Public Function getAllByTableName(table_name As String, item_id As Integer, Optional is_image As Integer = -1) As ArrayList
+        Dim where As String = ""
+        If is_image > -1 Then
+            where &= " and a.is_image=" & is_image
+        End If
+        Return db.array("select a.* " &
+                    " from att a " &
+                    " where a.table_name=" & db.q(table_name) &
+                    " and a.item_id=" & db.qi(item_id) &
+                    where &
+                    " order by a.id ")
+    End Function
+
 End Class

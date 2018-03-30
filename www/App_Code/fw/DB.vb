@@ -229,6 +229,11 @@ Public Class DB
         Return Utils.f2int(str)
     End Function
 
+    'simple quote as Float Value
+    Public Function qf(ByVal str As String) As Integer
+        Return Utils.f2float(str)
+    End Function
+
     'simple quote as Date Value
     Public Function qd(ByVal str As String) As String
         Dim result As String = ""

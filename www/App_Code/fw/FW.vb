@@ -277,7 +277,7 @@ Public Class FW
                     End If
                 ElseIf cur_method = "POST" Then
                     If cur_id > "" Then
-                        If req.Form.Count > 0 Then
+                        If req.Form.Count > 0 OrElse req.InputStream.Length > 0 Then 'POST form or body payload
                             cur_action_raw = "Save"
                         Else
                             cur_action_raw = "Delete"
@@ -497,6 +497,7 @@ Public Class FW
         Return result
     End Function
 
+    'parse query string, form and json in request body into fw.FORM
     Private Sub parse_form()
         Dim f As Hashtable = New Hashtable
 
@@ -535,7 +536,22 @@ Public Class FW
         For Each s In SQ.Keys
             f(s) = SQ(s)
         Next s
-        f("RAWURL") = req.RawUrl
+
+        'also parse json in request body if any
+        If req.InputStream.Length > 0 AndAlso Left(req.ContentType, Len("application/json")) = "application/json" Then
+            Try
+                'also could try this with Newtonsoft.Json http://www.tech-coder.com/2016/04/how-to-get-json-post-body-on-aspnet-mvc.html
+                req.InputStream.Position = 0
+                Dim json = New IO.StreamReader(req.InputStream).ReadToEnd()
+                Dim h = New Script.Serialization.JavaScriptSerializer().Deserialize(Of Hashtable)(json)
+                logger(LogLevel.TRACE, "REQUESTED JSON:", h)
+
+                Utils.mergeHash(f, h)
+            Catch ex As Exception
+                logger(LogLevel.WARN, "Request JSON parse error")
+            End Try
+        End If
+
         'logger(f)
         FORM = f
     End Sub
@@ -594,6 +610,7 @@ Public Class FW
         Catch ex As Exception
             Diagnostics.Debug.WriteLine("WARN logger can't write to log file. Reason:" & ex.Message)
         End Try
+
     End Sub
 
     Public Shared Function dumper(ByVal dmp_obj As Object, Optional ByVal level As Integer = 0) As String 'TODO better type detection(suitable for all collection types)
@@ -972,7 +989,7 @@ Public Class FW
 
         hf("success") = False
         hf("message") = msg
-        hf("_json_enabled") = True
+        hf("_json") = True
         parser("/error", hf)
     End Sub
 
