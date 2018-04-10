@@ -86,7 +86,7 @@ Public MustInherit Class FwModel
     'update exising record
     Public Overridable Function update(id As Integer, item As Hashtable) As Boolean
         item("upd_time") = Now()
-        If Not item.ContainsKey("add_users_id") AndAlso fw.SESSION("is_logged") Then item("add_users_id") = fw.SESSION("user")("id")
+        If Not item.ContainsKey("upd_users_id") AndAlso fw.SESSION("is_logged") Then item("upd_users_id") = fw.SESSION("user")("id")
 
         Dim where As New Hashtable
         where("id") = id

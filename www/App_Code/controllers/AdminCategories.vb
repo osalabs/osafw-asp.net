@@ -83,7 +83,7 @@ Public Class AdminCategoriesController
         End If
 
         hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
         hf("id") = id
         hf("i") = item
