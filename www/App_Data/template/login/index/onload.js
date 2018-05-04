@@ -4,7 +4,9 @@ pwd_hideshow();
 // $('#login').focus()
 
 $(document).on('keyup change', '.form-label-group input', input_on_change);
-$('.form-label-group input').trigger('change');
+setTimeout(function() {
+  $('.form-label-group input').trigger('change');
+},50);
 
 
 function input_on_change(e) {
@@ -14,9 +16,9 @@ function input_on_change(e) {
     //detect browser autofill
     //try/catch for non-webkit
     try {
-      is_filled = $this.is(":-webkit-autofill")
-    }catch(e){
-      // console.log(e)
+      is_filled = $this.is(":-webkit-autofill");
+    }catch(ex){
+      // console.log(ex)
     }
   }
 

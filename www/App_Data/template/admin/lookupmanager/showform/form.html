@@ -25,13 +25,15 @@
         </div>
     </~fields>
 
+    <~/common/form/group_status if="is_fwtable">
+
     <div class="form-group row">
       <div class="col-md-3 text-right">
         <p class="form-control-plaintext"><span class="form-saved-status"></span></p>
       </div>
       <div class="col-md-offset-3 col-md-9">
         <button type="submit" class="btn btn-primary">`Submit`</button>
-        <button type="button" class="btn btn-default" onclick="cancel_form(this.form, '<~../url>?d=<~d>')">`Cancel`</button>
+        <button type="button" class="btn btn-default on-cancel" data-href="<~../url>?d=<~d>">`Cancel`</button>
       </div>
     </div>
 
