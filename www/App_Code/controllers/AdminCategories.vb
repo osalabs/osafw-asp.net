@@ -25,7 +25,7 @@ Public Class AdminCategoriesController
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"
         If f("sortdir") <> "desc" Then f("sortdir") = "asc"
-        Dim SORTSQL As Hashtable = Utils.qh("id|id iname|iname add_time|add_time")
+        Dim SORTSQL As Hashtable = Utils.qh("id|id iname|iname add_time|add_time status|status")
 
         Dim where As String = " status = 0"
         If f("s") > "" Then

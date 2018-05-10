@@ -20,7 +20,7 @@ Public Class AdminDemosController
 
         search_fields = "iname idesc"
         list_sortdef = "iname asc"
-        list_sortmap = Utils.qh("id|id iname|iname add_time|add_time demo_dicts_id|demo_dicts_id email|email")
+        list_sortmap = Utils.qh("id|id iname|iname add_time|add_time demo_dicts_id|demo_dicts_id email|email status|status")
 
         related_field_name = "demo_dicts_id"
         model_related = fw.model(Of DemoDicts)()

@@ -29,7 +29,7 @@ Public Class AdminAttController
         'sorting
         If f("sortby") = "" Then f("sortby") = "iname"
         If f("sortdir") <> "desc" Then f("sortdir") = "asc"
-        Dim SORTSQL As Hashtable = Utils.qh("id|id iname|iname add_time|add_time fsize|fsize ext|ext category|att_categories_id")
+        Dim SORTSQL As Hashtable = Utils.qh("id|id iname|iname add_time|add_time fsize|fsize ext|ext category|att_categories_id status|status")
 
         Dim where As String = " status = 0 and table_name='' "
         If f("s") > "" Then
