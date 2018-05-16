@@ -136,7 +136,6 @@ Public Class Att
         Dim item As Hashtable = one(id)
 
         Dim user_access_level As Integer = fw.SESSION("access_level")
-        Dim user As Hashtable = fw.SESSION("user")
 
         'If item("access_level") > user_access_level Then
         '    result = False

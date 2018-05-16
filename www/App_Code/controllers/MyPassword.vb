@@ -24,7 +24,7 @@ Public Class MyPasswordController
 
         Dim hf As Hashtable = New Hashtable
         Dim item As Hashtable
-        Dim id As Integer = fw.SESSION("user")("id")
+        Dim id As Integer = fw.SESSION("user_id")
 
         If fw.cur_method = "GET" Then 'read from db
             If id > 0 Then
@@ -50,7 +50,7 @@ Public Class MyPasswordController
 
     Public Sub SaveAction()
         Dim item As New Hashtable
-        Dim id As Integer = fw.SESSION("user")("id")
+        Dim id As Integer = fw.SESSION("user_id")
 
         Try
             Validate(id, reqh("item"))
@@ -62,7 +62,7 @@ Public Class MyPasswordController
             If id > 0 Then
                 'update
                 item("upd_time") = Now()
-                item("upd_users_id") = fw.SESSION("user")("id")
+                item("upd_users_id") = fw.SESSION("user_id")
 
                 Dim where As New Hashtable
                 where("id") = id

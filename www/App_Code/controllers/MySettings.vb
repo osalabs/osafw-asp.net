@@ -23,7 +23,7 @@ Public Class MySettingsController
     Public Function ShowFormAction() As Hashtable
         Dim hf As Hashtable = New Hashtable
         Dim item As Hashtable
-        Dim id As Integer = fw.SESSION("user")("id")
+        Dim id As Integer = fw.SESSION("user_id")
 
         If fw.cur_method = "GET" Then 'read from db
             item = model.one(id)
@@ -43,7 +43,7 @@ Public Class MySettingsController
 
     Public Sub SaveAction()
         Dim item As Hashtable = reqh("item")
-        Dim id As Integer = fw.SESSION("user")("id")
+        Dim id As Integer = fw.SESSION("user_id")
 
         Try
             Validate(id, item)

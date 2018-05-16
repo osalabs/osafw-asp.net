@@ -18,8 +18,7 @@ Public Class Users
     End Sub
 
     Public Function meId() As Integer
-        If IsNothing(fw.SESSION("user")) OrElse Not fw.SESSION("user").ContainsKey("id") Then Return 0
-        Return Utils.f2int(fw.SESSION("user")("id"))
+        Return Utils.f2int(fw.SESSION("user_id"))
     End Function
 
     Public Function oneByEmail(email As String) As Hashtable
@@ -71,9 +70,10 @@ Public Class Users
         If id = 0 Then id = meId()
         Dim hU As Hashtable = one(id)
 
+        fw.SESSION("user_id", id)
         fw.SESSION("login", hU("email"))
         fw.SESSION("access_level", Utils.f2int(hU("access_level")))
-        fw.SESSION("user", hU)
+        'fw.SESSION("user", hU)
         Dim fname = Trim(hU("fname"))
         Dim lname = Trim(hU("lname"))
         fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname) 'will be empty If no user name Set
