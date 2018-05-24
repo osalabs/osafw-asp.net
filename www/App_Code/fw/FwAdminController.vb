@@ -60,7 +60,7 @@ Public Class FwAdminController
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
         ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
         ps("id") = id
         ps("i") = item
@@ -105,7 +105,7 @@ Public Class FwAdminController
         End If
 
         ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
         ps("id") = id
         ps("i") = item

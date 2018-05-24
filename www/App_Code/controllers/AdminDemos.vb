@@ -90,7 +90,7 @@ Public Class AdminDemosController
 
             Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
             FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
-            itemdb("dict_link_auto_id") = model_related.addOrUpdateQuick(item("dict_link_auto_id_iname"))
+            itemdb("dict_link_auto_id") = model_related.findOrAddByIname(item("dict_link_auto_id_iname"))
             itemdb("dict_link_multi") = FormUtils.multi2ids(reqh("dict_link_multi"))
             itemdb("fdate_combo") = FormUtils.dateForCombo(item, "fdate_combo")
             itemdb("ftime") = FormUtils.timeStrToInt(item("ftime_str")) 'ftime - convert from HH:MM to int (0-24h in seconds)

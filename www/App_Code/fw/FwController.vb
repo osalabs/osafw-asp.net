@@ -72,8 +72,7 @@ Public MustInherit Class FwController
     End Function
 
     Public Sub rw(ByVal str As String)
-        fw.resp.Write(str)
-        fw.resp.Write("<br>" & vbCrLf)
+        fw.rw(str)
     End Sub
 
     '----------------- just a covenience methods
@@ -308,22 +307,36 @@ Public MustInherit Class FwController
     Public Overridable Function getReturnLocation(Optional id As String = "") As String
         Dim result = ""
         Dim url As String
+        Dim url_q As String = IIf(related_id > "", "&related_id=" & related_id, "")
+        Dim is_add_new = reqi("is_add_more")
 
         If id > "" Then
-            url = Me.base_url & "/" & id & "/edit"
+            If is_add_new = 1 Then
+                'if Submit and Add New - redirect to new
+                url = Me.base_url & "/new"
+                url_q = "&copy_id=" & id
+            Else
+                'or just return to edit screen
+                url = Me.base_url & "/" & id & "/edit"
+            End If
         Else
             url = Me.base_url
         End If
 
-        If return_url > "" Then
+        If url_q > "" Then
+            url_q = Regex.Replace(url_q, "^\&", "") 'make url clean
+            url_q = "?" & url_q
+        End If
+
+        If is_add_new <> 1 AndAlso return_url > "" Then
             If fw.isJsonExpected() Then
                 'if json - it's usually autosave - don't redirect back to return url yet
-                result = url & "?return_url=" & Utils.urlescape(return_url) & IIf(related_id > "", "&related_id=" & related_id, "")
+                result = url & url_q & IIf(url_q > "", "&", "?") & "return_url=" & Utils.urlescape(return_url)
             Else
                 result = return_url
             End If
         Else
-            result = url & IIf(related_id > "", "?related_id=" & related_id, "")
+            result = url & url_q
         End If
 
         Return result

@@ -1024,6 +1024,13 @@ Public Class FW
         Me.model(Of FwEvents).log(ev_icode, item_id, item_id2, iname, records_affected)
     End Sub
 
+    Public Sub rw(ByVal str As String)
+        Me.resp.Write(str)
+        Me.resp.Write("<br>" & vbCrLf)
+        Me.resp.FlushAsync()
+    End Sub
+
+
 #Region "IDisposable Support"
     Private disposedValue As Boolean ' To detect redundant calls
 

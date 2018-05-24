@@ -1,12 +1,19 @@
 <~pager_block if="pager" inline>
   <ul class="pagination mt-3">
-    <!--li><a href="#">&larr;</a></li-->
     <~pager repeat inline>
+      <~pager_prev if="is_show_first" inline>
+        <li><a class="page-link" href="?f[pagenum]=0<~pager_url>">`First`</a></li>
+      </~pager_prev>
+      <~pager_prev if="is_show_prev" inline>
+        <li><a class="page-link" href="?f[pagenum]=<~pagenum_prev><~pager_url>" style="width:80px;text-align:center">&laquo;</a></li>
+      </~pager_prev>
     <li class="page-item <~/common/active ifeq="is_cur_page" value="1">">
       <a class="page-link" href="?f[pagenum]=<~pagenum><~pager_url>"><~pagenum_show></a>
     </li>
+      <~pager_next if="is_show_next" inline>
+        <li><a class="page-link" href="?f[pagenum]=<~pagenum_next><~pager_url>" style="width:80px;text-align:center">&raquo;</a></li>
+      </~pager_next>
     </~pager>
-    <!--li><a href="#">&rarr;</a></li-->
     <li>&nbsp;
         <select name="f[pagesize]" class="form-control on-pagesize-change">
         <~/common/sel/pagesize.sel select="f[pagesize]">

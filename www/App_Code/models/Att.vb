@@ -176,9 +176,8 @@ Public Class Att
             Else
                 fw.logger(LogLevel.INFO, "Transmit(", disposition, ") filepath [", filepath, "]")
                 Dim filename As String = Replace(item("fname"), """", "'")
-                Dim ext As String = UploadUtils.getUploadFileExt(item("ext"))
 
-                fw.resp.AppendHeader("Content-type", getMimeForExt(ext))
+                fw.resp.AppendHeader("Content-type", getMimeForExt(item("ext")))
                 fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
 
                 fw.resp.TransmitFile(filepath)

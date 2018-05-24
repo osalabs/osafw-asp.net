@@ -10,10 +10,10 @@ Public Class ConvUtils
     'if out_filename cotains "\" or "/" - save pdf file to this path
     'options:
     '  landscape = True - will produce landscape output
-    Public Shared Function parsePagePdf(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "", Optional options As Hashtable = Nothing) As String
+    Public Shared Function parsePagePdf(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef ps As Hashtable, Optional out_filename As String = "", Optional options As Hashtable = Nothing) As String
         Dim parser As ParsePage = New ParsePage(fw)
-        hf("IS_PRINT_MODE") = True
-        Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
+        ps("IS_PRINT_MODE") = True
+        Dim html_data As String = parser.parse_page(bdir, tpl_name, ps)
 
         html_data = _replace_specials(html_data)
 
@@ -77,9 +77,9 @@ Public Class ConvUtils
     'parse template and generate doc
     'if out_filename ="" or doesn't contain "\" or "/" - output pdf file to browser
     'if out_filename cotains "\" or "/" - save pdf file to this path
-    Public Shared Function parsePageDoc(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageDoc(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef ps As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
-        Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
+        Dim html_data As String = parser.parse_page(bdir, tpl_name, ps)
 
         html_data = _replace_specials(html_data)
 
@@ -129,10 +129,10 @@ Public Class ConvUtils
     'Note: set IS_PRINT_MODE=True hf var which is become available in templates
     'if out_filename ="" or doesn't contain "\" or "/" - output pdf file to browser
     'if out_filename cotains "\" or "/" - save pdf file to this path
-    Public Shared Function parsePageExcel(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageExcel(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef ps As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
-        hf("IS_PRINT_MODE") = True
-        Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
+        ps("IS_PRINT_MODE") = True
+        Dim html_data As String = parser.parse_page(bdir, tpl_name, ps)
 
         html_data = _replace_specials(html_data)
 
@@ -160,10 +160,10 @@ Public Class ConvUtils
     End Function
 
     'simple version of parse_page_xls - i.e. it's usual html file, just output as xls (Excel opens it successfully, however displays a warning)
-    Public Shared Function parsePageExcelSimple(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef hf As Hashtable, Optional out_filename As String = "") As String
+    Public Shared Function parsePageExcelSimple(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef ps As Hashtable, Optional out_filename As String = "") As String
         Dim parser As ParsePage = New ParsePage(fw)
-        hf("IS_PRINT_MODE") = True
-        Dim html_data As String = parser.parse_page(bdir, tpl_name, hf)
+        ps("IS_PRINT_MODE") = True
+        Dim html_data As String = parser.parse_page(bdir, tpl_name, ps)
 
         html_data = _replace_specials(html_data)
 

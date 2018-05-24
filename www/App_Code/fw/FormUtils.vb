@@ -142,15 +142,36 @@ Public Class FormUtils
     Public Shared Function getPager(count As Integer, pagenum As Integer, Optional pagesize As Object = Nothing) As ArrayList
         If pagesize Is Nothing Then pagesize = 25 'TODO get from  FW.config("MAX_PAGE_ITEMS")
         Dim pager As ArrayList = Nothing
+        Const PAD_PAGES = 5
 
         If count > pagesize Then
             pager = New ArrayList
             Dim page_count As Integer = Math.Ceiling(count / pagesize)
-            For i As Integer = 0 To page_count - 1
+
+            Dim from_page = pagenum - PAD_PAGES
+            If from_page < 0 Then from_page = 0
+
+            Dim to_page = pagenum + PAD_PAGES
+            If to_page > page_count - 1 Then to_page = page_count - 1
+
+            For i As Integer = from_page To to_page
                 Dim pager_item As New Hashtable
                 If pagenum = i Then pager_item("is_cur_page") = 1
                 pager_item("pagenum") = i
                 pager_item("pagenum_show") = i + 1
+                If i = from_page Then
+                    If pagenum > PAD_PAGES Then pager_item("is_show_first") = True
+                    If pagenum > 0 Then
+                        pager_item("is_show_prev") = True
+                        pager_item("pagenum_prev") = pagenum - 1
+                    End If
+                ElseIf i = to_page Then
+                    If pagenum < page_count - 1 Then
+                        pager_item("is_show_next") = True
+                        pager_item("pagenum_next") = pagenum + 1
+                    End If
+                End If
+
                 pager.Add(pager_item)
             Next i
         End If

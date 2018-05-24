@@ -6,6 +6,14 @@
 Public Class LookupManager
     Inherits FwModel
 
+    'system columns that not need to be shown to user as is
+    Public SYS_COLS As New Hashtable From {
+            {"add_time", True},
+            {"add_users_id", True},
+            {"upd_time", True},
+            {"upd_users_id", True}
+        }
+
     Public Sub New()
         MyBase.New()
         table_name = "xxx"
@@ -37,6 +45,11 @@ Public Class LookupManager
         Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
 
+        If Not defs("list_columns") > "" Then
+            'if no list cols - it's std table - add std fields
+            If Not item.ContainsKey("add_users_id") AndAlso fw.SESSION("is_logged") Then item("add_users_id") = fw.SESSION("user")("id")
+        End If
+
         Dim id As Integer = db.insert(tname, item)
         fw.logEvent(tname & "_add", id)
         Return id
@@ -51,6 +64,15 @@ Public Class LookupManager
 
         'also we need include old fields into where just because id by sort is not robust enough
         Dim itemold = oneByTname(tname, id)
+        'If Not defs("list_columns") > "" Then
+        '    'remove syscols
+        '    Dim itemold2 As New Hashtable
+        '    For Each key In itemold.Keys
+        '        If SYS_COLS.ContainsKey(key) Then Continue For
+        '        itemold2(key) = itemold(key)
+        '    Next
+        '    itemold = itemold2
+        'End If
         If md5 > "" Then
             'additionally check we got right record by comparing md5
             If md5 <> getRowMD5(itemold) Then Throw New ApplicationException("Cannot update database. Wrong checksum. Probably someone else already updated data you are trying to edit.")
@@ -77,6 +99,12 @@ Public Class LookupManager
         If item_save.Count > 0 Then
             Dim where As New Hashtable
             where(id_fname) = id
+
+            If Not defs("list_columns") > "" Then
+                'if no list cols - it's std table - add std fields
+                If Not item_save.ContainsKey("upd_time") Then item_save("upd_time") = Now()
+                If Not item_save.ContainsKey("upd_users_id") AndAlso fw.SESSION("is_logged") Then item_save("upd_users_id") = fw.SESSION("user")("id")
+            End If
 
             db.update(tname, item_save, where)
 
@@ -127,6 +155,17 @@ Public Class LookupManager
         'logger(str.ToString())
         'logger(Utils.md5(str.ToString()))
         Return Utils.md5(str.ToString())
+    End Function
+
+    Function filterOutSysCols(cols As ArrayList) As ArrayList
+        Dim result As New ArrayList
+
+        For Each col As Hashtable In cols
+            If SYS_COLS.ContainsKey(col("name")) Then Continue For
+            result.Add(col)
+        Next
+
+        Return result
     End Function
 
 End Class

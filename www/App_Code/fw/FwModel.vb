@@ -52,6 +52,11 @@ Public MustInherit Class FwModel
         Return db.array(sql)
     End Function
 
+    'return count of all non-deleted
+    Public Function getCount() As Integer
+        Return db.value("select count(*) from " & table_name & " where status<>127")
+    End Function
+
     'just return first row by iname field (you may want to make it unique)
     Public Overridable Function oneByIname(iname As String) As Hashtable
         Dim where As Hashtable = New Hashtable
@@ -242,7 +247,7 @@ Public MustInherit Class FwModel
     End Sub
 
 
-    Public Overridable Function addOrUpdateQuick(iname As String) As Integer
+    Public Overridable Function findOrAddByIname(iname As String, Optional is_added As Boolean = False) As Integer
         Dim result As Integer
         Dim item As Hashtable = Me.oneByIname(iname)
         If item.ContainsKey("id") Then
