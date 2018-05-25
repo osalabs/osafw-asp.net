@@ -670,7 +670,8 @@ Public Class ParsePage
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("number_format") Then
                     Dim precision = IIf(hattrs("number_format") > "", Utils.f2int(hattrs("number_format")), 2)
-                    value = FormatNumber(Utils.f2float(value), precision)
+                    Dim groupdigits = IIf(hattrs.ContainsKey("nfthousands") AndAlso hattrs("nfthousands") = "", TriState.False, TriState.True) 'default - group digits, but if nfthousands empty - don't
+                    value = FormatNumber(Utils.f2float(value), precision, TriState.UseDefault, TriState.False, groupdigits)
                     attr_count -= 1
                 End If
                 If attr_count > 0 AndAlso hattrs.ContainsKey("date") Then
