@@ -363,10 +363,10 @@ window.fw={
           $dh.remove();
 
           //create fixed header for the table
-          var $th_orig = $table.find('thead');
+          var $th_orig = $table.find('thead:first');
           $th_orig.find('tr:first').css({visibility: 'hidden'});
 
-          var $th = $table.find('thead').clone(true);
+          var $th = $table.find('thead:first').clone(true);
           $th.find('tr').not(':eq(0)').remove(); //leave just first tr
           $th.find('tr:first').css({visibility: ''});
 
@@ -374,8 +374,8 @@ window.fw={
           $htable[0].className = $table[0].className; //apply all classes
           $htable.removeClass('data-table');
 
-          var $th0 = $table.find('thead > tr:first > th');
-          var $thh = $htable.find('thead > tr:first > th');
+          var $th0 = $table.find('thead:first > tr:first > th');
+          var $thh = $htable.find('thead:first > tr:first > th');
           $th0.each(function(i,el) {
               $thh.eq(i).outerWidth( $(this).outerWidth() );
           });

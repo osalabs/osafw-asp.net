@@ -106,7 +106,6 @@
 ' markdown - convert markdown text to html using CommonMark.NET (optional). Note: may wrap tag with <p>
 
 Imports System.IO
-Imports Newtonsoft.Json
 
 Public Class ParsePage
     Private Shared RX_NOTS As New Regex("^(\S+)", RegexOptions.Compiled)
@@ -147,7 +146,7 @@ Public Class ParsePage
     End Sub
 
     Public Function parse_json(ByVal hf As Object) As String
-        Return JsonConvert.SerializeObject(hf)
+        Return Utils.jsonEncode(hf)
     End Function
 
 
@@ -429,7 +428,7 @@ Public Class ParsePage
                 ElseIf TypeOf (hf) Is Hashtable Then
                     'special name tags - ROOT_URL and ROOT_DOMAIN - hardcoded here because of too frequent usage in the site
                     If tag = "ROOT_URL" OrElse tag = "ROOT_DOMAIN" Then
-                        tag_value = fw.config("ROOT_URL")
+                        tag_value = fw.config(tag)
                         If tag_value Is Nothing Then tag_value = ""
                     Else
                         If hf.ContainsKey(tag) Then

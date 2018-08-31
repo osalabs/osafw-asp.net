@@ -247,7 +247,7 @@ Public MustInherit Class FwModel
     End Sub
 
 
-    Public Overridable Function findOrAddByIname(iname As String, Optional is_added As Boolean = False) As Integer
+    Public Overridable Function findOrAddByIname(iname As String, ByRef Optional is_added As Boolean = False) As Integer
         Dim result As Integer
         Dim item As Hashtable = Me.oneByIname(iname)
         If item.ContainsKey("id") Then
@@ -258,6 +258,7 @@ Public MustInherit Class FwModel
             item = New Hashtable
             item("iname") = iname
             result = Me.add(item)
+            is_added = True
         End If
         Return result
     End Function

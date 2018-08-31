@@ -91,7 +91,7 @@ CREATE TABLE att (
 
   fname                 NVARCHAR(255) NOT NULL DEFAULT '',              /*original file name*/
   fsize                 INT DEFAULT 0,                   /*file size*/
-  ext                   NVARCHAR(4) NOT NULL DEFAULT '',                 /*extension*/
+  ext                   NVARCHAR(16) NOT NULL DEFAULT '',                 /*extension*/
   iname                 NVARCHAR(255) NOT NULL DEFAULT '',   /*attachment name*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/

@@ -540,7 +540,7 @@ Public Class FW
         'also parse json in request body if any
         If req.InputStream.Length > 0 AndAlso Left(req.ContentType, Len("application/json")) = "application/json" Then
             Try
-                'also could try this with Newtonsoft.Json http://www.tech-coder.com/2016/04/how-to-get-json-post-body-on-aspnet-mvc.html
+                'also could try this with Utils.json_decode
                 req.InputStream.Position = 0
                 Dim json = New IO.StreamReader(req.InputStream).ReadToEnd()
                 Dim h = New Script.Serialization.JavaScriptSerializer().Deserialize(Of Hashtable)(json)

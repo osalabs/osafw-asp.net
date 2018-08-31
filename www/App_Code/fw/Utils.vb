@@ -145,6 +145,12 @@ Public Class Utils
         Return result
     End Function
 
+    'just return false if input cannot be converted to date
+    Public Shared Function isDate(ByVal AField As Object) As Boolean
+        Dim result As Object = f2date(AField)
+        Return result IsNot Nothing
+    End Function
+
     Public Shared Function f2int(ByVal AField As Object) As Integer
         Dim result As Integer = 0
         If AField Is Nothing Then Return 0
@@ -402,6 +408,63 @@ Public Class Utils
         Else
             result = (Math.Floor(b / 1073741824 * 100) / 100) & " GiB"
         End If
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' convert data structure to JSON string
+    ''' </summary>
+    ''' <param name="data">any data like single value, arraylist, hashtable, etc..</param>
+    ''' <returns></returns>
+    Public Shared Function jsonEncode(data As Object) As String
+        Return New Script.Serialization.JavaScriptSerializer().Serialize(data)
+    End Function
+
+    ''' <summary>
+    ''' convert JSON string into data structure
+    ''' </summary>
+    ''' <param name="str">JSON string</param>
+    ''' <returns>single value, arraylist, hashtable, etc.. or Nothing if cannot be converted</returns>
+    ''' <remarks>Note, JavaScriptSerializer.MaxJsonLength is about 4MB unicode</remarks>
+    Public Shared Function jsonDecode(str As String) As Object
+        Dim result As Object
+        Try
+            Dim des = New Script.Serialization.JavaScriptSerializer()
+            result = des.DeserializeObject(str)
+            result = cast2std(result)
+
+        Catch ex As Exception
+            'if error during conversion - return Nothing
+            result = Nothing
+        End Try
+
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' depp convert data structure to standard framework's Hashtable/Arraylist
+    ''' </summary>
+    ''' <param name="data"></param>
+    ''' <remarks>RECURSIVE!</remarks>
+    Public Shared Function cast2std(data As Object) As Object
+        Dim result As Object = data
+
+        If TypeOf result Is IDictionary Then
+            'convert dictionary to Hashtable
+            Dim result2 = New Hashtable 'because we can't iterate hashtable and change it
+            For Each key In CType(result, IDictionary).Keys
+                result2(key) = cast2std(result(key))
+            Next
+            result = result2
+
+        ElseIf TypeOf result Is IList Then
+            'convert arrays to ArrayList
+            result = New ArrayList(CType(result, IList))
+            For i = 0 To result.Count - 1
+                result(i) = cast2std(result(i))
+            Next
+        End If
+
         Return result
     End Function
 
