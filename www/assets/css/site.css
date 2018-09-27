@@ -60,6 +60,20 @@ table.list .sortable {
     background-color: #ffffcc !important;
 }
 
+#modal-custom-cols .sort-arrows {
+    float: right;
+    display: none;
+}
+    #modal-custom-cols .sort-arrows a {
+        padding: 0 10px;
+    }
+    #modal-custom-cols .col-rows .cb-row:hover {
+        background-color: #ffffcc;
+    }
+    #modal-custom-cols .col-rows .cb-row:hover .sort-arrows {
+        display: block;
+    }
+
 .btn-fileinput {
     overflow: hidden;
     position: relative;
@@ -137,6 +151,10 @@ form .has-danger label {
     max-height: 450px;
     overflow: auto;
 }
+.modal-wider .modal-dialog{
+    max-width: 850px;
+}
+
 .text-nooverflow {
     text-overflow: ellipsis;
     overflow: hidden;
@@ -168,6 +186,19 @@ form .has-danger label {
         max-width: none;
         width: auto;
     }
+
+/*list multi buttons floating if some rows checked*/
+#list-btn-multi {
+ background-color: rgba(255,255,255,0.8);
+ padding:10px 10px 10px 0;
+ display: inline-block;
+ bottom: 0px;
+ left: 20px;
+}
+
+.floating {
+ position: sticky;
+}
 
 /* jGrowl*/
 div.jGrowl div.hint_green{
@@ -285,6 +316,11 @@ div.jGrowl div.jGrowl-notification
     background-color: #e9ecef;
     color: #000;
 }
+    .fwlayout-fluid .sidebar.collapsing,
+    .fwlayout-fluid .sidebar.collapse.show
+    {
+        position: relative;
+    }
     .fwlayout-fluid .sidebar-nav {
         position: -webkit-sticky;
         position: sticky;
@@ -336,6 +372,12 @@ div.jGrowl div.jGrowl-notification
         bottom:0;
         font-size: x-small;
     }
+
+@media screen and (max-width: 768px) {
+    .fwlayout-fluid .site-footer {
+        position: relative;
+    }
+}
 
 /*** end of fw ***/
 

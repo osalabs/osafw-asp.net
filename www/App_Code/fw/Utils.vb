@@ -468,7 +468,6 @@ Public Class Utils
         Return result
     End Function
 
-    'TODO maybe use JsonConvert.SerializeObject?
     'serialize using BinaryFormatter.Serialize
     'return as base64 string
     Public Shared Function serialize(data As Object) As String

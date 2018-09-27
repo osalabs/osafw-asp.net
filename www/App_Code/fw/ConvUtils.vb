@@ -11,6 +11,9 @@ Public Class ConvUtils
     'options:
     '  landscape = True - will produce landscape output
     Public Shared Function parsePagePdf(fw As FW, ByRef bdir As String, ByRef tpl_name As String, ByRef ps As Hashtable, Optional out_filename As String = "", Optional options As Hashtable = Nothing) As String
+        If IsNothing(options) Then options = New Hashtable
+        If Not options.ContainsKey("disposition") Then options("disposition") = "attachment"
+
         Dim parser As ParsePage = New ParsePage(fw)
         ps("IS_PRINT_MODE") = True
         Dim html_data As String = parser.parse_page(bdir, tpl_name, ps)
@@ -29,7 +32,7 @@ Public Class ConvUtils
             html2pdf(fw, html_file, pdf_file, options)
 
             If out_filename = "" Then out_filename = "output"
-            fw.file_response(pdf_file, out_filename & ".pdf")
+            fw.file_response(pdf_file, out_filename & ".pdf", "application/pdf", options("disposition"))
             Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
             html2pdf(fw, html_file, out_filename, options)

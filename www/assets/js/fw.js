@@ -1,7 +1,7 @@
 /*
   misc client utils for the osafw framework
   www.osalabs.com/osafw
-  (c) 2009-2017 Oleg Savchuk www.osalabs.com
+  (c) 2009-2018 Oleg Savchuk www.osalabs.com
 */
 
 window.fw={
@@ -24,6 +24,9 @@ window.fw={
       $modal=$('#fw-modal-alert');
     }
     $modal.modal('show').find('.modal-title').html(title).end().find('.modal-body p').html(content);
+    $modal.off('shown.bs.modal').on('shown.bs.modal', function (e) {
+      $modal.find('.btn-primary').focus();
+    });
   },
 
   /*
@@ -45,6 +48,9 @@ window.fw={
       $modal=$('#fw-modal-confirm');
     }
     $modal.modal('show').find('.modal-title').html(title).end().find('.modal-body p').html(content);
+    $modal.off('shown.bs.modal').on('shown.bs.modal', function (e) {
+      $modal.find('.btn-primary').focus();
+    });
     $modal.find('.btn-primary').one('click', function (e) {
       callback();
     });
@@ -73,6 +79,21 @@ window.fw={
     //list check all/none handler
     $(document).on('click', '.on-list-chkall', function (e){
       $(".multicb", this.form).prop('checked', this.checked);
+    });
+
+    //make list multi buttons floating if at least one row checked
+    $(document).on('click', '.on-list-chkall, .multicb', function (e) {
+      var $bm = $('#list-btn-multi');
+      var len = $('.multicb:checked').length;
+      if (len>0){
+        //float
+        $bm.addClass('floating');
+        $bm.find('.rows-num').text(len);
+      }else{
+        //de-float
+        $bm.removeClass('floating');
+        $bm.find('.rows-num').text('');
+      }
     });
 
     $(document).on('click', '.on-delete-list-row', function (e){
@@ -190,7 +211,7 @@ window.fw={
       set_status($f, 1);
     });
 
-    $('body').on('keyup', 'form[data-autosave] :input', function(e){
+    $('body').on('keyup', 'form[data-autosave] :input:not([data-noautosave])', function(e){
       var $inp = $(this);
       //console.log('on keyup');
       if ($inp.data('oldval')!==$inp.val()) {
@@ -200,13 +221,13 @@ window.fw={
       }
     });
 
-    $('body').on('focus', 'form[data-autosave] :input', function(e){
+    $('body').on('focus', 'form[data-autosave] :input:not([data-noautosave])', function(e){
       var $inp = $(this);
       //console.log('on focus');
       $inp.data('oldval', $inp.val());
     });
 
-    $('body').on('blur', 'form[data-autosave] :input', function(e){
+    $('body').on('blur', 'form[data-autosave] :input:not([data-noautosave])', function(e){
       var $f = $(this.form);
       //console.log('on blur', $f);
       if ($f.data('is-changed')===true){

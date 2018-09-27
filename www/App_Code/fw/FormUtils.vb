@@ -360,4 +360,29 @@ Public Class FormUtils
         Return result
     End Function
 
+    'datetime field to HH:MM or empty string (if no date set)
+    Shared Function dateToFormTime(datestr As String) As String
+        Dim result As String = ""
+        If datestr > "" Then
+            Dim dt = Utils.f2date(datestr)
+            If dt IsNot Nothing Then
+                result = DirectCast(dt, Date).ToString("HH:mm", System.Globalization.DateTimeFormatInfo.InvariantInfo)
+            End If
+        End If
+        Return result
+    End Function
+
+    'date and time(HH:MM) fields to date object (or datestr if no time)
+    'example: fields("dtfield") = FormUtils.formTimeToDate(itemdb("datefield"), reqh("item")("timefield"))
+    Shared Function formTimeToDate(datestr As Object, timestr As String) As Object
+        Dim result = datestr
+        Dim timeint = FormUtils.timeStrToInt(timestr)
+        Dim dt = Utils.f2date(datestr)
+        If dt IsNot Nothing Then
+            'if date set - add time
+            result = dt.AddSeconds(timeint)
+        End If
+        Return result
+    End Function
+
 End Class

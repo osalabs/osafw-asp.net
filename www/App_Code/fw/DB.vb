@@ -230,7 +230,7 @@ Public Class DB
     End Function
 
     'simple quote as Float Value
-    Public Function qf(ByVal str As String) As Integer
+    Public Function qf(ByVal str As String) As Double
         Return Utils.f2float(str)
     End Function
 
