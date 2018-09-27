@@ -86,6 +86,7 @@ CREATE TABLE att (
   table_name            NVARCHAR(128) NOT NULL DEFAULT '',
   item_id               INT NOT NULL DEFAULT 0,
 
+  is_s3                 TINYINT DEFAULT 0, /* 1 if file is in S3 - see config: $S3Bucket/$S3Root/att/att_id */
   is_inline             TINYINT DEFAULT 0, /* if uploaded with wysiwyg */
   is_image              TINYINT DEFAULT 0, /* 1 if this is supported image */
 
@@ -259,3 +260,49 @@ insert into lookup_manager_tables (tname, iname) VALUES
 ('events','Events')
 , ('categories','Categories');
 GO
+
+/*user custom views*/
+DROP TABLE user_views;
+CREATE TABLE user_views (
+  id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+  screen                NVARCHAR(128) NOT NULL, --related screen, ex: "Demos"
+  fields                NVARCHAR(MAX), -- comma-separated list of fields to display, order kept
+
+  status                TINYINT DEFAULT 0,
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0, -- related user
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
+CREATE UNIQUE INDEX user_views_UK ON user_views (add_users_id, screen);
+
+/*user lists*/
+DROP TABLE user_lists;
+CREATE TABLE user_lists (
+  id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+  entity                NVARCHAR(128) NOT NULL, -- usually table name, ex: 'demos'
+
+  iname                 NVARCHAR(255) NOT NULL,
+  idesc                 NVARCHAR(MAX), -- description
+
+  status                TINYINT DEFAULT 0,
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0, -- related owner user
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
+
+/*items linked to user lists */
+DROP TABLE user_lists_items;
+CREATE TABLE user_lists_items (
+  id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+  user_lists_id         INT NOT NULL FOREIGN KEY REFERENCES user_lists(id),
+  item_id               INT NOT NULL, -- related item id, example demos.id
+
+  status                TINYINT DEFAULT 0,
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0, -- related owner user
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
+CREATE UNIQUE INDEX user_lists_items_UK ON user_lists_items (user_lists_id, item_id);

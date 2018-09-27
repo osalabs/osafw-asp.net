@@ -183,16 +183,31 @@ Public Class FwAdminController
     Public Overridable Function SaveMultiAction() As Hashtable
         Dim cbses As Hashtable = reqh("cb")
         Dim is_delete As Boolean = fw.FORM.ContainsKey("delete")
+        Dim user_lists_id As Integer = reqi("addtolist")
+        Dim remove_user_lists_id = reqi("removefromlist")
         Dim ctr As Integer = 0
+
+        If user_lists_id > 0 Then
+            Dim user_lists = fw.model(Of UserLists).one(user_lists_id)
+            If user_lists.Count = 0 OrElse user_lists("add_users_id") <> fw.model(Of Users).meId Then Throw New ApplicationException("Wrong Request")
+        End If
 
         For Each id As String In cbses.Keys
             If is_delete Then
                 model0.delete(id)
                 ctr += 1
+            ElseIf user_lists_id > 0 Then
+                fw.model(Of UserLists).addItemList(user_lists_id, id)
+                ctr += 1
+            ElseIf remove_user_lists_id > 0 Then
+                fw.model(Of UserLists).delItemList(remove_user_lists_id, id)
+                ctr += 1
             End If
         Next
 
-        fw.FLASH("multidelete", ctr)
+        If is_delete Then fw.FLASH("multidelete", ctr)
+        If user_lists_id > 0 Then fw.FLASH("success", ctr & " records added to the list")
+
         Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
     End Function
 

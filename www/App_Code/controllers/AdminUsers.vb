@@ -31,7 +31,13 @@ Public Class AdminUsersController
         If f("sortdir") <> "desc" Then f("sortdir") = "asc"
         Dim SORTSQL As Hashtable = Utils.qh("id|id iname|fname,lname email|email access_level|access_level add_time|add_time status|status")
 
-        Dim where As String = " status = 0"
+        Dim where As String = ""
+        If list_filter("status") > "" Then
+            where &= " status=" & db.qi(list_filter("status"))
+        Else
+            where &= " status<>127 "
+        End If
+
         If f("s") > "" Then
             where &= " and (email like " & db.q("%" & f("s") & "%") &
                     " or fname like " & db.q("%" & f("s") & "%") &

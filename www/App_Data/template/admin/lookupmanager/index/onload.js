@@ -53,7 +53,7 @@ if (mode){
 
 }else{
     //list mode
-    make_table_list(".list");
+    //make_table_list(".list");
 }
 
 function add_new_row(){
