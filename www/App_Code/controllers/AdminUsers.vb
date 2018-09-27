@@ -1,7 +1,7 @@
 ﻿' Admin Users controller
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+' (c) 2009-2018 Oleg Savchuk www.osalabs.com
 
 Public Class AdminUsersController
     Inherits FwController
@@ -33,9 +33,9 @@ Public Class AdminUsersController
 
         Dim where As String = " status = 0"
         If f("s") > "" Then
-            where &= " and (email like " & db.q("%" & f("s") & "%") & _
-                    " or fname like " & db.q("%" & f("s") & "%") & _
-                    " or lname like " & db.q("%" & f("s") & "%") & _
+            where &= " and (email like " & db.q("%" & f("s") & "%") &
+                    " or fname like " & db.q("%" & f("s") & "%") &
+                    " or lname like " & db.q("%" & f("s") & "%") &
                     ")"
         End If
 
@@ -108,7 +108,7 @@ Public Class AdminUsersController
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname phone pwd access_level status"))
+            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname phone pwd access_level title address1 address2 city state zip phone status"))
 
             If id > 0 Then
                 If Not itemdb("pwd") > "" Then itemdb.Remove("pwd")

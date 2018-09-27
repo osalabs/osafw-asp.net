@@ -5,6 +5,12 @@
 
 Imports System.IO
 
+#Const is_S3 = False 'if you use Amazon.S3 set to True here and in S3 model
+
+#If is_S3 Then
+Imports Amazon
+#End If
+
 Public Class Att
     Inherits FwModel
     Public MIME_MAP As String = "doc|application/msword docx|application/msword xls|application/vnd.ms-excel xlsx|application/vnd.ms-excel ppt|application/vnd.ms-powerpoint pptx|application/vnd.ms-powerpoint pdf|application/pdf html|text/html zip|application/x-zip-compressed jpg|image/jpeg jpeg|image/jpeg gif|image/gif png|image/png wmv|video/x-ms-wmv avi|video/x-msvideo"
@@ -116,14 +122,24 @@ Public Class Att
     Public Overrides Sub delete(id As Integer, Optional is_perm As Boolean = False)
         'remove files first
         Dim item As Hashtable = one(id)
-        Dim filepath As String = getUploadImgPath(id, "", item("ext"))
-        If filepath > "" Then File.Delete(filepath)
-        'for images - also delete s/m thumbnails
-        If item("is_image") = 1 Then
-            filepath = getUploadImgPath(id, "s", item("ext"))
+        If item("is_s3") = "1" Then
+#If is_S3 Then
+            'S3 storage - remove from S3
+            fw.model(Of S3).deleteObject(table_name & "/" & item("id"))
+#Else
+            fw.logger(LogLevel.WARN, "Att record has S3 flag, but S3 storage is not enabled")
+#End If
+        Else
+            'local storage
+            Dim filepath As String = getUploadImgPath(id, "", item("ext"))
             If filepath > "" Then File.Delete(filepath)
-            filepath = getUploadImgPath(id, "m", item("ext"))
-            If filepath > "" Then File.Delete(filepath)
+            'for images - also delete s/m thumbnails
+            If item("is_image") = 1 Then
+                filepath = getUploadImgPath(id, "s", item("ext"))
+                If filepath > "" Then File.Delete(filepath)
+                filepath = getUploadImgPath(id, "m", item("ext"))
+                If filepath > "" Then File.Delete(filepath)
+            End If
         End If
 
         MyBase.delete(id, is_perm)
@@ -176,8 +192,9 @@ Public Class Att
             Else
                 fw.logger(LogLevel.INFO, "Transmit(", disposition, ") filepath [", filepath, "]")
                 Dim filename As String = Replace(item("fname"), """", "'")
+                Dim ext As String = UploadUtils.getUploadFileExt(filename)
 
-                fw.resp.AppendHeader("Content-type", getMimeForExt(item("ext")))
+                fw.resp.AppendHeader("Content-type", getMimeForExt(ext))
                 fw.resp.AppendHeader("Content-Disposition", disposition & "; filename=""" & filename & """")
 
                 fw.resp.TransmitFile(filepath)
@@ -234,5 +251,101 @@ Public Class Att
                     where &
                     " order by a.id ")
     End Function
+
+    'return one att record with additional check by table_name
+    Public Function oneByTableName(item_table_name As String, id As Integer) As Hashtable
+        Return db.row(table_name, New Hashtable From {
+                      {"table_name", item_table_name},
+                      {"id", id}
+                      })
+    End Function
+
+    'generate signed url and redirect to it, so user download directly from S3
+    Public Sub redirectS3(item As Hashtable)
+#If is_S3 Then
+        If fw.model(Of Users).meId() = 0 Then Throw New ApplicationException("Access Denied") 'denied for non-logged
+
+        Dim url = fw.model(Of S3).getSignedUrl(table_name & "/" & item("id"))
+
+        fw.redirect(url)
+#Else
+        logger(LogLevel.WARN, "redirectS3 - S3 not enabled")
+#End If
+    End Sub
+
+#If is_S3 Then
+
+    ''' <summary>
+    ''' upload all posted files (fw.req.Files) to S3 for the table
+    ''' </summary>
+    ''' <param name="item_table_name"></param>
+    ''' <param name="item_id"></param>
+    ''' <param name="att_categories_id"></param>
+    ''' <param name="fieldnames">qw string of ONLY field names to upload</param>
+    ''' <returns>number of successuflly uploaded files</returns>
+    ''' <remarks>also set FLASH error if some files not uploaded</remarks>
+    Public Function uploadPostedFilesS3(item_table_name As String, item_id As Integer, Optional att_categories_id As String = Nothing, Optional fieldnames As String = "") As Integer
+        Dim result = 0
+
+        'upload files to the S3
+        Dim model_s3 = fw.model(Of S3)
+
+        'create /att folder
+        model_s3.createFolder(Me.table_name)
+
+        Dim honlynames = Utils.qh(fieldnames)
+
+        'create list of eligible file uploads
+        Dim afiles As New ArrayList
+        If honlynames.Count > 0 Then
+            'if we only need some fields - skip if not requested field
+            For Each fieldname In fw.req.Files.Keys
+                If Not honlynames.ContainsKey(fieldname) Then Continue For
+                afiles.Add(fw.req.Files(fieldname))
+            Next
+        Else
+            'just add all files
+            For i = 0 To fw.req.Files.Count - 1
+                afiles.Add(fw.req.Files(i))
+            Next
+        End If
+
+        'upload files to S3
+        For Each file In afiles
+            If file.ContentLength = 0 Then Continue For 'skip empty
+
+            'first - save to db so we can get att_id
+            Dim attitem As New Hashtable
+            attitem("att_categories_id") = att_categories_id
+            attitem("table_name") = item_table_name
+            attitem("item_id") = item_id
+            attitem("is_s3") = 1
+            attitem("status") = 1
+            attitem("fname") = file.FileName
+            attitem("fsize") = file.ContentLength
+            attitem("ext") = UploadUtils.getUploadFileExt(file.FileName)
+            Dim att_id = fw.model(Of Att).add(attitem)
+
+            Try
+                Dim response = model_s3.uploadPostedFile(Me.table_name & "/" & att_id, file, "inline")
+
+                'TODO check response for 200 and if not - error/delete?
+                'once uploaded - mark in db as uploaded
+                fw.model(Of Att).update(att_id, New Hashtable From {{"status", 0}})
+
+                result += 1
+
+            Catch ex As Amazon.S3.AmazonS3Exception
+                logger(ex.Message)
+                logger(ex)
+                fw.FLASH("error", "Some files were not uploaded due to error. Please re-try.")
+                'TODO if error - don't set status to 0 but remove att record?
+                fw.model(Of Att).delete(att_id, True)
+            End Try
+        Next
+
+        Return result
+    End Function
+#End If
 
 End Class

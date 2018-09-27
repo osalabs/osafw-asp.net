@@ -198,7 +198,7 @@ Public Class FwAdminController
 
 
     '********************* support for customizable list screen
-    Public Function UserViewsAction(Optional form_id As String = "") As Hashtable
+    Public Sub UserViewsAction(Optional form_id As String = "")
         Dim ps As New Hashtable
 
         Dim rows = getViewListArr(getViewListUserFields(), True) 'list all fields
@@ -210,7 +210,7 @@ Public Class FwAdminController
 
         ps("rows") = rows
         fw.parser("/common/list/userviews", ps)
-    End Function
+    End Sub
 
     Public Sub SaveUserViewsAction()
         Dim item As Hashtable = reqh("item")

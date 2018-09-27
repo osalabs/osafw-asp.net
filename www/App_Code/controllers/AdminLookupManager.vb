@@ -91,6 +91,9 @@ Public Class AdminLookupManagerController
         If defs("list_columns") > "" Then
             list_cols = Utils.commastr2hash(defs("list_columns"))
             hf("is_two_modes") = False 'if custom list defined - don't enable table edit mode
+        Else
+            'if no custom columns - remove sys cols
+            cols = model.filterOutSysCols(cols)
         End If
 
         For Each col As Hashtable In cols
@@ -193,7 +196,12 @@ Public Class AdminLookupManagerController
                     Dim fh As New Hashtable
                     fh("colname") = col("name")
                     fh("iname") = col("iname")
-                    fh("value") = row(col("name"))
+                    If list_cols.Count = 0 AndAlso col("name") = "status" AndAlso f("mode") <> "edit" Then
+                        fh("value") = FormUtils.selectTplName("/common/sel/status.sel", row(col("name")))
+                    Else
+                        fh("value") = row(col("name"))
+                    End If
+
                     fh("id") = row("id")
                     fh("maxlen") = col("maxlen")
                     fh("type") = col("itype")
@@ -227,6 +235,14 @@ Public Class AdminLookupManagerController
         Dim item As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
         Dim cols As ArrayList = model_tables.getColumns(defs)
+        Dim is_fwtable As Boolean = False
+
+        If Not defs("list_columns") > "" Then
+            'if no custom columns - remove sys cols
+            is_fwtable = True
+            cols = model.filterOutSysCols(cols)
+        End If
+
 
         If fw.cur_method = "GET" Then 'read from db
             If id > 0 Then
@@ -247,6 +263,8 @@ Public Class AdminLookupManagerController
         Dim fv As New ArrayList
         Dim last_igroup As String = ""
         For Each col As Hashtable In cols
+            If is_fwtable AndAlso col("name") = "status" Then Continue For 'for fw tables - status displayed in standard way
+
             Dim fh As New Hashtable
             fh("colname") = col("name")
             fh("iname") = col("iname")
@@ -287,8 +305,11 @@ Public Class AdminLookupManagerController
         'hf("multi_datarow") = fw.model(Of DemoDicts).get_multi_list(item("dict_link_multi"))
         'FormUtils.combo4date(item("fdate_combo"), hf, "fdate_combo")
 
-        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        hf("is_fwtable") = is_fwtable
+        If is_fwtable Then
+            hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+            hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        End If
 
         hf("id") = id
         hf("i") = item

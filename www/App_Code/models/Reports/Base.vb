@@ -37,6 +37,7 @@ Public Class ReportBase
     End Function
 
     Public Overridable Function saveChanges() As Boolean
+        Return False
     End Function
 
     'render report according to format

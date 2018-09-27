@@ -38,7 +38,7 @@ Public Class ReportSample
 
         'define query
         Dim sql As String
-        sql = "select el.*, e.iname  as event_name, u.fname, u.lname " &
+        sql = "select top 20 el.*, e.iname  as event_name, u.fname, u.lname " &
               "  from [events] e, event_log el " &
               "       LEFT OUTER JOIN users u ON (u.id=el.add_users_id)" &
               " where el.events_id=e.id" &

@@ -23,6 +23,10 @@ Public Class AttController
         Dim id As Integer = Utils.f2int(form_id)
         If id = 0 Then Throw New ApplicationException("404 File Not Found")
         Dim size As String = reqs("size")
+
+        Dim item As Hashtable = model.one(id)
+        If item("is_s3") = "1" Then model.redirectS3(item)
+
         model.transmitFile(Utils.f2int(form_id), size)
     End Sub
 
@@ -32,8 +36,11 @@ Public Class AttController
         Dim size As String = reqs("size")
         Dim is_preview As Boolean = reqs("preview") = "1"
 
+        Dim item As Hashtable = model.one(id)
+        If item("is_s3") = "1" Then model.redirectS3(item)
+
         If is_preview Then
-            Dim item As Hashtable = model.one(id)
+
             If item("is_image") Then
                 model.transmitFile(id, size, "inline")
             Else
@@ -41,7 +48,7 @@ Public Class AttController
                 Dim filepath As String = fw.config("site_root") & "/img/att_file.png" ' TODO move to web.config or to model? and no need for transfer file - just redirect TODO
                 Dim ext As String = UploadUtils.getUploadFileExt(filepath)
                 fw.resp.AppendHeader("Content-type", model.getMimeForExt(ext))
-                fw.resp.TransmitFile(filepath)
+                fw.resp.TransmitFile(filepath, "", "inline")
             End If
         Else
             model.transmitFile(id, size, "inline")

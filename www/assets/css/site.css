@@ -175,6 +175,10 @@ form .has-danger label {
     margin-bottom: 20px;
 }
 
+.w100 {
+    width: 100px;
+}
+
 /*for .scrollable tables with fixed header*/
 .data-header {
     position: fixed;
