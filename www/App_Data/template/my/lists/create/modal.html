@@ -28,3 +28,26 @@
     </form>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+
+    $(document).on('click', '.on-create-userlist', function(e){
+      e.preventDefault();
+      $modal = $('#modal-create-userlist').modal('show');
+      $modal.on('shown.bs.modal', function (e) {
+         $modal.find("#list_iname").focus();
+
+         //also fill item_id with comma-separated checked ids
+         var ids=[];
+         $('.multicb:checked').each(function (i,el) {
+            var name = el.name.replace('cb[', '');
+            name = name.replace(']', '');
+            ids.push(name); //leave just id
+         });
+         $modal.find('input[name="item[item_id]"]').val(ids.join(','));
+      });
+    });
+
+  });
+</script>
