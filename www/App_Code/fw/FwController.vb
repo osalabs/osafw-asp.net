@@ -231,6 +231,10 @@ Public MustInherit Class FwController
             list_where &= " and (" & Join(afields, " or ") & ")"
         End If
 
+        If list_filter("userlist") > "" Then
+            Me.list_where &= " and id IN (select ti.item_id from " & fw.model(Of UserLists).table_items & " ti where ti.user_lists_id=" & db.qi(list_filter("userlist")) & " and ti.add_users_id=" & fw.model(Of Users).meId & " ) "
+        End If
+
         If related_id > "" AndAlso related_field_name > "" Then
             list_where &= " and " & db.q_ident(related_field_name) & "=" & db.q(related_id)
         End If
@@ -245,9 +249,8 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
-        Dim list_table_name As String = list_view
-        If list_table_name = "" Then list_table_name = model0.table_name
-        Me.list_count = db.value("select count(*) from " & list_table_name & " where " & Me.list_where)
+        If list_view = "" Then list_view = model0.table_name
+        Me.list_count = db.value("select count(*) from " & list_view & " where " & Me.list_where)
         If Me.list_count > 0 Then
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
@@ -255,7 +258,7 @@ Public MustInherit Class FwController
             'offset+1 because _RowNumber starts from 1
             Dim sql As String = "SELECT * FROM (" &
                             "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" &
-                            "   FROM " & list_table_name &
+                            "   FROM " & list_view &
                             "   WHERE " & Me.list_where &
                             ") tmp WHERE _RowNumber BETWEEN " & (offset + 1) & " AND " & (offset + 1 + limit - 1)
             'for MySQL this would be much simplier

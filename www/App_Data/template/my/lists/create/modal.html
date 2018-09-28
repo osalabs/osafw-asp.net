@@ -3,7 +3,7 @@
     <form method="post" action="<~/my/lists/url>">
      <input type="hidden" name="XSS" value="<~session[XSS]>">
      <input type="hidden" name="return_url" value="<~return_url>">
-     <input type="hidden" name="item[entity]" value="<~entity>">
+     <input type="hidden" name="item[entity]" value="<~userlist_entity>">
      <input type="hidden" name="item[item_id]" value="<~item_id>">
 
     <div class="modal-content">
@@ -47,6 +47,29 @@
          });
          $modal.find('input[name="item[item_id]"]').val(ids.join(','));
       });
+    });
+
+    $(document).on('click', '.on-toggle-userlist', function(e){
+      e.preventDefault();
+      var $this = $(this);
+      $.getJSON($this.prop('href'))
+      .done(function (data, textStatus, jqXHR) {
+        if (data.success){
+          if (data.action=='added'){
+            $this.find('.glyphicon').removeClass('d-none');
+            fw.ok('Record removed from list "'+data.iname+'"');
+          }else if (data.action=='removed'){
+            $this.find('.glyphicon').addClass('d-none');
+            fw.ok('Record added to list "'+data.iname+'"');
+          }
+        }else{
+          fw.error(data.err_msg);
+        }
+      })
+      .fail(function(jqXHR, textStatus, errorThrown) {
+        fw.error( errorThrown || 'Server error');
+      });
+
     });
 
   });

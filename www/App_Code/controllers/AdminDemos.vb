@@ -42,7 +42,7 @@ Public Class AdminDemosController
     End Sub
 
     Public Overrides Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
-        Dim ps As Hashtable = MyBase.ShowFormAction(form_id)
+        Dim ps As Hashtable = MyBase.ShowAction(form_id)
         Dim item As Hashtable = ps("i")
 
         ps("parent") = model.one(Utils.f2int(item("parent_id")))

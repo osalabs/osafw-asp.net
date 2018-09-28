@@ -6,8 +6,8 @@
 Public Class UserLists
     Inherits FwModel
 
-    Public Const ENTITY_DEMOS = "demos"
-    'TODO add here your entities
+    'TODO add here your entities or just use list_view in controllers
+    'Public Const ENTITY_DEMOS = "demos"
 
     Public table_items As String = "user_lists_items"
 
@@ -56,7 +56,7 @@ Public Class UserLists
         Dim item As New Hashtable
         item("user_lists_id") = user_lists_id
         item("item_id") = item_id
-        item("add_users_id") = fw.SESSION("user")("id")
+        item("add_users_id") = fw.model(Of Users).meId()
 
         Dim id As Integer = db.insert(table_items, item)
         fw.logEvent(table_items & "_add", id)

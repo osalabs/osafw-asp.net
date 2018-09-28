@@ -90,4 +90,28 @@ Public Class MyListsController
         Return Me.saveCheckResult(success, id, is_new)
     End Function
 
+    Public Function ToggleListAction(form_id As String) As Hashtable
+        Dim user_lists_id = Utils.f2int(form_id)
+        Dim item_id = reqi("item_id")
+        Dim ps = New Hashtable From {
+                {"_json", True},
+                {"success", True}
+            }
+
+        Try
+            Dim user_lists = fw.model(Of UserLists).one(user_lists_id)
+            If item_id = 0 OrElse user_lists.Count = 0 OrElse user_lists("add_users_id") <> fw.model(Of Users).meId Then Throw New ApplicationException("Wrong Request")
+
+            Dim res = fw.model(Of UserLists).toggleItemList(user_lists_id, item_id)
+            ps("iname") = user_lists("iname")
+            ps("action") = IIf(res, "added", "removed")
+
+        Catch ex As Exception
+            ps("success") = False
+            ps("err_msg") = ex.Message
+        End Try
+
+        Return ps
+    End Function
+
 End Class

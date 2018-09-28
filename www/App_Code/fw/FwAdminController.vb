@@ -56,6 +56,11 @@ Public Class FwAdminController
             {"return_url", Me.return_url}
         }
 
+        'userlists support
+        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
+        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
+        ps("list_view") = list_view
+
         Return ps
     End Function
 
@@ -67,6 +72,10 @@ Public Class FwAdminController
 
         ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
         ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+
+        'userlists support
+        ps("list_view") = IIf(list_view = "", model0.table_name, list_view)
+        ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
 
         ps("id") = id
         ps("i") = item

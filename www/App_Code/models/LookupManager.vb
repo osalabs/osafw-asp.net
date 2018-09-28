@@ -47,7 +47,7 @@ Public Class LookupManager
 
         If Not defs("list_columns") > "" Then
             'if no list cols - it's std table - add std fields
-            If Not item.ContainsKey("add_users_id") AndAlso fw.SESSION("is_logged") Then item("add_users_id") = fw.SESSION("user")("id")
+            If Not item.ContainsKey("add_users_id") AndAlso fw.SESSION("is_logged") Then item("add_users_id") = fw.model(Of Users).meId()
         End If
 
         Dim id As Integer = db.insert(tname, item)
@@ -103,7 +103,7 @@ Public Class LookupManager
             If Not defs("list_columns") > "" Then
                 'if no list cols - it's std table - add std fields
                 If Not item_save.ContainsKey("upd_time") Then item_save("upd_time") = Now()
-                If Not item_save.ContainsKey("upd_users_id") AndAlso fw.SESSION("is_logged") Then item_save("upd_users_id") = fw.SESSION("user")("id")
+                If Not item_save.ContainsKey("upd_users_id") AndAlso fw.SESSION("is_logged") Then item_save("upd_users_id") = fw.model(Of Users).meId()
             End If
 
             db.update(tname, item_save, where)
