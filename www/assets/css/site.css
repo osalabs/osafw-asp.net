@@ -51,12 +51,12 @@ fieldset[disabled] .btn-default.active {
 
 /************ fw
 */
-table.list .sortable {
+table.list > thead > tr > th[data-sort] {
     color: #007bff;
     text-decoration: underline;
     cursor: pointer;
 }
-.sortable.active-sort{
+table.list > thead > tr > th[data-sort].active-sort{
     background-color: #ffffcc !important;
 }
 

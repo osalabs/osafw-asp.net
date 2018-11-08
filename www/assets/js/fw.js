@@ -300,7 +300,7 @@ window.fw={
   // if no data-filter defined, tries to find first form with data-list-filter
   // <table class="list" data-rowtitle="Double click to Edit" [data-rowtitle-type="explicit"] [data-filter="#FFilter"]>
   //  <thead>
-  //    <tr class="list-header sort-header" data-sortby="" data-sortdir="asc|desc"
+  //    <tr data-sortby="" data-sortdir="asc|desc"
   //  ... <tr data-url="url to go on double click">
   //       <td data-rowtitle="override title on particular cell if 'explicit' set above">
   make_table_list: function(tbl){
@@ -320,16 +320,16 @@ window.fw={
     if ($tbl.data('rowtitle-type')=='explicit') title_selector="tbody tr td.rowtitle";
     $tbl.find(title_selector).attr('title', rowtitle);
 
-    var $sh=$tbl.find('.sort-header');
+    var $sh=$tbl.find('tr[data-sortby]');
     var sortby=$sh.data('sortby');
     var sortdir=$sh.data('sortdir');
 
     var sort_img= (sortdir=='desc') ? 'glyphicon-arrow-up' : 'glyphicon-arrow-down';
-    $tbl.find('.sortable[data-sort="'+sortby+'"]').addClass('active-sort').prepend('<span class="glyphicon '+sort_img+' float-right"></span>');
+    $sh.find('th[data-sort="'+sortby+'"]').addClass('active-sort').prepend('<span class="glyphicon '+sort_img+' float-right"></span>');
 
-    $tbl.on('click', '.sortable', function() {
+    $sh.on('click', 'th[data-sort]', function() {
       var $td=$(this);
-      var sortdir=$tbl.find('.sort-header').data('sortdir');
+      var sortdir=$sh.data('sortdir');
       //console.log(sortdir, $td.is('.active'));
 
       if ( $td.is('.active-sort') ){

@@ -13,10 +13,10 @@
                 <th></th>
             </tr>
         </~group_headers_block>
-        <tr class="list-header sort-header" data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
+        <tr data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
             <th style="width:30px"><input type="checkbox" name="all" value="1" onclick="list_chkall(this)"></th>
             <~fields_headers repeat inline>
-                <th class="sortable" data-sort="<~colname>">`<~iname>`</th>
+                <th data-sort="<~colname>">`<~iname>`</th>
             </~fields_headers>
             <th style="width:80px"></th>
         </tr>
