@@ -1,3 +1,4 @@
+<div id="fw-form-msg">
 <~green_block if="GLOBAL[ok_msg]" inline><div class="alert alert-success"><~GLOBAL[ok_msg]></div></~green_block>
 <~err_block if="GLOBAL[err_msg]" inline><div class="alert alert-danger"><~GLOBAL[err_msg]></div></~err_block>
 <~err_blockREQ if="ERR[REQUIRED]" inline><div class="alert alert-danger">`Please fill in all required fields`</div></~err_blockREQ>
@@ -23,3 +24,4 @@
 <~multidelete if="GLOBAL[_flash][multidelete]" inline>
     <div class="alert alert-success"><~GLOBAL[_flash][multidelete]> `records has been deleted`</div>
 </~multidelete>
+</div>

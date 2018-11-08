@@ -1,4 +1,4 @@
-<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" data-errors="<~ERR json>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
 
@@ -23,13 +23,13 @@
   <fieldset>
     <~/common/form/msg>
 
-    <div class="form-group row form-control-lg <~/common/error if="ERR[iname]">">
+    <div class="form-group row form-control-lg">
       <label class="col-form-label col-md-3 required" for="iname">`Page Title`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required>
       </div>
     </div>
-    <div class="form-group row form-control-sm <~/common/error if="ERR[url]">">
+    <div class="form-group row form-control-sm">
       <label class="col-form-label col-md-3 <~/common/required unless="i[is_home]">" for="url">`Url`</label>
       <div class="col-md-9">
         <div class="input-group">
@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[idesc]">">
+    <div class="form-group row">
       <div class="col-md-12">
         <label class="col-form-label" for="idesc">`Page Content`:
             <span class="nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown syntax</a> supported</span>
@@ -52,7 +52,7 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[head_att_id]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="head_att_id">`Banner`</label>
       <div class="col-md-3">
         <input id="head_att_id" name="item[head_att_id]" value="<~i[head_att_id]>" type="hidden">
@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[idesc_right]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="idesc_right">`Right aside column`
         <small class="form-text text-muted nobold"><a href="https://guides.github.com/features/mastering-markdown/" target="_blank">markdown syntax</a> supported</small>
       </label>
@@ -77,7 +77,7 @@
     <fieldset>
         <legend>Page Attributes</legend>
 
-        <div class="form-group row <~/common/error if="ERR[parent_id]">">
+        <div class="form-group row">
           <label class="col-form-label col-md-3" for="parent_id">`Parent page`</label>
           <div class="col-md-9">
             <~parent_a_home if="i[is_home]" inline>
@@ -92,7 +92,7 @@
           </div>
         </div>
 
-        <!--div class="form-group row <~/common/error if="ERR[template]">">
+        <!--div class="form-group row">
           <label class="col-form-label col-md-3" for="template">`Template`</label>
           <div class="col-md-3">
             <select id="template" name="item[template]" class="form-control">
@@ -102,7 +102,7 @@
           </div>
         </div-->
 
-        <div class="form-group row <~/common/error if="ERR[prio]">">
+        <div class="form-group row">
           <label class="col-form-label col-md-3" for="prio">`Priority`</label>
           <div class="col-md-2">
             <input id="prio" name="item[prio]" maxlength="13" value="<~i[prio]>" type="text" class="form-control">
@@ -112,13 +112,13 @@
           </div>
         </div>
 
-        <div class="form-group row <~/common/error if="ERR[custom_css]">">
+        <div class="form-group row">
           <label class="col-form-label col-md-3" for="custom_css">`Custom CSS`</label>
           <div class="col-md-9">
             <textarea id="custom_css" name="item[custom_css]" rows="3" class="form-control autoresize"><~i[custom_css]></textarea>
           </div>
         </div>
-        <div class="form-group row <~/common/error if="ERR[custom_js]">">
+        <div class="form-group row">
           <label class="col-form-label col-md-3" for="custom_js">`Custom JS`</label>
           <div class="col-md-9">
             <textarea id="custom_js" name="item[custom_js]" rows="3" class="form-control autoresize"><~i[custom_js]></textarea>
@@ -131,7 +131,7 @@
         <legend>Publish</legend>
 
         <~publish_not_a_home unless="i[is_home]" inline>
-        <div class="form-group row <~/common/error if="ERR[pub_time]">">
+        <div class="form-group row">
           <label class="col-form-label col-md-3" for="pub_time">`Publish date`</label>
           <div class="col-md-3">
             <div class="input-group date">

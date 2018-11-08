@@ -8,15 +8,16 @@ CREATE TABLE users (
 
   fname                 NVARCHAR(32) NOT NULL DEFAULT '',
   lname                 NVARCHAR(32) NOT NULL DEFAULT '',
+  title                 NVARCHAR(128) NOT NULL DEFAULT '',
 
-  address1              NVARCHAR(64) NOT NULL DEFAULT '',
+  address1              NVARCHAR(128) NOT NULL DEFAULT '',
   address2              NVARCHAR(64) NOT NULL DEFAULT '',
   city                  NVARCHAR(64) NOT NULL DEFAULT '',
   state                 NVARCHAR(4) NOT NULL DEFAULT '',
   zip                   NVARCHAR(16) NOT NULL DEFAULT '',
   phone                 NVARCHAR(16) NOT NULL DEFAULT '',
 
-  notes                 NTEXT,
+  notes                 NVARCHAR(MAX),
   login_time            DATETIME2,
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
@@ -62,7 +63,7 @@ CREATE TABLE att_categories (
 
   icode                 NVARCHAR(64) NOT NULL DEFAULT '', /*to use from code*/
   iname                 NVARCHAR(64) NOT NULL DEFAULT '',
-  idesc                 NTEXT,
+  idesc                 NVARCHAR(MAX),
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
@@ -166,7 +167,7 @@ CREATE TABLE categories (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
   iname					        NVARCHAR(64) NOT NULL DEFAULT '',
-  idesc					        NTEXT,
+  idesc					        NVARCHAR(MAX),
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
@@ -189,7 +190,7 @@ CREATE TABLE events (
   icode                 NVARCHAR(64) NOT NULL default '',
 
   iname                 NVARCHAR(255) NOT NULL default '',
-  idesc                 NTEXT,
+  idesc                 NVARCHAR(MAX),
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),

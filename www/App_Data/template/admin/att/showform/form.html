@@ -1,4 +1,4 @@
-<form method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" enctype="multipart/form-data">
+<form method="post" data-check-changes action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" enctype="multipart/form-data" data-errors="<~ERR json>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
 
   <fieldset>
@@ -6,7 +6,7 @@
 
     <~/common/form/group_id>
 
-    <div class="form-group row <~/common/error if="ERR[att_categories_id]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="att_categories_id">`Category`</label>
       <div class="col-md-3">
         <select id="att_categories_id" name="item[att_categories_id]" class="form-control">
@@ -16,8 +16,8 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[iname]">">
-      <label class="col-form-label col-md-3" for="iname">`File name`</label>
+    <div class="form-group row">
+      <label class="col-form-label col-md-3 required" for="iname">`File name`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="128" value="<~i[iname]>" type="text" class="form-control">
         <~stats_block if="id" inline>
@@ -26,8 +26,8 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[file1]">">
-      <label class="col-form-label col-md-3" for="file1">`File`</label>
+    <div class="form-group row">
+      <label class="col-form-label col-md-3 required" for="file1">`File`</label>
       <div class="col-md-9">
         <~not_uploaded unless="i[fsize]" inline>
           <input id="file1" name="file1" type="file">
@@ -44,7 +44,7 @@
                    </div>
                  </~uploaded_file>
             </~uploaded>
-        <~err_file1_NOFILE ifeq="ERR[file1]" value="NOFILE" inline><p class="help-block">`You have to select file for upload`</p></~err_file1_NOFILE>
+          <p class="err-NOFILE">`You have to select file for upload`</p>
       </div>
     </div>
   </fieldset>

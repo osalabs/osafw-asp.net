@@ -118,6 +118,10 @@ form .required:before {
     font-family: Menlo, Monaco, "Courier New", monospace;
 }
 
+form [class^='err-'] {
+    display: none;
+}
+
 form .has-danger label {
     color: #dc3545;
 }

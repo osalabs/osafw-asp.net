@@ -21,4 +21,5 @@ Public Class AdminDemoDictsController
         list_sortdef = "iname asc"   'default sorting: name, asc|desc direction
         list_sortmap = Utils.qh("id|id iname|iname add_time|add_time status|status")
     End Sub
+
 End Class

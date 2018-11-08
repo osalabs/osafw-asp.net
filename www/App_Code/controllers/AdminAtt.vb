@@ -112,6 +112,7 @@ Public Class AdminAttController
 
         hf("id") = id
         hf("i") = item
+        If fw.FERR.Count > 0 Then logger(fw.FERR)
 
         Return hf
     End Function
@@ -222,7 +223,7 @@ Public Class AdminAttController
             End If
         End If
 
-        If Not result Then fw.FERR("REQ") = 1
+        If Not result Then fw.FERR("REQUIRED") = True
 
         If fw.FERR.Count > 0 AndAlso Not fw.FERR.ContainsKey("REQ") Then
             fw.FERR("INVALID") = 1

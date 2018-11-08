@@ -115,6 +115,7 @@ window.fw={
     //form screen init
     fw.setup_cancel_form_handlers();
     fw.setup_autosave_form_handlers();
+    fw.process_form_errors();
   },
 
   //for all forms with data-check-changes on a page - setup changes tracker, call in $(document).ready()
@@ -251,6 +252,8 @@ window.fw={
           dataType: 'json',
           success: function function_name (data) {
               //console.log('ajaxSubmit success', data);
+              $('#fw-form-msg').hide();
+              fw.clean_form_errors($f);
               if (data.success){
                   $f.data('is-changed', false);
                   set_status($f, 2);
@@ -261,6 +264,8 @@ window.fw={
                   }
               }else{
                   $f.data('is-ajaxsubmit',false);
+                  //auto-save error - highlight errors
+                  if (data.ERR) fw.process_form_errors($f, data.ERR);
                   //hint_error(data.err_msg ? data.err_msg : 'Auto-save error. Press Save manually.');
               }
               $f.trigger('autosave-success',[data]);
@@ -286,6 +291,40 @@ window.fw={
       }
       $(f).find('.form-saved-status').html('<span class="'+cls+'">'+txt+'</span>');
     }
+  },
+
+  //cleanup any exisitng form errors
+  clean_form_errors: function ($form) {
+    $form=$($form);
+    $form.find('.has-danger').removeClass('has-danger');
+    $form.find('.is-invalid').removeClass('is-invalid');
+    $form.find('[class^="err-"]').removeClass('invalid-feedback');
+  },
+
+  //form - optional, if set - just this form processed
+  //err_json - optional, if set - this error json used instead of form's data-errors
+  process_form_errors: function (form, err_json) {
+    //console.log(form, err_json);
+    var selector= 'form[data-errors]';
+    if (form) selector=$(form);
+    $(selector).each(function (i, el) {
+      var $f = $(el);
+      var errors = err_json ? err_json : $f.data('errors');
+      console.log(errors);
+      if ($.isPlainObject(errors)){
+        //highlight error fields
+        $.each(errors,function(key, errcode) {
+          var $input = $f.find('[name="item['+key+']"],[name="'+key+'"]');
+          if ($input.length){
+            $input.closest('.form-group').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
+            $input.addClass('is-invalid'); //mark input itself
+            if (errcode!==true && errcode.length){
+              $input.parent().find('.err-'+errcode).addClass('invalid-feedback'); //find/show specific error message
+            }
+          }
+        });
+      }
+    });
   },
 
   delete_btn: function (ael){

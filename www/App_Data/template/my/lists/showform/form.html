@@ -1,4 +1,4 @@
-<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das>  action="<~../url><~uu1 if="id" inline>/<~id></~uu1>">
+<form method="post" data-check-changes <~das if="id" inline>data-autosave</~das>  action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" data-errors="<~ERR json>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
  <~/common/form/relid>
@@ -8,7 +8,7 @@
 
     <~/common/form/group_id>
 
-    <div class="form-group row <~/common/error if="ERR[entity]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3 required" for="entity">`Screen`</label>
       <div class="col-md-4">
         <select id="entity" name="item[entity]" class="form-control selectpicker" data-live-search="true" required>
@@ -18,14 +18,14 @@
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[iname]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3 required" for="iname">`Title`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="64" value="<~i[iname]>" type="text" class="form-control" required autofocus>
-        <~err_iname_EXISTS ifeq="ERR[iname]" value="EXISTS" inline><p class="invalid-feedback">`Such title already exists in our database`</p></~err_iname_EXISTS>
+        <p class="err-EXISTS">`Such title already exists in our database`</p>
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[idesc]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="idesc">`Description`</label>
       <div class="col-md-9">
         <textarea id="idesc" name="item[idesc]" rows="5" class="form-control" data-noautosave><~i[idesc]></textarea>

@@ -126,6 +126,7 @@ Public Class FwAdminController
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
+        If fw.FERR.Count > 0 Then logger(fw.FERR)
 
         Return ps
     End Function

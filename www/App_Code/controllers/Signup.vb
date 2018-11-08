@@ -17,6 +17,8 @@ Public Class SignupController
         base_url = "/Signup"
         'override layout
         fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
+
+        If Not fw.config("IS_SIGNUP") Then fw.redirect(fw.config("UNLOGGED_DEFAULT_URL"))
     End Sub
 
     Public Sub IndexAction()
@@ -89,7 +91,7 @@ Public Class SignupController
 
         If result AndAlso item("pwd") <> item("pwd2") Then
             result = False
-            fw.FERR("pwd") = "WRONG"
+            fw.FERR("pwd2") = "WRONG"
         End If
 
         If Not result Then Throw New ApplicationException(msg)

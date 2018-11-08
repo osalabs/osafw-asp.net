@@ -102,7 +102,7 @@
 ' capitalize        - capitalize first word, capitalize=all - capitalize all words
 ' default
 ' urlencode
-' TODO var2js
+' json (was var2js) - produces json-compatible string, example: {success:true, msg:""}
 ' markdown - convert markdown text to html using CommonMark.NET (optional). Note: may wrap tag with <p>
 
 Imports System.IO
@@ -231,7 +231,11 @@ Public Class ParsePage
                                 End If
                                 value = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
                             Else
-                                value = tag_value.ToString()
+                                If attrs.ContainsKey("json") Then
+                                    value = Utils.jsonEncode(tag_value)
+                                Else
+                                    value = tag_value.ToString()
+                                End If
                                 If value > "" AndAlso Not attrs.ContainsKey("noescape") Then value = Utils.htmlescape(value)
                             End If
                             tag_replace(page, tag_full, value, attrs)

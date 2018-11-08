@@ -1,51 +1,51 @@
-<form method="post" data-check-changes action="<~../url>">
+<form method="post" data-check-changes action="<~../url>" data-errors="<~ERR json>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
 
   <fieldset>
     <~/common/form/msg>
 
-    <div class="form-group row <~/common/error if="ERR[email]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3 required" for="email">`Email`</label>
       <div class="col-md-9">
         <input id="email" name="item[email]" maxlength="128" value="<~i[email]>" type="email" class="form-control" required>
-        <~err_email_EXISTS ifeq="ERR[email]" value="EXISTS" inline><p class="help-block">`Such email already exists in our database`</p></~err_email_EXISTS>
-        <~err_email_WRONG ifeq="ERR[email]" value="WRONG" inline><p class="help-block">`Invalid Email`</p></~err_email_WRONG>
+        <p class="err-EXISTS">`Such email already exists in our database`</p>
+        <p class="err-WRONG">`Invalid Email`</p>
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[fname]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="fname">`First name`</label>
       <div class="col-md-9">
         <input id="fname" name="item[fname]" maxlength="32" value="<~i[fname]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[lname]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="lname">`Last name`</label>
       <div class="col-md-9">
         <input id="lname" name="item[lname]" maxlength="32" value="<~i[lname]>" type="text" class="form-control">
       </div>
     </div>
 
-    <div class="form-group row <~/common/error if="ERR[address1]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="address1">`Address 1`</label>
       <div class="col-md-9">
         <input id="address1" name="item[address1]" maxlength="64" value="<~i[address1]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[address2]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="address2">`Address 2`</label>
       <div class="col-md-9">
         <input id="address2" name="item[address2]" maxlength="64" value="<~i[address2]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[city]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="city">`City`</label>
       <div class="col-md-5">
         <input id="city" name="item[city]" maxlength="64" value="<~i[city]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[state]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="state">`State`</label>
       <div class="col-md-4">
         <select id="state" name="item[state]" class="form-control">
@@ -54,13 +54,13 @@
         </select>
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[zip]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="zip">`Zip`</label>
       <div class="col-md-3">
         <input id="zip" name="item[zip]" maxlength="16" value="<~i[zip]>" type="text" class="form-control">
       </div>
     </div>
-    <div class="form-group row <~/common/error if="ERR[phone]">">
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="phone">`Phone`</label>
       <div class="col-md-3">
         <input id="phone" name="item[phone]" maxlength="16" value="<~i[phone]>" type="text" class="form-control">
