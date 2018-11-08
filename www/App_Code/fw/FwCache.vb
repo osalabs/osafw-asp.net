@@ -6,6 +6,8 @@
 
 Public Class FwCache
     Public Shared cache As New Hashtable 'app level cache
+    Private Shared locker As New Object
+
     Public request_cache As New Hashtable 'request level cache
 
     Public Shared Function getValue(key As String) As Object
@@ -13,17 +15,23 @@ Public Class FwCache
     End Function
 
     Public Shared Sub setValue(key As String, value As Object)
-        cache(key) = value
+        SyncLock locker
+            cache(key) = value
+        End SyncLock
     End Sub
 
     'remove one key from cache
     Public Shared Sub remove(key As String)
-        cache.Remove(key)
+        SyncLock locker
+            cache.Remove(key)
+        End SyncLock
     End Sub
 
     'clear whole cache
     Public Shared Sub clear()
-        cache.Clear()
+        SyncLock locker
+            cache.Clear()
+        End SyncLock
     End Sub
 
     '******** request-level cache ***********

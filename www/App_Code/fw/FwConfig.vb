@@ -9,15 +9,20 @@ Public Class FwConfig
     Public Shared settings As Hashtable
     Public Shared route_prefixes_rx As String
 
+    Private Shared locker As New Object
+
     Public Shared Sub init(req As System.Web.HttpRequest, Optional ByVal hostname As String = "")
         'appSettings is Shared, so it's lifetime same as application lifetime 
         'if appSettings already initialized no need to read web.config again
-        If settings IsNot Nothing AndAlso settings.Count>0 Then Exit Sub
+        SyncLock locker
+            If settings IsNot Nothing AndAlso settings.Count > 0 AndAlso settings.ContainsKey("_SETTINGS_OK") Then Exit Sub
+            FwConfig.hostname = hostname
+            initDefaults(req, hostname)
+            readSettings()
+            specialSettings()
 
-        FwConfig.hostname = hostname
-        initDefaults(req, hostname)
-        readSettings()
-        specialSettings()
+            settings("_SETTINGS_OK") = True 'just a marker to ensure we have all settings set
+        End SyncLock
     End Sub
 
     'reload settings
@@ -140,7 +145,7 @@ Public Class FwConfig
     'prefixes used so Dispatcher will know that url starts not with a full controller name, but with a prefix, need to be added to controller name
     'return regexp str that cut the prefix from the url, second capturing group captures rest of url after the prefix
     Public Shared Function getRoutePrefixesRX() As String
-        If route_prefixes_rx Is Nothing Then
+        If String.IsNullOrEmpty(route_prefixes_rx) Then
             'prepare regexp - escape all prefixes
             Dim r As New ArrayList()
             For Each url As String In settings("route_prefixes").Keys
