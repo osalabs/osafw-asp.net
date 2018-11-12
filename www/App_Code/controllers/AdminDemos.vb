@@ -26,12 +26,6 @@ Public Class AdminDemosController
         model_related = fw.model(Of DemoDicts)()
     End Sub
 
-    Public Overrides Sub setListSearch()
-        MyBase.setListSearch()
-
-        If list_filter("status") > "" Then list_where &= " and status=" & db.qi(list_filter("status"))
-    End Sub
-
     Public Overrides Sub getListRows()
         MyBase.getListRows()
 

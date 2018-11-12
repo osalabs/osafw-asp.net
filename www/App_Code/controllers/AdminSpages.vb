@@ -29,15 +29,7 @@ Public Class AdminSpagesController
         Dim f As Hashtable = Me.initFilter()
 
         Me.setListSorting()
-
-        Me.list_where = " 1=1 "
         Me.setListSearch()
-        'set here non-standard search
-        If f("status") > "" Then
-            Me.list_where &= " and status=" & db.qi(f("status"))
-        Else
-            Me.list_where &= " and status<>127 " 'by default - show all non-deleted
-        End If
 
         If list_filter("sortby") = "iname" AndAlso list_filter("s") = "" Then
             Me.list_count = db.value("select count(*) from " & model.table_name & " where " & Me.list_where)

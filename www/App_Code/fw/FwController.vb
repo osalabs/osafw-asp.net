@@ -24,7 +24,7 @@ Public MustInherit Class FwController
     Protected list_view As String                  ' table/view to use in list sql, if empty model0.table_name used
     Protected list_orderby As String               ' orderby for the list screen
     Protected list_filter As Hashtable             ' filter values for the list screen
-    Protected list_where As String = " status<>127 " ' where to use in list sql, default is status=0
+    Protected list_where As String = " 1=1 "       ' where to use in list sql, default is non-deleted records (see setListSearch() )
     Protected list_count As Integer                ' count of list rows returned from db
     Protected list_rows As ArrayList               ' list rows returned from db (array of hashes)
     Protected list_pager As ArrayList              ' pager for the list from FormUtils.get_pager
@@ -202,8 +202,6 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks>Sample: Me.search_fields="field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'</remarks>
     Public Overridable Sub setListSearch()
-        'Me.list_where = " status = 0" 'if initial where empty, use " 1=1 "
-
         Dim s As String = Trim(Me.list_filter("s"))
         If s > "" AndAlso Me.search_fields > "" Then
             Dim list_table_name As String = list_view
@@ -231,12 +229,30 @@ Public MustInherit Class FwController
             list_where &= " and (" & Join(afields, " or ") & ")"
         End If
 
+        setListSearchStatus()
+
         If list_filter("userlist") > "" Then
             Me.list_where &= " and id IN (select ti.item_id from " & fw.model(Of UserLists).table_items & " ti where ti.user_lists_id=" & db.qi(list_filter("userlist")) & " and ti.add_users_id=" & fw.model(Of Users).meId & " ) "
         End If
 
         If related_id > "" AndAlso related_field_name > "" Then
             list_where &= " and " & db.q_ident(related_field_name) & "=" & db.q(related_id)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' set list_where filter based on status filter: 
+    ''' - if status not set - filter our deleted (i.e. show all)
+    ''' - if status set - filter by status, but if status=127 (deleted) only allow to see deleted by admins
+    ''' </summary>
+    Public Overridable Sub setListSearchStatus()
+        If Me.list_filter("status") > "" Then
+            Dim status = Utils.f2int(Me.list_filter("status"))
+            'if want to see trashed and not admin - just show active
+            If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then status = 0
+            Me.list_where &= " and status=" & db.qi(status)
+        Else
+            Me.list_where &= " and status<>127 " 'by default - show all non-deleted
         End If
     End Sub
 
