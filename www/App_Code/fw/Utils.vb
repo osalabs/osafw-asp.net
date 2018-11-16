@@ -151,9 +151,16 @@ Public Class Utils
         Return result IsNot Nothing
     End Function
 
+    'guarantee to return string (if cannot convert to string - just return empty string)
+    Public Shared Function f2str(ByVal AField As Object) As String
+        If AField Is Nothing Then Return ""
+        Dim result As String = Convert.ToString(AField)
+        Return result
+    End Function
+
     Public Shared Function f2int(ByVal AField As Object) As Integer
-        Dim result As Integer = 0
         If AField Is Nothing Then Return 0
+        Dim result As Integer = 0
 
         Int32.TryParse(AField.ToString(), result)
         Return result

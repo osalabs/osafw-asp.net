@@ -7,12 +7,6 @@ Public MustInherit Class FwController
     Public Shared route_default_action As String = "" 'supported values - "" (use Default Parser for unknown actions), index (use IndexAction for unknown actions), show (assume action is id and use ShowAction)
     Public base_url As String 'base url for the controller
 
-    Public list_sortdef As String       'required, default list sorting: name asc|desc
-    Public list_sortmap As Hashtable    'required, sortmap fields
-    Public search_fields As String      'optional, search fields, space-separated 
-    'fields to search via $s=list_filter("s"), ! - means exact match, not "like"
-    'format: "field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'
-
     Public form_new_defaults As Hashtable   'optional, defaults for the fields in new form
     Public required_fields As String        'optional, default required fields, space-separated
     Public save_fields As String            'required, fields to save from the form to db, space-separated
@@ -21,6 +15,8 @@ Public MustInherit Class FwController
     Protected fw As FW
     Protected db As DB
     Protected model0 As FwModel
+    Protected config As Hashtable                  ' controller config, loaded from template dir/config.json
+
     Protected list_view As String                  ' table/view to use in list sql, if empty model0.table_name used
     Protected list_orderby As String               ' orderby for the list screen
     Protected list_filter As Hashtable             ' filter values for the list screen
@@ -28,6 +24,19 @@ Public MustInherit Class FwController
     Protected list_count As Integer                ' count of list rows returned from db
     Protected list_rows As ArrayList               ' list rows returned from db (array of hashes)
     Protected list_pager As ArrayList              ' pager for the list from FormUtils.get_pager
+    Protected list_sortdef As String               ' required for Index, default list sorting: name asc|desc
+    Protected list_sortmap As Hashtable            ' required for Index, sortmap fields
+    Protected search_fields As String              ' optional, search fields, space-separated 
+    'fields to search via $s=list_filter("s"), ! - means exact match, not "like"
+    'format: "field1 field2,!field3 field4" => field1 LIKE '%$s%' or (field2 LIKE '%$s%' and field3='$s') or field4 LIKE '%$s%'
+
+    'support of customizable view list
+    'map of fileld names to screen names
+    Protected is_dynamic As Boolean = False         'true if controller is dynamic, then define below:
+    Protected view_list_defaults As String = ""     'qw list of default columns
+    Protected view_list_map As String = ""          'qh list of all available columns fieldname|visiblename
+    Protected view_list_map_cache As Hashtable      'cache for view_list_map as hash
+
     Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
     Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
     Protected related_field_name As String         ' if set (in Controller) and $related_id passed - list will be filtered on this field
@@ -45,6 +54,33 @@ Public MustInherit Class FwController
 
         return_url = reqs("return_url")
         related_id = reqs("related_id")
+    End Sub
+
+    'load controller config from json in template dir (based on base_url)
+    Public Overridable Sub loadControllerConfig()
+        Dim conf_file0 = base_url.ToLower() & "/config.json"
+        Dim conf_file = fw.config("template") & "/" & conf_file0
+        If Not IO.File.Exists(conf_file) Then Throw New ApplicationException("Controller Config file not found in templates: " & conf_file0)
+
+        Me.config = Utils.jsonDecode(FW.get_file_content(conf_file))
+        If Me.config Is Nothing Then Throw New ApplicationException("Controller Config is invalid, check json in templates: " & conf_file0)
+        logger("loaded config:")
+        logger(Me.config)
+
+        'TODO check/conv to str
+        required_fields = Utils.f2str(Me.config("required_fields"))
+        save_fields = Utils.f2str(Me.config("save_fields"))
+        save_fields_checkboxes = Utils.f2str(Me.config("save_fields"))
+
+        search_fields = Utils.f2str(Me.config("search_fields"))
+        list_sortdef = Utils.f2str(Me.config("list_sortdef"))
+        list_sortmap = Utils.qh(Utils.f2str(Me.config("list_sortmap")))
+
+        related_field_name = Utils.f2str(Me.config("related_field_name"))
+
+        list_view = Utils.f2str(Me.config("list_view"))
+
+        is_dynamic = Utils.f2bool(Me.config("is_dynamic"))
     End Sub
 
     'set of helper functions to return string, integer, date values from request (fw.FORM)

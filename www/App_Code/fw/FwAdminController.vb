@@ -29,6 +29,19 @@ Public Class FwAdminController
         'list_view = model0.table_name 'optionally override list view/table
     End Sub
 
+    Public Overrides Sub loadControllerConfig()
+        MyBase.loadControllerConfig()
+
+        If is_dynamic Then
+            'Whoah! this is fully dynamic form
+            view_list_defaults = Utils.f2str(Me.config("view_list_defaults"))
+            view_list_map = Utils.f2str(Me.config("view_list_map"))
+
+            list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
+            search_fields = getViewListUserFields() 'just search in all visible fields
+        End If
+    End Sub
+
     Public Overridable Function IndexAction() As Hashtable
         'get filters from the search form
         Dim f As Hashtable = Me.initFilter()
@@ -60,6 +73,22 @@ Public Class FwAdminController
         ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
         ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
         ps("list_view") = list_view
+
+        If is_dynamic Then
+            'customizable headers
+            setViewList(ps, reqh("search"))
+
+            'set links for iname, models_iname, manufacturers_iname, lastcal_PerformedOn
+            'bad style to use html in code, but it's much faster than templates
+            'For Each row As Hashtable In ps("list_rows")
+            '    For Each col As Hashtable In row("cols")
+            '        col("data") = Utils.htmlescape(col("data"))
+            '        If col("field_name") = "XXX" Then
+            '            col("data") = "<a href='/Admin/XXX/" & row("id") & "'>" & col("data") & "</a>"
+            '        End If
+            '    Next
+            'Next
+        End If
 
         Return ps
     End Function
