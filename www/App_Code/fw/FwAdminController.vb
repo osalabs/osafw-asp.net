@@ -7,12 +7,6 @@ Public Class FwAdminController
     Inherits FwController
     'Public Shared Shadows route_default_action As String = "index" 'empty|index|show - calls IndexAction or ShowAction accordingly if no requested controller action found. If empty (default) - show template from /cur_controller/cur_action dir
 
-    'support of customizable view list
-    'map of fileld names to screen names
-    Public view_list_defaults As String = "" 'qw list of default columns
-    Public view_list_map As String = "" 'qh list of all available columns fieldname|visiblename
-    Public view_list_map_cache As Hashtable 'cache for view_list_map as hash
-
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
 
@@ -27,19 +21,6 @@ Public Class FwAdminController
         'list_sortmap = Utils.qh("id|id iname|iname add_time|add_time")
 
         'list_view = model0.table_name 'optionally override list view/table
-    End Sub
-
-    Public Overrides Sub loadControllerConfig()
-        MyBase.loadControllerConfig()
-
-        If is_dynamic Then
-            'Whoah! this is fully dynamic form
-            view_list_defaults = Utils.f2str(Me.config("view_list_defaults"))
-            view_list_map = Utils.f2str(Me.config("view_list_map"))
-
-            list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
-            search_fields = getViewListUserFields() 'just search in all visible fields
-        End If
     End Sub
 
     Public Overridable Function IndexAction() As Hashtable
@@ -292,87 +273,6 @@ Public Class FwAdminController
         End Try
 
         fw.redirect(return_url)
-    End Sub
-
-    Public Overridable Function getViewListMap() As Hashtable
-        If view_list_map_cache Is Nothing Then view_list_map_cache = Utils.qh(view_list_map)
-        Return view_list_map_cache
-    End Function
-
-    'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order
-    'if fields defined - show fields only
-    'if is_all true - then show all fields (not only from fields param)
-    Public Overridable Function getViewListArr(Optional fields As String = "", Optional is_all As Boolean = False) As ArrayList
-        Dim result As New ArrayList
-
-        'if fields defined - first show these fields, then the rest
-        Dim fields_added As New Hashtable
-        If fields > "" Then
-            Dim map = getViewListMap()
-            For Each fieldname In Utils.qw(fields)
-                result.Add(New Hashtable From {{"field_name", fieldname}, {"field_name_visible", map(fieldname)}, {"is_checked", True}})
-                fields_added(fieldname) = True
-            Next
-        End If
-
-        If is_all Then
-            'rest/all fields
-            Dim arr = Utils.qw(view_list_map)
-            For Each v In arr
-                v = Replace(v, "&nbsp;", " ")
-                Dim asub() As String = Split(v, "|", 2)
-                If UBound(asub) < 1 Then Throw New ApplicationException("Wrong Format for view_list_map")
-                If fields_added.ContainsKey(asub(0)) Then Continue For
-
-                result.Add(New Hashtable From {{"field_name", asub(0)}, {"field_name_visible", asub(1)}})
-            Next
-        End If
-        Return result
-    End Function
-
-    Public Overridable Function getViewListSortmap() As Hashtable
-        Dim result As New Hashtable
-        For Each fieldname In getViewListMap().Keys
-            result(fieldname) = fieldname
-        Next
-        Return result
-    End Function
-
-    Public Overridable Function getViewListUserFields() As String
-        Dim item = fw.model(Of UserViews).oneByScreen(base_url) 'base_url is screen identifier
-        Return IIf(item("fields") > "", item("fields"), view_list_defaults)
-    End Function
-
-    'add to ps:
-    ' headers
-    ' headers_search
-    ' depends on ps("list_rows")
-    'usage:
-    ' model.setViewList(ps, reqh("search"))
-    Public Overridable Sub setViewList(ps As Hashtable, hsearch As Hashtable)
-        Dim fields = getViewListUserFields()
-
-        Dim headers = getViewListArr(fields)
-        'add search from user's submit
-        For Each header As Hashtable In headers
-            header("search_value") = hsearch(header("field_name"))
-        Next
-
-        ps("headers") = headers
-        ps("headers_search") = headers
-
-        'dynamic cols
-        For Each row As Hashtable In ps("list_rows")
-            Dim cols As New ArrayList
-            For Each fieldname In Utils.qw(fields)
-                cols.Add(New Hashtable From {
-                    {"row", row},
-                    {"field_name", fieldname},
-                    {"data", row(fieldname)}
-                })
-            Next
-            row("cols") = cols
-        Next
     End Sub
 
 End Class

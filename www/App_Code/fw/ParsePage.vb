@@ -153,7 +153,13 @@ Public Class ParsePage
     Public Function parse_page(ByVal bdir As String, ByVal tpl_name As String, ByVal hf As Hashtable) As String
         basedir = bdir
         Dim parent_hf As Hashtable = New Hashtable
-        Return _parse_page(tpl_name, hf, "", "", parent_hf)
+        'Return _parse_page(tpl_name, hf, "", "", parent_hf)
+
+        Dim start_time = DateTime.Now
+        Dim result = _parse_page(tpl_name, hf, "", "", parent_hf)
+        Dim end_timespan As TimeSpan = DateTime.Now - start_time
+        fw.logger("ParsePage speed: " & String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds) & "/s")
+        Return result
     End Function
 
     Public Function parse_string(tpl As String, hf As Hashtable) As String
@@ -317,7 +323,6 @@ Public Class ParsePage
         End If
 
         'get from fs(if not in cache)
-        file_data = FW.get_file_content(filename)
         Dim cache As Hashtable = New Hashtable
         cache("data") = file_data
         cache("modtime") = modtime

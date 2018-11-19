@@ -61,6 +61,49 @@ window.fw={
     //list screen init
     fw.make_table_list(".list");
 
+    //list screen init
+    var $ffilter = $('form[data-list-filter]:first');
+
+    //advanced search filter
+    $(document).on('click', 'form[data-list-filter] .on-toggle-search', function (e) {
+      var $fis = $('form[data-list-filter] input[name="f[is_search]"]');
+      var $ts = $('.on-toggle-search').find('.glyphicon');
+      var $el = $('table.list .search');
+      if ($el.is(':visible')){
+          $el.hide();
+          $ts.removeClass('glyphicon-menu-up');
+          $fis.val('');
+      } else {
+          $el.show();
+          $ts.addClass('glyphicon-menu-up');
+          $fis.val('1');
+      }
+    });
+
+    $('table.list').on('keypress','.search input', function(e) {
+      if (e.which == 13) {// on Enter press
+          e.preventDefault();
+          //on explicit search - could reset pagenum to 0
+          //$ffilter.find('input[name="f[pagenum]"]').val(0);
+          $ffilter.trigger('submit');
+          return false;
+      }
+    });
+
+    //on filter form submit - add advanced search fields into form
+    $ffilter.on('submit', function (e) {
+        var $f = $ffilter;
+        var $fis = $f.find('input[name="f[is_search]"]');
+        if ($fis.val()=='1'){
+            //if search ON - add search fields to the form
+            var html=[];
+            $('table.list .search input').each(function (i, el) {
+                html.push( '<input type="hidden" name="'+el.name+'" value="'+el.value+'">');
+            });
+            $f.append(html.join(''));
+        }
+    });
+
     //autosubmit filter on change filter fields
     $(document).on('change', 'form[data-list-filter][data-autosubmit] [name^="f["]:input:visible:not([data-nosubmit])', function(){
         this.form.submit();
