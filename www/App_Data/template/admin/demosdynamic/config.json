@@ -15,5 +15,141 @@
     "view_list_map": "demo_dicts_iname|DemoDicts iname|Title email|Email add_time|Added&nbsp;on status|Status id|id",
     "view_list_custom": "status demo_dicts_iname",
 
+    "show_fields": [
+        {
+            "field": "parent_id",
+            "label": "Parent",
+            "lookup_table": "demos",
+            "lookup_field": "iname",
+            "type": "plaintext"
+        },
+        {
+            "field": "demo_dicts_id",
+            "label": "DemoDicts",
+            "lookup_table": "demo_dicts",
+            "lookup_field": "iname",
+            "type": "plaintext"
+        },
+        {
+            "field": "iname",
+            "label": "Title",
+            "type": "plaintext"
+        },
+        {
+            "field": "idesc",
+            "label": "Description",
+            "type": "markdown"
+        },
+        {
+            "field": "idesc2",
+            "label": "Wysisyg editor",
+            "type": "noescape"
+        },
+        {
+            "field": "idesc3",
+            "label": "Wysisyg editor short",
+            "type": "noescape"
+        },
+        {
+            "field": "email",
+            "label": "Email",
+            "type": "plaintext"
+        },
+        {
+            "field": "fint",
+            "label": "Integer number",
+            "type": "plaintext"
+        },
+        {
+            "field": "ffloat",
+            "label": "Float number",
+            "type": "float"
+        },
+        {
+            "field": "dict_link_auto_id",
+            "label": "DemoDicts Autocomplete",
+            "type": "plaintext",
+            "lookup_model": "DemoDicts",
+            "lookup_field": "iname"
+        },
+        {
+            "field": "dict_link_multi",
+            "label": "DemoDicts Multi",
+            "type": "multi",
+            "lookup_model": "DemoDicts"
+        },
+        {
+            "field": "fcombo",
+            "label": "Combo",
+            "type": "plaintext",
+            "lookup_tpl": "/common/sel/fcombo.sel"
+        },
+        {
+            "field": "fradio",
+            "label": "Radio",
+            "type": "plaintext",
+            "lookup_tpl": "/common/sel/fcombo.sel"
+        },
+        {
+            "field": "fyesno",
+            "label": "Yes or No",
+            "type": "plaintext",
+            "lookup_tpl": "/common/sel/yn.sel"
+        },
+        {
+            "field": "is_checkbox",
+            "label": "Checkbox",
+            "type": "checkbox"
+        },
+        {
+            "field": "fdate_combo",
+            "label": "Date combo",
+            "type": "date"
+        },
+        {
+            "field": "fdate_pop",
+            "label": "Date popup",
+            "type": "date"
+        },
+        {
+            "field": "fdatetime",
+            "label": "Date and Time",
+            "type": "date_long"
+        },
+        {
+            "field": "ftime",
+            "label": "Time",
+            "type": "plaintext",
+            "conv": "time_from_seconds"
+        },
+        {
+            "field": "att_id",
+            "label": "Attachment",
+            "type": "att",
+            "class_contents": "col-md-2"
+        },
+        {
+            "field": "",
+            "label": "Multiple Attachments",
+            "type": "att_links"
+        },
+        {
+            "field": "status",
+            "label": "Status",
+            "type": "plaintext",
+            "lookup_tpl": "/common/sel/status.sel"
+        },
+        {
+            "field": "add_time",
+            "label": "Added on",
+            "type": "added"
+        },
+        {
+            "field": "upd_time",
+            "label": "Updated on",
+            "type": "updated"
+        }
+    ],
+
     "1":"1"
 }

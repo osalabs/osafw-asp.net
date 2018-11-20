@@ -442,6 +442,7 @@ Public Class Utils
 
         Catch ex As Exception
             'if error during conversion - return Nothing
+            FW.Current.logger(ex.Message)
             result = Nothing
         End Try
 

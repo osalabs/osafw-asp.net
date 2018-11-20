@@ -34,11 +34,62 @@ Public Class AdminDemosDynamicController
     Public Overrides Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
         Dim ps As Hashtable = MyBase.ShowAction(form_id)
         Dim item As Hashtable = ps("i")
+        Dim id = Utils.f2int(item("id"))
 
-        ps("parent") = model.one(Utils.f2int(item("parent_id")))
-        ps("demo_dicts") = model_related.one(Utils.f2int(item("demo_dicts_id")))
-        ps("dict_link_auto") = model_related.one(Utils.f2int(item("dict_link_auto_id")))
-        ps("multi_datarow") = model_related.getMultiList(item("dict_link_multi"))
+        Dim fields As ArrayList = Me.config("show_fields")
+        For Each def As Hashtable In fields
+            Dim dtype = def("type")
+            Dim field = def("field")
+
+            If dtype = "multi" Then
+                'complex field
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
+
+            ElseIf dtype = "att" Then
+                def("att") = fw.model(Of Att).one(Utils.f2int(item(field)))
+
+            ElseIf dtype = "att_links" Then
+                def("att_links") = fw.model(Of Att).getAllLinked(model.table_name, Utils.f2int(id))
+                logger(def("att_links"))
+
+            Else
+                'single values
+                'lookups
+                If def.ContainsKey("lookup_table") Then 'lookup by table
+                    Dim lookup_key = def("lookup_key")
+                    If lookup_key = "" Then lookup_key = "id"
+
+                    Dim lookup_field = def("lookup_field")
+                    If lookup_field = "" Then lookup_field = "iname"
+
+                    def("lookup_row") = db.row(def("lookup_table"), New Hashtable From {{lookup_key, item(field)}})
+                    def("value") = def("lookup_row")(lookup_field)
+
+                ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
+                    def("lookup_row") = fw.model(def("lookup_model")).one(item(field))
+
+                    Dim lookup_field = def("lookup_field")
+                    If lookup_field = "" Then lookup_field = "iname"
+
+                    def("value") = def("lookup_row")(lookup_field)
+
+                ElseIf def.ContainsKey("lookup_tpl") Then
+                    def("value") = FormUtils.selectTplName(def("lookup_tpl"), item(field))
+
+                Else
+                    def("value") = item(field)
+                End If
+
+                'convertors
+                If def.ContainsKey("conv") Then
+                    If def("conv") = "time_from_seconds" Then
+                        def("value") = FormUtils.intToTimeStr(Utils.f2int(def("value")))
+                    End If
+                End If
+            End If
+        Next
+        ps("fields") = fields
+
         ps("att") = fw.model(Of Att).one(Utils.f2int(item("att_id")))
         ps("att_links") = fw.model(Of Att).getAllLinked(model.table_name, Utils.f2int(item("id")))
 
