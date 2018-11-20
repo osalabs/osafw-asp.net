@@ -1,0 +1,16 @@
+<div class="row">
+    <div class="col-3 col-md-2">
+        <p><button id="<~field>" type="button" class="btn btn-default on-select-att" data-att-category="<~att_category default="general">">`Select/Upload`</button></p>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="card text-center att-info" <~/common/display_none unless="att">>
+          <input name="item[<~field>]" value="<~value>" type="hidden">
+          <img class="card-img-top" src="<~/att/url>/<~att[id]>?preview=1&size=s" alt="">
+          <div class="card-body text-nooverflow">
+            <p class="card-text att-iname"><~att[iname]></p>
+            <a href="<~/att/url>/<~att[id]>" target="_blank" class="btn btn-default"><i class="glyphicon glyphicon-download"></i> `Download`</a>
+            <button type="button" class="btn btn-default on-remove-att"><i class="glyphicon glyphicon-remove"></i> `Remove`</button>
+          </div>
+        </div>
+    </div>
+</div>

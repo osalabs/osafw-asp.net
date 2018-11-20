@@ -148,6 +148,177 @@
             "field": "upd_time",
             "label": "Updated on",
             "type": "updated"
+        },
+        {
+            "is_custom": true,
+            "field": "some_custom_field"
+        }
+    ],
+
+    "showform_fields": [
+        {
+            "field": "id",
+            "label": "ID",
+            "type": "group_id"
+        },
+        {
+            "field": "parent_id",
+            "label": "Parent (TODO)",
+            "lookup_model": "DemoDicts",
+            "type": "select",
+            "is_option0": true,
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "demo_dicts_id",
+            "label": "DemoDicts",
+            "lookup_model": "DemoDicts",
+            "type": "select",
+            "is_option0": true,
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "iname",
+            "label": "Title",
+            "type": "input",
+            "required": true,
+            "maxlength": 64
+        },
+        {
+            "field": "idesc",
+            "label": "Description",
+            "type": "textarea",
+            "rows": "5",
+            "class_control": "markdown autoresize"
+        },
+        {
+            "field": "idesc2",
+            "label": "Wysisyg editor",
+            "type": "textarea",
+            "rows": "10",
+            "class_control": "fw-html-editor"
+        },
+        {
+            "field": "idesc3",
+            "label": "Wysisyg editor short",
+            "type": "textarea",
+            "rows": "10",
+            "class_control": "fw-html-editor-short"
+        },
+        {
+            "field": "email",
+            "label": "Email (unique field)",
+            "type": "email",
+            "required": true,
+            "maxlength": 128
+        },
+        {
+            "field": "fint",
+            "label": "Integer number",
+            "type": "number",
+            "min": 0,
+            "max": 999999,
+            "class_contents": "col-md-2"
+        },
+        {
+            "field": "ffloat",
+            "label": "Float number",
+            "type": "number",
+            "step": 0.1,
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "dict_link_auto_id",
+            "label": "DemoDicts Autocomplete",
+            "type": "autocomplete",
+            "lookup_model": "DemoDicts",
+            "lookup_field": "iname",
+            "help_text": "will add new items to DemoDicts"
+        },
+        {
+            "field": "dict_link_multi",
+            "label": "DemoDicts Multi",
+            "type": "multicb",
+            "lookup_model": "DemoDicts"
+        },
+        {
+            "field": "fcombo",
+            "label": "Combo",
+            "type": "select",
+            "lookup_tpl": "/common/sel/fcombo.sel",
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "fradio",
+            "label": "Radio",
+            "type": "radio",
+            "lookup_tpl": "/common/sel/fcombo.sel",
+            "is_inline": true
+        },
+        {
+            "field": "fyesno",
+            "label": "Yes or No",
+            "type": "yesno",
+            "is_inline": true
+        },
+        {
+            "field": "is_checkbox",
+            "label": "Checkbox",
+            "type": "cb"
+        },
+        {
+            "field": "fdate_combo",
+            "label": "Date combo (TODO)",
+            "type": "date"
+        },
+        {
+            "field": "fdate_pop",
+            "label": "Date popup",
+            "type": "date_popup",
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "fdatetime",
+            "label": "Date and Time (TODO)",
+            "type": "date_long"
+        },
+        {
+            "field": "ftime",
+            "label": "Time (TODO)",
+            "type": "plaintext",
+            "conv": "time_from_seconds"
+        },
+        {
+            "field": "att_id",
+            "label": "Attachment",
+            "type": "att_edit",
+            "att_category": "general"
+        },
+        {
+            "field": "",
+            "label": "Multiple Attachments",
+            "type": "att_links_edit"
+        },
+        {
+            "field": "status",
+            "label": "Status",
+            "type": "select",
+            "lookup_tpl": "/common/sel/status.sel",
+            "class_contents": "col-md-3"
+        },
+        {
+            "field": "add_time",
+            "label": "Added on",
+            "type": "added"
+        },
+        {
+            "field": "upd_time",
+            "label": "Updated on",
+            "type": "updated"
+        },
+        {
+            "is_custom": true,
+            "field": "some_custom_field"
         }
     ],
 

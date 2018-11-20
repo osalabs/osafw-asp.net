@@ -117,6 +117,27 @@ Public Class FormUtils
         Return result
     End Function
 
+    Public Shared Function selectTplOptions(ByVal tpl_path As String, ByVal sel_id As String, Optional is_multi As Boolean = False) As ArrayList
+        Dim result As New ArrayList
+        If sel_id Is Nothing Then sel_id = ""
+
+        Dim lines As String() = FW.get_file_lines(FwConfig.settings("template") + tpl_path)
+
+        For Each line In lines
+            If line.Length < 2 Then Continue For
+
+            Dim arr() As String = Split(line, "|", 2)
+            Dim value As String = arr(0)
+            Dim desc As String = arr(1)
+
+            'desc = ParsePage.RX_LANG.Replace(desc, "$1")
+            desc = New Regex("`(.+?)`", RegexOptions.Compiled).Replace(desc, "$1")
+            result.Add(New Hashtable From {{"id", value}, {"iname", desc}})
+        Next
+
+        Return result
+    End Function
+
     Public Shared Function cleanInput(ByVal strIn As String) As String
         ' Replace invalid characters with empty strings.
         Return Regex.Replace(strIn, "[^\w\.\,\:\\\%@\-\/ ]", "")

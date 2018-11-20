@@ -1,0 +1,9 @@
+<div class="field-multi-value">
+  <~multi_datarow repeat inline>
+    <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="<~field>$<~id>" name="<~field>_multi[<~id>]" value="1" <~/common/checked if="is_checked">>
+      <label class="custom-control-label" for="<~field>$<~id>"><~iname></label>
+    </div>
+  </~multi_datarow>
+</div>
+<~./help_block if="help_text">
