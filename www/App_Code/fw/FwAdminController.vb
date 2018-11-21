@@ -55,22 +55,6 @@ Public Class FwAdminController
         ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
         ps("list_view") = list_view
 
-        If is_dynamic Then
-            'customizable headers
-            setViewList(ps, reqh("search"))
-
-            'set links for iname, models_iname, manufacturers_iname, lastcal_PerformedOn
-            'bad style to use html in code, but it's much faster than templates
-            'For Each row As Hashtable In ps("list_rows")
-            '    For Each col As Hashtable In row("cols")
-            '        col("data") = Utils.htmlescape(col("data"))
-            '        If col("field_name") = "XXX" Then
-            '            col("data") = "<a href='/Admin/XXX/" & row("id") & "'>" & col("data") & "</a>"
-            '        End If
-            '    Next
-            'Next
-        End If
-
         Return ps
     End Function
 
@@ -230,49 +214,5 @@ Public Class FwAdminController
 
         Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
     End Function
-
-
-    '********************* support for customizable list screen
-    Public Sub UserViewsAction(Optional form_id As String = "")
-        Dim ps As New Hashtable
-
-        Dim rows = getViewListArr(getViewListUserFields(), True) 'list all fields
-        ''set checked only for those selected by user
-        'Dim hfields = Utils.qh(getViewListUserFields())
-        'For Each row In rows
-        '    row("is_checked") = hfields.ContainsKey(row("field_name"))
-        'Next
-
-        ps("rows") = rows
-        fw.parser("/common/list/userviews", ps)
-    End Sub
-
-    Public Sub SaveUserViewsAction()
-        Dim item As Hashtable = reqh("item")
-        Dim success = True
-
-        Try
-            If reqi("is_reset") = 1 Then
-                fw.model(Of UserViews).updateByScreen(base_url, view_list_defaults)
-            Else
-                'save fields
-                'order by value
-                Dim ordered = reqh("fld").Cast(Of DictionaryEntry).OrderBy(Function(entry) Utils.f2int(entry.Value)).ToList()
-                'and then get ordered keys
-                Dim anames As New List(Of String)
-                For Each el In ordered
-                    anames.Add(el.Key)
-                Next
-
-                fw.model(Of UserViews).updateByScreen(base_url, Join(anames.ToArray(), " "))
-            End If
-
-        Catch ex As ApplicationException
-            success = False
-            Me.setFormError(ex)
-        End Try
-
-        fw.redirect(return_url)
-    End Sub
 
 End Class

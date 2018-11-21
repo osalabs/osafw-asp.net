@@ -130,7 +130,7 @@ Public MustInherit Class FwModel
             Dim vars As New Hashtable
             vars(field_status) = 127
             If field_upd_time > "" Then vars(field_upd_time) = Now()
-            If field_add_users_id AndAlso fw.SESSION("is_logged") Then vars("add_users_id") = fw.SESSION("user_id")
+            If field_add_users_id > "" AndAlso fw.SESSION("is_logged") Then vars("add_users_id") = fw.SESSION("user_id")
 
             db.update(table_name, vars, where)
         End If
