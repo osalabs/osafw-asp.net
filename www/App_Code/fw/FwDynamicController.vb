@@ -443,6 +443,8 @@ Public Class FwDynamicController
                     fields(field) = FormUtils.dateForCombo(item, field)
                 ElseIf def("type") = "time" Then
                     fields(field) = FormUtils.timeStrToInt(fields(field)) 'ftime - convert from HH:MM to int (0-24h in seconds)
+                ElseIf def("type") = "number" Then
+                    fields(field) = Utils.f2float(fields(field)) 'number - convert to number (if field empty or non-number - it will become 0)
                 End If
             End If
         Next
