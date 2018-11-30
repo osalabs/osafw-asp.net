@@ -276,8 +276,6 @@ Public MustInherit Class FwController
             list_where &= " and (" & Join(afields, " or ") & ")"
         End If
 
-        setListSearchStatus()
-
         If list_filter("userlist") > "" Then
             Me.list_where &= " and id IN (select ti.item_id from " & fw.model(Of UserLists).table_items & " ti where ti.user_lists_id=" & db.qi(list_filter("userlist")) & " and ti.add_users_id=" & fw.model(Of Users).meId & " ) "
         End If
@@ -308,13 +306,15 @@ Public MustInherit Class FwController
     ''' - if status set - filter by status, but if status=127 (deleted) only allow to see deleted by admins
     ''' </summary>
     Public Overridable Sub setListSearchStatus()
-        If Me.list_filter("status") > "" Then
-            Dim status = Utils.f2int(Me.list_filter("status"))
-            'if want to see trashed and not admin - just show active
-            If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then status = 0
-            Me.list_where &= " and status=" & db.qi(status)
-        Else
-            Me.list_where &= " and status<>127 " 'by default - show all non-deleted
+        If model0.field_status > "" Then
+            If Me.list_filter("status") > "" Then
+                Dim status = Utils.f2int(Me.list_filter("status"))
+                'if want to see trashed and not admin - just show active
+                If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then status = 0
+                Me.list_where &= " and " & db.q_ident(model0.field_status) & "=" & db.qi(status)
+            Else
+                Me.list_where &= " and " & db.q_ident(model0.field_status) & "<>127 " 'by default - show all non-deleted
+            End If
         End If
     End Sub
 
@@ -333,12 +333,21 @@ Public MustInherit Class FwController
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
 
+            'for SQL Server 2012+
+            Dim sql As String = "SELECT * FROM " & list_view &
+                                " WHERE " & Me.list_where &
+                                " ORDER BY " & Me.list_orderby &
+                                " OFFSET " & offset & " ROWS " &
+                                " FETCH NEXT " & limit & " ROWS ONLY"
+
+            'for 2005<= SQL Server versions <2012
             'offset+1 because _RowNumber starts from 1
-            Dim sql As String = "SELECT * FROM (" &
-                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" &
-                            "   FROM " & list_view &
-                            "   WHERE " & Me.list_where &
-                            ") tmp WHERE _RowNumber BETWEEN " & (offset + 1) & " AND " & (offset + 1 + limit - 1)
+            'Dim sql As String = "SELECT * FROM (" &
+            '                "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & Me.list_orderby & ") AS _RowNumber" &
+            '                "   FROM " & list_view &
+            '                "   WHERE " & Me.list_where &
+            '                ") tmp WHERE _RowNumber BETWEEN " & (offset + 1) & " AND " & (offset + 1 + limit - 1)
+
             'for MySQL this would be much simplier
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 

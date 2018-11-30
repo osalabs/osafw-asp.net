@@ -23,6 +23,7 @@ Public Class FwDynamicController
         Me.setListSorting()
 
         Me.setListSearch()
+        Me.setListSearchStatus() 'status field is not always in table, so keep it separate
         'set here non-standard search
         'If f("field") > "" Then
         '    Me.list_where &= " and field=" & db.q(f("field"))
