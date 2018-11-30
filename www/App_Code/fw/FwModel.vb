@@ -189,7 +189,7 @@ Public MustInherit Class FwModel
 
     Public Overridable Function getAutocompleteList(q As String) As ArrayList
         Dim where = field_iname & " like " & db.q("%" & q & "%")
-        If field_status > "" Then where += " and status<>127 "
+        If field_status > "" Then where &= " and status<>127 "
 
         Dim sql As String = "select " & field_iname & " as iname from " & table_name & " where " & where
         Return db.col(sql)
