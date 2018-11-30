@@ -386,8 +386,8 @@ Public Class FwDynamicController
                     Dim lookup_field = def("lookup_field")
                     If lookup_field = "" Then lookup_field = "iname"
 
-                    'def("lookup_row") = db.row(def("lookup_table"), New Hashtable From {{lookup_key, item(field)}})
-                    'def("value") = def("lookup_row")(lookup_field)
+                    def("lookup_row") = db.row(def("lookup_table"), New Hashtable From {{lookup_key, item(field)}})
+                    def("value") = def("lookup_row")(lookup_field)
 
                 ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
                     If def.ContainsKey("lookup_field") Then
