@@ -8,6 +8,7 @@ Imports System.Data
 
 Public Class AdminDBController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 100
 
     Private Const dbpwd As String = "db321"
 

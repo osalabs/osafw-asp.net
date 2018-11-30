@@ -11,6 +11,8 @@ Public Class Settings
     Public Sub New()
         MyBase.New()
         table_name = "settings"
+
+        field_status = ""
     End Sub
 
     ''' <summary>

@@ -5,6 +5,8 @@
 
 Public Class FwDynamicController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 100
+
     Protected model_related As FwModel
 
     Public Overrides Sub init(fw As FW)

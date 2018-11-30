@@ -4,6 +4,8 @@
 ' (c) 2009-2017 Oleg Savchuk www.osalabs.com
 
 Public MustInherit Class FwController
+    Public Shared access_level As Integer = -1 'access level for the controller. fw.config("access_levels") overrides this. -1 (public access), 0(min logged level), 100(max admin level)
+
     Public Shared route_default_action As String = "" 'supported values - "" (use Default Parser for unknown actions), index (use IndexAction for unknown actions), show (assume action is id and use ShowAction)
     Public base_url As String 'base url for the controller
 

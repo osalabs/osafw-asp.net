@@ -7,6 +7,8 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminAttController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As New Att
     Private Shared MAX_THUMB_W_S As Integer = 180
     Private Shared MAX_THUMB_H_S As Integer = 180

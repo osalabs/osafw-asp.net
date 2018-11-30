@@ -5,6 +5,8 @@
 
 Public Class AdminAttCategoriesController
     Inherits FwAdminController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As AttCategories
 
     Public Overrides Sub init(fw As FW)

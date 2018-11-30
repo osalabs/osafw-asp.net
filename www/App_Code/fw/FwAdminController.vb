@@ -5,6 +5,7 @@
 
 Public Class FwAdminController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 100
     'Public Shared Shadows route_default_action As String = "index" 'empty|index|show - calls IndexAction or ShowAction accordingly if no requested controller action found. If empty (default) - show template from /cur_controller/cur_action dir
 
     Public Overrides Sub init(fw As FW)

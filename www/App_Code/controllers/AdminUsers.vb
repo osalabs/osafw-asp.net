@@ -5,6 +5,8 @@
 
 Public Class AdminUsersController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 100
+
     Protected model As New Users
 
     Public Overrides Sub init(fw As FW)

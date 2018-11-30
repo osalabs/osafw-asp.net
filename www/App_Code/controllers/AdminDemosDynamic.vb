@@ -5,6 +5,8 @@
 
 Public Class AdminDemosDynamicController
     Inherits FwDynamicController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As Demos
 
     Public Overrides Sub init(fw As FW)

@@ -324,7 +324,7 @@ Public Class FW
         Dim args() As [String] = {cur_id} 'TODO - add rest of possible params from parts
 
         Try
-            _auth(cur_controller, cur_action)
+            Dim auth_check_controller = _auth(cur_controller, cur_action)
 
             Dim calledType As Type = Type.GetType(cur_controller & "Controller", False, True) 'case ignored
             If calledType Is Nothing Then
@@ -334,6 +334,18 @@ Public Class FW
                 cur_controller_path = "/Home"
                 cur_controller = "Home"
                 cur_action = "NotFound"
+            Else
+                'controller found
+                If auth_check_controller = 1 Then
+                    'but need's check access level on controller level
+                    Dim field = calledType.GetField("access_level", BindingFlags.Public Or BindingFlags.Static)
+                    If field IsNot Nothing Then
+                        Dim current_level As Integer = -1
+                        If SESSION("access_level") IsNot Nothing Then current_level = SESSION("access_level")
+
+                        If current_level < Utils.f2int(field.GetValue(Nothing)) Then Throw New AuthException("Bad access - Not authorized (2)")
+                    End If
+                End If
             End If
 
             logger(LogLevel.TRACE, "TRY controller.action=", cur_controller, ".", cur_action)
@@ -460,10 +472,11 @@ Public Class FW
     'simple auth check based on /controller/action - and rules filled in in Config class
     'called from Dispatcher
     'throws exception OR if is_die=false
-    ' return true - if user allowed to see page
-    ' return false - if not allowed
-    Public Function _auth(ByVal controller As String, ByVal action As String, Optional is_die As Boolean = True) As Boolean
-        Dim result As Boolean = False
+    ' return 2 - if user allowed to see page - explicitly based on fw.config
+    ' return 1 - if no fw.config rule, so need to further check Controller.access_level (not checking here for performance reasons)
+    ' return 0 - if not allowed
+    Public Function _auth(ByVal controller As String, ByVal action As String, Optional is_die As Boolean = True) As Integer
+        Dim result As Integer = 0
 
         'integrated XSS check - only for POST/PUT/DELETE requests or if it contains XSS param
         If (FORM.ContainsKey("XSS") OrElse cur_method = "POST" OrElse cur_method = "PUT" OrElse cur_method = "DELETE") _
@@ -472,28 +485,28 @@ Public Class FW
             Dim no_xss As Hashtable = Me.config("no_xss")
             If no_xss Is Nothing OrElse Not no_xss.ContainsKey(controller) Then
                 If is_die Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
-                Return False
+                Return result
             End If
         End If
 
         Dim path As String = "/" & controller & "/" & action
         Dim path2 As String = "/" & controller
 
+        'pre-check controller's access level by url
         Dim current_level As Integer = -1
         If SESSION("access_level") IsNot Nothing Then current_level = SESSION("access_level")
         Dim rule_level As Integer
-
         Dim rules As Hashtable = config("access_levels")
         If rules.ContainsKey(path) Then
-            rule_level = rules(path)
+            If current_level >= rules(path) Then result = 2
         ElseIf rules.ContainsKey(path2) Then
-            rule_level = rules(path2)
+            If current_level >= rules(path2) Then result = 2
         Else
-            rule_level = -1 'no restrictions
+            rule_level = -1 'no restrictions defined for this url in config
+            result = 1 'need to check Controller.access_level after _auth
         End If
 
-        If current_level >= rule_level Then result = True
-        If Not result AndAlso is_die Then Throw New AuthException("Bad access - Not authorized")
+        If result = 0 AndAlso is_die Then Throw New AuthException("Bad access - Not authorized")
         Return result
     End Function
 

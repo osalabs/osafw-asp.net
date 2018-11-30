@@ -7,6 +7,8 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminSpagesController
     Inherits FwAdminController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As Spages
 
     Public Overrides Sub init(fw As FW)

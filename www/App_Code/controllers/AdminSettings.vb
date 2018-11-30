@@ -7,6 +7,8 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminSettingsController
     Inherits FwAdminController
+    Public Shared Shadows access_level As Integer = 100
+
     Protected model As Settings
 
     Public Overrides Sub init(fw As FW)

@@ -7,6 +7,7 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminReportsController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 80
     Public Shared Shadows route_default_action As String = "show"
     Protected model As New Reports
 

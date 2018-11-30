@@ -5,6 +5,8 @@
 
 Public Class AdminDemosController
     Inherits FwAdminController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As Demos
     Protected model_related As DemoDicts
 

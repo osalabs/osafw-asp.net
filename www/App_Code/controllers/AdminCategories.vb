@@ -7,6 +7,8 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminCategoriesController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 80
+
     Protected model As New Categories
 
     Public Overrides Sub init(fw As FW)
