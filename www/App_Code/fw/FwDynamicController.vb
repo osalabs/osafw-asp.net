@@ -114,8 +114,8 @@ Public Class FwDynamicController
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
+        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
         ps("fields") = prepareShowFormFields(item, ps)
         'TODO
