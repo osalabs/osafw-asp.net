@@ -5,6 +5,8 @@
 
 Public Class MyPasswordController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 0
+
     Protected model As New Users
 
     Public Overrides Sub init(fw As FW)

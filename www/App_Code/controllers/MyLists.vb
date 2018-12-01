@@ -5,6 +5,8 @@
 
 Public Class MyListsController
     Inherits FwAdminController
+    Public Shared Shadows access_level As Integer = 0
+
     Protected model As UserLists
 
     Public Overrides Sub init(fw As FW)

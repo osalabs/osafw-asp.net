@@ -5,6 +5,7 @@
 
 Public Class MainController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 0
 
     Public Function IndexAction() As Hashtable
         Dim ps As Hashtable = New Hashtable

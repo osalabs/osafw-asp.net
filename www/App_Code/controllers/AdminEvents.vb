@@ -7,6 +7,8 @@ Imports Microsoft.VisualBasic
 
 Public Class AdminEventsController
     Inherits FwController
+    Public Shared Shadows access_level As Integer = 100
+
     Protected model As New FwEvents
     Protected model_users As New Users
 
