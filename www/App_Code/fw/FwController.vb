@@ -36,8 +36,7 @@ Public MustInherit Class FwController
     'map of fileld names to screen names
     Protected is_dynamic As Boolean = False         'true if controller is dynamic, then define below:
     Protected view_list_defaults As String = ""     'qw list of default columns
-    Protected view_list_map As String = ""          'qh list of all available columns fieldname|visiblename
-    Protected view_list_map_cache As Hashtable      'cache for view_list_map as hash
+    Protected view_list_map As Hashtable            'list of all available columns fieldname|visiblename
     Protected view_list_custom As String = ""       'qw list of custom-formatted fields for the list_table
 
     Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
@@ -70,7 +69,7 @@ Public MustInherit Class FwController
         'logger("loaded config:")
         'logger(Me.config)
 
-        'TODO check/conv to str
+        'check/conv to str
         required_fields = Utils.f2str(Me.config("required_fields"))
         save_fields = Utils.f2str(Me.config("save_fields"))
         save_fields_checkboxes = Utils.f2str(Me.config("save_fields"))
@@ -87,12 +86,20 @@ Public MustInherit Class FwController
         If is_dynamic Then
             'Whoah! this is fully dynamic form
             view_list_defaults = Utils.f2str(Me.config("view_list_defaults"))
-            view_list_map = Utils.f2str(Me.config("view_list_map"))
+
+            'since view_list_map could be defined as qw string or as hashtable - check and convert
+            Dim raw_view_list_map = Me.config("view_list_map")
+            If TypeOf raw_view_list_map Is IDictionary Then
+                view_list_map = raw_view_list_map
+            Else
+                view_list_map = Utils.qh(raw_view_list_map)
+            End If
+
             view_list_custom = Utils.f2str(Me.config("view_list_custom"))
 
             list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
             search_fields = getViewListUserFields() 'just search in all visible fields
-        End If
+            End If
 
     End Sub
 
@@ -296,7 +303,7 @@ Public MustInherit Class FwController
         'advanced search
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
-            If hsearch(fieldname) > "" AndAlso (Not is_dynamic OrElse getViewListMap().ContainsKey(fieldname)) Then
+            If hsearch(fieldname) > "" AndAlso (Not is_dynamic OrElse view_list_map.ContainsKey(fieldname)) Then
                 Me.list_where &= " and " & db.q_ident(fieldname) & " LIKE " & db.q("%" & hsearch(fieldname) & "%")
             End If
         Next
@@ -484,11 +491,6 @@ Public MustInherit Class FwController
 
 
     '********************************** dynamic controller support
-    Public Overridable Function getViewListMap() As Hashtable
-        If view_list_map_cache Is Nothing Then view_list_map_cache = Utils.qh(view_list_map)
-        Return view_list_map_cache
-    End Function
-
     'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order
     'if fields defined - show fields only
     'if is_all true - then show all fields (not only from fields param)
@@ -498,23 +500,21 @@ Public MustInherit Class FwController
         'if fields defined - first show these fields, then the rest
         Dim fields_added As New Hashtable
         If fields > "" Then
-            Dim map = getViewListMap()
             For Each fieldname In Utils.qw(fields)
-                result.Add(New Hashtable From {{"field_name", fieldname}, {"field_name_visible", map(fieldname)}, {"is_checked", True}})
+                result.Add(New Hashtable From {{"field_name", fieldname}, {"field_name_visible", view_list_map(fieldname)}, {"is_checked", True}})
                 fields_added(fieldname) = True
             Next
         End If
 
         If is_all Then
             'rest/all fields
-            Dim arr = Utils.qw(view_list_map)
-            For Each v In arr
-                v = Replace(v, "&nbsp;", " ")
-                Dim asub() As String = Split(v, "|", 2)
-                If UBound(asub) < 1 Then Throw New ApplicationException("Wrong Format for view_list_map")
-                If fields_added.ContainsKey(asub(0)) Then Continue For
+            For Each k As String In view_list_map.Keys
+                'Dim v = Replace(k, "&nbsp;", " ")
+                'Dim asub() As String = Split(v, "|", 2)
+                'If UBound(asub) < 1 Then Throw New ApplicationException("Wrong Format for view_list_map")
+                If fields_added.ContainsKey(k) Then Continue For
 
-                result.Add(New Hashtable From {{"field_name", asub(0)}, {"field_name_visible", asub(1)}})
+                result.Add(New Hashtable From {{"field_name", k}, {"field_name_visible", view_list_map(k)}})
             Next
         End If
         Return result
@@ -522,7 +522,7 @@ Public MustInherit Class FwController
 
     Public Overridable Function getViewListSortmap() As Hashtable
         Dim result As New Hashtable
-        For Each fieldname In getViewListMap().Keys
+        For Each fieldname In view_list_map.Keys
             result(fieldname) = fieldname
         Next
         Return result

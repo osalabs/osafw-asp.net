@@ -166,17 +166,16 @@ Public Class FwDynamicController
         Return Me.saveCheckResult(success, id, is_new)
     End Function
 
-
+    ''' <summary>
+    ''' Performs submitted form validation for required field and simple validations: exits, isemail, isphone, isdate, isfloat.
+    ''' If more complex validation required - just override this and call just necessary validation
+    ''' </summary>
+    ''' <param name="id"></param>
+    ''' <param name="item"></param>
     Public Overridable Sub Validate(id As Integer, item As Hashtable)
-        Dim result As Boolean = Me.validateRequired(item, Me.required_fields)
+        Dim result As Boolean = validateRequiredDynamic(item)
 
-        'TODO simple validation via showform_fields
-        If result AndAlso model0.isExists(item("email"), id) Then
-            fw.FERR("email") = "EXISTS"
-        End If
-        If result AndAlso Not FormUtils.isEmail(item("email")) Then
-            fw.FERR("email") = "WRONG"
-        End If
+        If result Then validateSimpleDynamic(id, item)
 
         'If result AndAlso Not SomeOtherValidation() Then
         '    FW.FERR("other field name") = "HINT_ERR_CODE"
@@ -184,6 +183,58 @@ Public Class FwDynamicController
 
         Me.validateCheckResult()
     End Sub
+
+    Protected Function validateRequiredDynamic(item As Hashtable) As Boolean
+        Dim result = True
+        If Me.required_fields = "" Then
+            'if required_fields not defined - fill from showform_fields
+            Dim fields As ArrayList = Me.config("showform_fields")
+            Dim req As New ArrayList
+            For Each def As Hashtable In fields
+                If Utils.f2bool(def("required")) Then req.Add(def("field"))
+            Next
+            result = Me.validateRequired(item, req.ToArray())
+        Else
+            result = Me.validateRequired(item, Me.required_fields)
+        End If
+        Return result
+    End Function
+
+    'simple validation via showform_fields
+    Protected Function validateSimpleDynamic(id As Integer, item As Hashtable) As Boolean
+        Dim result As Boolean = True
+        Dim fields As ArrayList = Me.config("showform_fields")
+        For Each def As Hashtable In fields
+            Dim field = def("field")
+            If field = "" Then Continue For
+
+            Dim val = Utils.qh(def("validate"))
+            If val.ContainsKey("exists") AndAlso model0.isExists(item(field), id) Then
+                fw.FERR(field) = "EXISTS"
+                result = False
+            End If
+            If val.ContainsKey("isemail") AndAlso Not FormUtils.isEmail(item(field)) Then
+                fw.FERR(field) = "WRONG"
+                result = False
+            End If
+            If val.ContainsKey("isphone") AndAlso Not FormUtils.isPhone(item(field)) Then
+                fw.FERR(field) = "WRONG"
+                result = False
+            End If
+            If val.ContainsKey("isdate") AndAlso Not Utils.isDate(item(field)) Then
+                fw.FERR(field) = "WRONG"
+                result = False
+            End If
+            If val.ContainsKey("isfloat") AndAlso Not Utils.isFloat(item(field)) Then
+                fw.FERR(field) = "WRONG"
+                result = False
+            End If
+
+            'If Not result Then Exit For 'uncomment to break on first error
+        Next
+        Return result
+    End Function
+
 
     Public Overridable Sub ShowDeleteAction(ByVal form_id As String)
         Dim id As Integer = Utils.f2int(form_id)
