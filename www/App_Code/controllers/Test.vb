@@ -46,6 +46,7 @@ Public Class TestController
             al100.Add(h)
         Next
         hf("repeat100_dr") = al100
+        hf("myself") = hf.Clone()
 
         fw.parser(hf)
     End Sub

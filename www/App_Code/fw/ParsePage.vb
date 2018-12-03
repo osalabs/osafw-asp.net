@@ -4,7 +4,7 @@
 ' (c) 2009-2015 Oleg Savchuk www.osalabs.com
 '
 ' supports:
-' - SESSION, GLOBAL (from fw.G), SUBHASHES, SUBARRAYS
+' - SESSION, GLOBAL (from fw.G), SUBHASHES, SUBARRAYS, _TOP, _PARENT
 ' - <~tag if="var"> - var tested for true value (1, true, >"", but not "0")
 ' - CSRF shield - all vars escaped, if var shouldn't be escaped use "noescape" attr: <~raw_variable noescape>
 ' - 'attrs("select") can contain strings with separator "," for multiple select
@@ -138,6 +138,7 @@ Public Class ParsePage
     Private is_check_file_modifications As Boolean = False
     Private TMPL_PATH As String
     Private basedir As String = ""
+    Private data_top As Hashtable 'reference to the topmost hashtable
 
     Public Sub New(fw As FW)
         Me.fw = fw
@@ -152,6 +153,7 @@ Public Class ParsePage
 
     Public Function parse_page(ByVal bdir As String, ByVal tpl_name As String, ByVal hf As Hashtable) As String
         basedir = bdir
+        Me.data_top = hf
         Dim parent_hf As Hashtable = New Hashtable
         'Return _parse_page(tpl_name, hf, "", "", parent_hf)
 
@@ -212,17 +214,17 @@ Public Class ParsePage
                             ElseIf attrs.ContainsKey("global") Then
                                 tag_value = hfvalue(tag, fw.G)
                             Else
-                                tag_value = hfvalue(tag, hf)
+                                tag_value = hfvalue(tag, hf, parent_hf)
                             End If
                         Else
-                            tag_value = hfvalue(tag, hf)
+                            tag_value = hfvalue(tag, hf, parent_hf)
                         End If
 
                         If tag_value.ToString().Length > 0 Then
 
                             Dim value As String
                             If attrs.ContainsKey("repeat") Then
-                                value = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl)
+                                value = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl, hf)
                             ElseIf attrs.ContainsKey("select") Then
                                 ' this is special case for '<select>' HTML tag when options passed as ArrayList
                                 value = _attr_select(tag, tpl_name, hf, attrs)
@@ -247,7 +249,7 @@ Public Class ParsePage
                             tag_replace(page, tag_full, value, attrs)
 
                         ElseIf attrs.ContainsKey("repeat") Then
-                            v = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl)
+                            v = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl, hf)
                             tag_replace(page, tag_full, v, attrs)
                         ElseIf attrs.ContainsKey("var") Then
                             tag_replace(page, tag_full, "", attrs)
@@ -372,7 +374,7 @@ Public Class ParsePage
     'returns: 
     '  value (string, hashtable, etc..), empty string "" 
     '  Or Nothing - tag not present in hf param (only if hf is Hashtable), file lookup will be necessary
-    Private Function hfvalue(ByVal tag As String, ByVal hf As Object) As Object
+    Private Function hfvalue(ByVal tag As String, ByVal hf As Object, Optional parent_hf As Hashtable = Nothing) As Object
         Dim tag_value As Object = ""
         Dim ptr As Object
 
@@ -388,6 +390,12 @@ Public Class ParsePage
                     start_pos = 1
                 ElseIf parts0 = "SESSION" Then
                     ptr = fw.SESSION
+                    start_pos = 1
+                ElseIf parts0 = "_TOP" Then
+                    ptr = Me.data_top
+                    start_pos = 1
+                ElseIf parts0 = "_PARENT" AndAlso parent_hf IsNot Nothing Then
+                    ptr = parent_hf
                     start_pos = 1
                 Else
                     ptr = hf
@@ -574,7 +582,7 @@ Public Class ParsePage
     End Function
 
     'return ready HTML
-    Private Function _attr_repeat(ByRef attrs As Hashtable, ByRef tag As String, ByRef tag_val_array As Object, ByRef tpl_name As String, ByRef inline_tpl As String) As String
+    Private Function _attr_repeat(ByRef attrs As Hashtable, ByRef tag As String, ByRef tag_val_array As Object, ByRef tpl_name As String, ByRef inline_tpl As String, parent_hf As Hashtable) As String
         'Validate: if input doesn't contain array - return "" - nothing to repeat
         If Not TypeOf (tag_val_array) Is ArrayList Then
             If tag_val_array IsNot Nothing AndAlso tag_val_array.ToString() <> "" Then
@@ -584,18 +592,18 @@ Public Class ParsePage
         End If
 
         Dim value As New StringBuilder
-        Dim parent_hf As Hashtable = New Hashtable
+        If parent_hf Is Nothing Then parent_hf = New Hashtable
 
         Dim ttpath As String = tag_tplpath(tag, tpl_name)
 
         For i As Integer = 0 To tag_val_array.Count - 1
-            proc_repeat_modifiers(tag_val_array, i)
+            proc_repeat_modifiers(tag_val_array, i, parent_hf)
             value.Append(_parse_page(ttpath, tag_val_array(i), "", inline_tpl, parent_hf))
         Next
         Return value.ToString()
     End Function
 
-    Private Sub proc_repeat_modifiers(ByRef uftag As ArrayList, ByVal i As Integer)
+    Private Sub proc_repeat_modifiers(ByRef uftag As ArrayList, ByVal i As Integer, parent_hf As Hashtable)
         Dim uftagi As Hashtable = uftag(i)
         Dim cnt As Integer = uftag.Count
 

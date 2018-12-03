@@ -99,7 +99,7 @@ Public MustInherit Class FwController
 
             list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
             search_fields = getViewListUserFields() 'just search in all visible fields
-            End If
+        End If
 
     End Sub
 

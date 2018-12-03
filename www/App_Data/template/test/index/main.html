@@ -60,6 +60,8 @@
             .total=<b><~repeat.total></b><br>
             .index=<b><~repeat.index></b><br>
             .iteration=<b><~repeat.iteration></b><br>
+            _TOP[one]=<~_TOP[one]><br>
+            _PARENT[two]=<~_PARENT[two]><br>
         </~repeat3_dr>
     </li>
     <li>
@@ -76,5 +78,11 @@
        <~now date="short"> - mm/dd/yyyy hh:mm<br>
        <~now date="long"> - mm/dd/yyyy hh:mm:ss<br>
        <~now date="sql"> - yyyy-mm-dd hh:mm:ss<br>
+    </li>
+    <li>
+       json dump of parse data: 
+       <pre>
+       <~myself json>
+       </pre>
     </li>
 </ul>
