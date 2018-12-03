@@ -222,20 +222,44 @@
             "maxlength": 128
         },
         {
-            "field": "fint",
-            "label": "Integer number",
-            "type": "number",
-            "min": 0,
-            "max": 999999,
-            "class_contents": "col-md-2"
+            "type": "row",
+            "class": ""
         },
+            {
+                "type": "col",
+                "class": ""
+            },
+                {
+                    "field": "fint",
+                    "label": "Integer number",
+                    "type": "number",
+                    "min": 0,
+                    "max": 999999,
+                    "class_label": "col-6",
+                    "class_contents": "col-3"
+                },
+            {
+                "type": "col_end"
+            },
+            {
+                "type": "col",
+                "class": ""
+            },
+                {
+                    "field": "ffloat",
+                    "label": "Float number",
+                    "type": "number",
+                    "step": 0.1,
+                    "class_label": "col-6",
+                    "class_contents": "col-3"
+                },
+            {
+                "type": "col_end"
+            },
         {
-            "field": "ffloat",
-            "label": "Float number",
-            "type": "number",
-            "step": 0.1,
-            "class_contents": "col-md-3"
+            "type": "row_end"
         },
+
         {
             "field": "dict_link_auto_id",
             "label": "DemoDicts Autocomplete",

@@ -410,13 +410,18 @@ Public Class FwDynamicController
         Dim id = Utils.f2int(item("id"))
 
         Dim fields As ArrayList = Me.config("showform_fields")
+        If fields Is Nothing Then Throw New ApplicationException("Controller config.json doesn't contain 'showform_fields'")
         For Each def As Hashtable In fields
             def("i") = item 'ref to item
             def("ps") = ps 'ref to whole ps
-            Dim dtype = def("type")
-            Dim field = def("field")
+            Dim dtype = def("type") 'type is required
+            Dim field = def("field") & ""
 
-            If dtype = "multicb" Then
+            If dtype = "row" OrElse dtype = "row_end" OrElse dtype = "col" OrElse dtype = "col_end" Then
+                'structural tags
+                def("is_structure") = True
+
+            ElseIf dtype = "multicb" Then
                 'complex field
                 def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
