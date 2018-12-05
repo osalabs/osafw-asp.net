@@ -357,7 +357,11 @@ Public Class FwDynamicController
             Dim dtype = def("type")
             Dim field = def("field")
 
-            If dtype = "multi" Then
+            If dtype = "row" OrElse dtype = "row_end" OrElse dtype = "col" OrElse dtype = "col_end" Then
+                'structural tags
+                def("is_structure") = True
+
+            ElseIf dtype = "multi" Then            
                 'complex field
                 def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
 
