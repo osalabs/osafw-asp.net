@@ -361,7 +361,7 @@ Public Class FwDynamicController
                 'structural tags
                 def("is_structure") = True
 
-            ElseIf dtype = "multi" Then            
+            ElseIf dtype = "multi" Then
                 'complex field
                 def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
 

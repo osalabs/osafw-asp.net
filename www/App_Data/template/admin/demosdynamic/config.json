@@ -64,14 +64,38 @@
             "type": "plaintext"
         },
         {
-            "field": "fint",
-            "label": "Integer number",
-            "type": "plaintext"
+            "type": "row",
+            "class": ""
         },
+            {
+                "type": "col",
+                "class": ""
+            },
+                {
+                    "field": "fint",
+                    "label": "Integer number",
+                    "type": "plaintext",
+                    "class_label": "col-6",
+                    "class_contents": "col-3"
+                },
+            {
+                "type": "col_end"
+            },
+            {
+                "type": "col"
+            },
+                {
+                    "field": "ffloat",
+                    "label": "Float number",
+                    "type": "float",
+                    "class_label": "col-6",
+                    "class_contents": "col-3"
+                },
+            {
+                "type": "col_end"
+            },
         {
-            "field": "ffloat",
-            "label": "Float number",
-            "type": "float"
+            "type": "row_end"
         },
         {
             "field": "dict_link_auto_id",
