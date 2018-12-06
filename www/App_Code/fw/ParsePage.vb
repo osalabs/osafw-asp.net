@@ -811,16 +811,12 @@ Public Class ParsePage
             asel(i) = Trim(asel(i))
         Next
 
-        If hf.ContainsKey(tag) Then
+        Dim seloptions As Object = hfvalue(tag, hf)
+        If TypeOf seloptions Is ICollection Then
             ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
             ' "id" key is optional, if not present - iname will be used for values too
-            If Not (TypeOf hf(tag) Is ICollection) Then
-                fw.logger(LogLevel.DEBUG, "ParsePage - not an ArrayList or Hashtables passed for a select tag=", tag)
-                Return ""
-            End If
-
             Dim value As String, desc As String
-            For Each item As Hashtable In hf(tag)
+            For Each item As Hashtable In seloptions
                 desc = Utils.htmlescape(item("iname"))
                 If item.ContainsKey("id") Then
                     value = Trim(item("id"))
@@ -841,6 +837,11 @@ Public Class ParsePage
             'just read from the plain text file
             Dim tpl_path = tag_tplpath(tag, tpl_name)
             If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
+
+            If Not File.Exists(TMPL_PATH + "/" + tpl_path) Then
+                fw.logger(LogLevel.DEBUG, "ParsePage - NOR an ArrayList of Hashtables NEITHER .sel template file passed for a select tag=", tag)
+                Return ""
+            End If
 
             Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
             Dim line As String
@@ -927,13 +928,10 @@ Public Class ParsePage
         Dim sel_value As String = hfvalue(attrs("selvalue"), hf)
         If sel_value Is Nothing Then sel_value = ""
 
-        If hf.ContainsKey(tag) Then
+        Dim seloptions As Object = hfvalue(tag, hf)
+        If TypeOf seloptions Is ICollection Then
             ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
             ' "id" key is optional, if not present - iname will be used for values too
-            If Not (TypeOf hf(tag) Is ICollection) Then
-                fw.logger(LogLevel.DEBUG, "ParsePage - not an ArrayList or Hashtables passed for a selvalue tag=", tag)
-                Return ""
-            End If
 
             Dim value As String, desc As String
             For Each item As Hashtable In hf(tag)
@@ -952,9 +950,14 @@ Public Class ParsePage
             Next
 
         Else
-
             Dim tpl_path = tag_tplpath(tag, tpl_name)
             If Left(tpl_path, 1) <> "/" Then tpl_path = basedir + "/" + tpl_path
+
+            If Not File.Exists(TMPL_PATH + "/" + tpl_path) Then
+                fw.logger(LogLevel.DEBUG, "ParsePage - NOR an ArrayList of Hashtables NEITHER .sel template file passed for a selvalue tag=", tag)
+                Return ""
+            End If
+
             Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
 
             Dim line As String

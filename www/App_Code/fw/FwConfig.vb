@@ -49,7 +49,7 @@ Public Class FwConfig
         Dim http As String = "http://"
         If req.ServerVariables("HTTPS") = "on" Then http = "https://"
         Dim port As String = ":" & req.ServerVariables("SERVER_PORT")
-        If port = ":80" Then port = ""
+        If port = ":80" OrElse port = ":443" Then port = ""
         settings("ROOT_DOMAIN") = http & req.ServerVariables("SERVER_NAME") & port
 
     End Sub
