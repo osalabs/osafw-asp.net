@@ -353,7 +353,6 @@ Public Class FwDynamicController
         Dim fields As ArrayList = Me.config("show_fields")
         For Each def As Hashtable In fields
             def("i") = item 'ref to item
-            def("ps") = ps 'ref to whole ps
             Dim dtype = def("type")
             Dim field = def("field")
 

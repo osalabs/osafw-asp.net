@@ -4,7 +4,7 @@
 ' (c) 2009-2015 Oleg Savchuk www.osalabs.com
 '
 ' supports:
-' - SESSION, GLOBAL (from fw.G), SUBHASHES, SUBARRAYS, _TOP, _PARENT
+' - SESSION, GLOBAL (from fw.G), SUBHASHES, SUBARRAYS, PARSEPAGE.TOP, PARSEPAGE.PARENT
 ' - <~tag if="var"> - var tested for true value (1, true, >"", but not "0")
 ' - CSRF shield - all vars escaped, if var shouldn't be escaped use "noescape" attr: <~raw_variable noescape>
 ' - 'attrs("select") can contain strings with separator "," for multiple select
@@ -391,10 +391,10 @@ Public Class ParsePage
                 ElseIf parts0 = "SESSION" Then
                     ptr = fw.SESSION
                     start_pos = 1
-                ElseIf parts0 = "_TOP" Then
+                ElseIf parts0 = "PARSEPAGE.TOP" Then
                     ptr = Me.data_top
                     start_pos = 1
-                ElseIf parts0 = "_PARENT" AndAlso parent_hf IsNot Nothing Then
+                ElseIf parts0 = "PARSEPAGE.PARENT" AndAlso parent_hf IsNot Nothing Then
                     ptr = parent_hf
                     start_pos = 1
                 Else
