@@ -71,8 +71,22 @@ Public MustInherit Class FwController
 
         'check/conv to str
         required_fields = Utils.f2str(Me.config("required_fields"))
-        save_fields = Utils.f2str(Me.config("save_fields"))
-        save_fields_checkboxes = Utils.f2str(Me.config("save_fields"))
+
+        'save_fields could be defined as qw string - check and convert
+        Dim save_fields_raw = Me.config("save_fields")
+        If TypeOf save_fields_raw Is IList Then
+            save_fields = Utils.qwRevert(save_fields_raw) 'not optimal, but simplest for now
+        Else
+            save_fields = Utils.f2str(save_fields_raw)
+        End If
+
+        'save_fields_checkboxes could be defined as qw string - check and convert
+        Dim save_fields_checkboxes_raw = Me.config("save_fields_checkboxes")
+        If TypeOf save_fields_checkboxes_raw Is IDictionary Then
+            save_fields_checkboxes = Utils.qhRevert(save_fields_checkboxes_raw) 'not optimal, but simplest for now
+        Else
+            save_fields_checkboxes = Utils.f2str(save_fields_checkboxes_raw)
+        End If
 
         search_fields = Utils.f2str(Me.config("search_fields"))
         list_sortdef = Utils.f2str(Me.config("list_sortdef"))

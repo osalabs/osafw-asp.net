@@ -1,7 +1,31 @@
 {
     "required_fields": "",
-    "save_fields": "parent_id demo_dicts_id iname idesc email fint ffloat fcombo fradio fyesno fdate_pop fdatetime ftime att_id status dict_link_auto_id dict_link_multi fdate_combo",
-    "save_fields_checkboxes": "is_checkbox|0",
+    "###save_fields": "parent_id demo_dicts_id iname idesc email fint ffloat fcombo fradio fyesno fdate_pop fdatetime ftime att_id status dict_link_auto_id dict_link_multi fdate_combo",
+    "###save_fields_checkboxes": "is_checkbox|0",
+
+    "save_fields": [
+        "parent_id",
+        "demo_dicts_id",
+        "iname",
+        "idesc",
+        "email",
+        "fint",
+        "ffloat",
+        "fcombo",
+        "fradio",
+        "fyesno",
+        "fdate_pop",
+        "fdatetime",
+        "ftime",
+        "att_id",
+        "status",
+        "dict_link_auto_id",
+        "dict_link_multi",
+        "fdate_combo"
+    ],
+    "save_fields_checkboxes": {
+        "is_checkbox":"0"
+    },
 
     "search_fields": "iname idesc",
     "list_sortdef": "iname asc",

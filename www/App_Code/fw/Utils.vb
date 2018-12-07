@@ -24,6 +24,16 @@ Public Class Utils
         Return arr
     End Function
 
+    'convert from array (IList) back to qw-string
+    'spaces converted to "&nbsp;"
+    Public Shared Function qwRevert(ByVal slist As IList) As String
+        Dim result As New StringBuilder()
+        For Each el As String In slist
+            result.Append(el.Replace(" ", "&nbsp;") & " ")
+        Next
+        Return result.ToString()
+    End Function
+
     'convert string like "AAA|1 BBB|2 CCC|3 DDD" to hash
     'AAA => 1
     'BBB => 2
@@ -46,6 +56,15 @@ Public Class Utils
 
         Return result
     End Function
+
+    Public Shared Function qhRevert(ByVal sh As IDictionary) As String
+        Dim result As New ArrayList()
+        For Each key In sh.Keys
+            result.Add(Replace(key.ToString(), " ", "&nbsp;") & "|" & sh(key))
+        Next
+        Return Join(result.ToArray(), " ")
+    End Function
+
 
     'remove elements from hash, leave only those which keys passed
     Public Shared Sub hashFilter(hash As Hashtable, keys As String())

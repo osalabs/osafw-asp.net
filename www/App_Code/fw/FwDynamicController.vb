@@ -533,7 +533,7 @@ Public Class FwDynamicController
     Protected Function _fieldsToHash(fields As ArrayList) As Hashtable
         Dim result As New Hashtable
         For Each fldinfo As Hashtable In fields
-            If fldinfo.ContainsKey("field") AndAlso Not result.ContainsKey(fldinfo("field")) Then            
+            If fldinfo.ContainsKey("field") AndAlso Not result.ContainsKey(fldinfo("field")) Then
                 result(fldinfo("field")) = fldinfo
             End If
         Next
