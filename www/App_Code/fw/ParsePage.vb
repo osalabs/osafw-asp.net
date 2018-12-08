@@ -139,6 +139,8 @@ Public Class ParsePage
     Private TMPL_PATH As String
     Private basedir As String = ""
     Private data_top As Hashtable 'reference to the topmost hashtable
+    Private is_found_last_hfvalue As Boolean = False
+    Private NOTAGS_CACHE As New Hashtable
 
     Public Sub New(fw As FW)
         Me.fw = fw
@@ -157,10 +159,10 @@ Public Class ParsePage
         Dim parent_hf As Hashtable = New Hashtable
         'Return _parse_page(tpl_name, hf, "", "", parent_hf)
 
-        Dim start_time = DateTime.Now
+        'Dim start_time = DateTime.Now
         Dim result = _parse_page(tpl_name, hf, "", "", parent_hf)
-        Dim end_timespan As TimeSpan = DateTime.Now - start_time
-        fw.logger("ParsePage speed: " & String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds) & "/s")
+        'Dim end_timespan As TimeSpan = DateTime.Now - start_time
+        'fw.logger("ParsePage speed: " & String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds) & "/s")
         Return result
     End Function
 
@@ -171,10 +173,12 @@ Public Class ParsePage
     End Function
 
     Private Function _parse_page(ByVal tpl_name As String, ByVal hf As Hashtable, ByVal out_filename As String, ByVal page As String, ByRef parent_hf As Hashtable) As String
-        'fw.logger("DEBUG", "ParsePage - Parsing template = " + tpl_name)
-
         If Left(tpl_name, 1) <> "/" Then tpl_name = basedir + "/" + tpl_name
 
+        'if we have this template in no tags cache - return immediately, no need to parse
+        If NOTAGS_CACHE.ContainsKey(tpl_name) Then Return NOTAGS_CACHE(tpl_name)
+
+        'fw.logger("DEBUG", "ParsePage - Parsing template = " + tpl_name + ", pagelen=" & page.Length)
         If page.Length < 1 Then page = precache_file(TMPL_PATH + tpl_name)
 
         If page.Length > 0 Then
@@ -220,6 +224,7 @@ Public Class ParsePage
                             tag_value = hfvalue(tag, hf, parent_hf)
                         End If
 
+                        'fw.logger("ParsePage - tag: " & tag_full & ", found=" & is_found_last_hfvalue)
                         If tag_value.ToString().Length > 0 Then
 
                             Dim value As String
@@ -275,7 +280,11 @@ Public Class ParsePage
                                     tag_value = New Hashtable
                                 End If
                                 v = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
+                            ElseIf is_found_last_hfvalue Then
+                                'value found but empty
+                                v = ""
                             Else
+                                'value not found - looks like subtemplate in file
                                 v = _parse_page(tag_tplpath(tag, tpl_name), hf, "", inline_tpl, parent_hf)
                             End If
                             tag_replace(page, tag_full, v, attrs)
@@ -286,8 +295,10 @@ Public Class ParsePage
                     End If
 
                 Next tag_match
+            Else
+                'no tags in this template - remember it for quick retrieval
+                NOTAGS_CACHE(tpl_name) = page
             End If
-
         End If
 
         'FW.logger("DEBUG", "ParsePage - Parsing template = " & tpl_name & " END")
@@ -317,7 +328,7 @@ Public Class ParsePage
             If is_check_file_modifications Then modtime = File.GetLastWriteTime(filename)
         End If
 
-        'fw.logger("try load file " & filename)
+        'fw.logger("ParsePage - try load file " & filename)
         'get from fs(if not in cache)
         If File.Exists(filename) Then
             file_data = FW.get_file_content(filename)
@@ -351,7 +362,7 @@ Public Class ParsePage
     'Note: also strip tag to short tag
     Private Sub get_tag_attrs(ByRef tag As String, ByRef attrs As Hashtable)
         '        If Regex.IsMatch(tag, "\s") Then
-        If InStr(tag, " ") Then
+        If tag.Contains(" ") Then
             Dim attrs_raw As MatchCollection = RX_ATTRS1.Matches(tag)
 
             tag = attrs_raw.Item(0).Value
@@ -374,13 +385,15 @@ Public Class ParsePage
     'returns: 
     '  value (string, hashtable, etc..), empty string "" 
     '  Or Nothing - tag not present in hf param (only if hf is Hashtable), file lookup will be necessary
+    '  set is_found to True if tag value found hf/parent_hf (so can be used to detect if there are no tag value at all so no fileseek required)
     Private Function hfvalue(ByVal tag As String, ByVal hf As Object, Optional parent_hf As Hashtable = Nothing) As Object
         Dim tag_value As Object = ""
         Dim ptr As Object
+        is_found_last_hfvalue = True
 
         Try
 
-            If Regex.Match(tag, "\[").Success Then
+            If tag.Contains("[") Then
                 Dim parts() As String = tag.Split("[")
                 Dim start_pos As Integer = 0
                 Dim parts0 As String = UCase(parts(0))
@@ -435,39 +448,38 @@ Public Class ParsePage
                     End If
                 Next
                 tag_value = ptr
-                If tag_value Is Nothing Then tag_value = ""
             Else
-                If TypeOf (hf) Is HttpSessionState Then
-                    If DirectCast(hf, HttpSessionState).Item(tag) IsNot Nothing Then
-                        tag_value = DirectCast(hf, HttpSessionState).Item(tag)
-                    End If
-                    If tag_value Is Nothing Then tag_value = ""
-                ElseIf TypeOf (hf) Is Hashtable Then
+                If TypeOf (hf) Is Hashtable Then
                     'special name tags - ROOT_URL and ROOT_DOMAIN - hardcoded here because of too frequent usage in the site
                     If tag = "ROOT_URL" OrElse tag = "ROOT_DOMAIN" Then
                         tag_value = fw.config(tag)
-                        If tag_value Is Nothing Then tag_value = ""
                     Else
                         If hf.ContainsKey(tag) Then
                             tag_value = hf(tag)
-                            If tag_value Is Nothing Then tag_value = ""
+                        Else
+                            'if no such tag in Hashtable
+                            is_found_last_hfvalue = False
                         End If
-                        'here tag_value could be Nothing, if no such tag in Hashtable
+                    End If
+                ElseIf TypeOf (hf) Is HttpSessionState Then
+                    If DirectCast(hf, HttpSessionState).Item(tag) IsNot Nothing Then
+                        tag_value = DirectCast(hf, HttpSessionState).Item(tag)
                     End If
 
                 ElseIf tag = "ROOT_URL" Then
                     tag_value = fw.config("ROOT_URL")
-                    If tag_value Is Nothing Then tag_value = ""
 
                 ElseIf tag = "ROOT_DOMAIN" Then
                     tag_value = fw.config("ROOT_DOMAIN")
-                    If tag_value Is Nothing Then tag_value = ""
-
+                Else
+                    is_found_last_hfvalue = False
                 End If
             End If
         Catch ex As Exception
             fw.logger(LogLevel.DEBUG, "ParsePage - error in hvalue for tag [", tag, "]:", ex.Message)
         End Try
+
+        If tag_value Is Nothing Then tag_value = ""
 
         Return tag_value
     End Function
@@ -572,6 +584,7 @@ Public Class ParsePage
     End Function
 
     Private Function get_inline_tpl(ByRef hpage As String, ByRef tag As String, ByRef tag_full As String) As String
+        'fw.logger("ParsePage - get_inline_tpl: ", tag, " | ", tag_full)
         Dim re As String = Regex.Escape("<~" + tag_full + ">") + "(.*?)" + Regex.Escape("</~" + tag + ">")
 
         Dim inline_match As Match = Regex.Match(hpage, re, RegexOptions.Singleline Or RegexOptions.IgnoreCase)
