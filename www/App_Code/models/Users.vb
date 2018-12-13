@@ -86,7 +86,7 @@ Public Class Users
         Dim sql As String = "select id, fname+' '+lname as iname from " & table_name & " where status=0 order by fname, lname"
         Return db.array(sql)
     End Function
-    Public Overrides Function listSelectOptions() As ArrayList
+    Public Overrides Function listSelectOptions(Optional params As Object = Nothing) As ArrayList
         Dim sql As String = "select id, fname+' '+lname as iname from " & table_name & " where status=0 order by fname, lname"
         Return db.array(sql)
     End Function

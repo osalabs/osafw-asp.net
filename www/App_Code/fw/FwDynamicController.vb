@@ -362,7 +362,7 @@ Public Class FwDynamicController
 
             ElseIf dtype = "multi" Then
                 'complex field
-                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
 
             ElseIf dtype = "att" Then
                 def("att") = fw.model(Of Att).one(Utils.f2int(item(field)))
@@ -426,7 +426,7 @@ Public Class FwDynamicController
 
             ElseIf dtype = "multicb" Then
                 'complex field
-                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field))
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
                     row("field") = def("field")
                 Next
@@ -458,7 +458,7 @@ Public Class FwDynamicController
                         def("value") = def("lookup_row")(def("lookup_field"))
                     Else
                         'lookup select
-                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions()
+                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def("lookup_params"))
                         def("value") = item(field)
                     End If
 

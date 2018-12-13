@@ -56,8 +56,9 @@ Public MustInherit Class FwModel
         Return db.array(table_name, where, field_iname)
     End Function
 
-    'override if id/iname differs in table 
-    Public Overridable Function listSelectOptions() As ArrayList
+    'override if id/iname differs in table
+    'params - to use - override in your model
+    Public Overridable Function listSelectOptions(Optional params As Object = Nothing) As ArrayList
         Dim where = ""
         If field_status > "" Then where = " where status=0 "
         Dim sql As String = "select " & field_id & " as id, " & field_iname & " as iname from " & table_name & where & " order by " & field_iname
@@ -196,7 +197,8 @@ Public MustInherit Class FwModel
     End Function
 
     'sel_ids - comma-separated ids
-    Public Overridable Function getMultiList(sel_ids As String) As ArrayList
+    'params - to use - override in your model
+    Public Overridable Function getMultiList(sel_ids As String, Optional params As Object = Nothing) As ArrayList
         Dim ids As New ArrayList(Split(sel_ids, ","))
         Dim rows As ArrayList = Me.list()
         For Each row As Hashtable In rows

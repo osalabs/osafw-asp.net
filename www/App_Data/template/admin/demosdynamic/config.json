@@ -132,7 +132,8 @@
             "field": "dict_link_multi",
             "label": "DemoDicts Multi",
             "type": "multi",
-            "lookup_model": "DemoDicts"
+            "lookup_model": "DemoDicts",
+            "lookup_params": "some optional params"
         },
         {
             "field": "fcombo",
@@ -320,7 +321,8 @@
             "field": "dict_link_multi",
             "label": "DemoDicts Multi",
             "type": "multicb",
-            "lookup_model": "DemoDicts"
+            "lookup_model": "DemoDicts",
+            "lookup_params": "some optional params"
         },
         {
             "field": "fcombo",
