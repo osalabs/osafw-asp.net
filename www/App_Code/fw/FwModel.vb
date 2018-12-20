@@ -46,7 +46,7 @@ Public MustInherit Class FwModel
 
     Public Overridable Function iname(id As Integer) As String
         Dim row As Hashtable = one(id)
-        Return row("iname")
+        Return row(field_iname)
     End Function
 
     'return standard list of id,iname where status=0 order by iname
