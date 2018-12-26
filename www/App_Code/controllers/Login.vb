@@ -46,7 +46,7 @@ Public Class LoginController
             pwd = Left(Trim(pwd), 32)
 
             'for dev config only - login as first admin
-            If Utils.f2bool(fw.config("is_dev")) AndAlso login = "" AndAlso pwd = "~" Then
+            If Utils.f2bool(fw.config("IS_DEV")) AndAlso login = "" AndAlso pwd = "~" Then
                 Dim dev = db.row("select TOP 1 email, pwd from users where status=0 and access_level=100 order by id")
                 login = dev("email")
                 pwd = dev("pwd")

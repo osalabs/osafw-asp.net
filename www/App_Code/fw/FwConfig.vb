@@ -122,6 +122,7 @@ Public Class FwConfig
         Dim overs As Hashtable = settings("override")
         For Each over_name As String In overs.Keys
             If Regex.IsMatch(hostname, overs(over_name)("hostname_match")) Then
+                settings("config_override") = over_name
                 Utils.mergeHashDeep(settings, overs(over_name))
                 Exit For
             End If
