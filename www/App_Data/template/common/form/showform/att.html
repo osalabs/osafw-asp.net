@@ -4,7 +4,7 @@
     </div>
     <div class="col-6 col-lg-4">
         <div class="card text-center att-info" <~/common/display_none unless="att">>
-          <input name="item[<~field>]" value="<~value>" type="hidden">
+          <input name="item[<~field>]" value="<~value>" type="hidden" <~attrs_control>>
           <img class="card-img-top" src="<~/att/url>/<~att[id]>?preview=1&size=s" alt="">
           <div class="card-body text-nooverflow">
             <p class="card-text att-iname"><~att[iname]></p>

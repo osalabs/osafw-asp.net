@@ -225,7 +225,8 @@
             "type": "select",
             "is_option0": true,
             "option0_title": "- none -",
-            "class_contents": "col-md-3"
+            "class_contents": "col-md-3",
+            "attrs_control": "data-noautosave=true"
         },
         {
             "field": "demo_dicts_id",
