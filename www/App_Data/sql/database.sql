@@ -161,27 +161,6 @@ INSERT INTO spages (parent_id, url, iname) VALUES
 update spages set is_home=1 where id=1;
 
 
-/* some categories */
-DROP TABLE categories;
-CREATE TABLE categories (
-  id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-
-  iname					        NVARCHAR(64) NOT NULL DEFAULT '',
-  idesc					        NVARCHAR(MAX),
-  prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
-
-  status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
-  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_users_id          INT DEFAULT 0,
-  upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-);
-INSERT INTO categories (iname) VALUES
-('category1')
-,('category2')
-,('category3')
-;
-
 
 /*event types for log*/
 DROP TABLE events;
@@ -259,7 +238,7 @@ GO
 
 insert into lookup_manager_tables (tname, iname) VALUES
 ('events','Events')
-, ('categories','Categories');
+;
 GO
 
 /*user custom views*/
