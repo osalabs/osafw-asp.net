@@ -10,7 +10,7 @@
             <~headers repeat inline>
                 <th data-sort="<~field_name>"><~field_name_visible></th>
             </~headers>
-            <th class="nobold text-right"><a href="#" class="on-custom-cols"><i class="glyphicon glyphicon-cog"></i></a></th>
+            <th class="nobold text-right"><a href="#" class="px-2 mr-2 on-toggle-search" title="`Filter Columns`"><i class="glyphicon glyphicon-filter"></i></a><a href="#" class="on-custom-cols" title="Customize Columns"><i class="glyphicon glyphicon-cog"></i></a></th>
         </tr>
         <tr class="search" <~search_show ifeq="f[is_search]" value="1" inline>style="display:table-row"</~search_show>>
             <th></th>

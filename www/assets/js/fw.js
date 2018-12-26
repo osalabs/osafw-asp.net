@@ -65,17 +65,14 @@ window.fw={
     var $ffilter = $('form[data-list-filter]:first');
 
     //advanced search filter
-    $(document).on('click', 'form[data-list-filter] .on-toggle-search', function (e) {
-      var $fis = $('form[data-list-filter] input[name="f[is_search]"]');
-      var $ts = $('.on-toggle-search').find('.glyphicon');
+    $(document).on('click', '.on-toggle-search', function (e) {
+      var $fis = $ffilter.find('input[name="f[is_search]"]');
       var $el = $('table.list .search');
       if ($el.is(':visible')){
           $el.hide();
-          $ts.removeClass('glyphicon-menu-up');
           $fis.val('');
       } else {
           $el.show();
-          $ts.addClass('glyphicon-menu-up');
           $fis.val('1');
       }
     });
