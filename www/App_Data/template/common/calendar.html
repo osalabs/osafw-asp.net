@@ -3,5 +3,8 @@
 <script>
     $(document).ready(function() {
         $('.date').datepicker({format: 'mm/dd/yyyy'});
+        $('.date').on('changeDate', function (e) {
+            $(this).closest('form').trigger('autosave');
+        })
     });
 </script>
