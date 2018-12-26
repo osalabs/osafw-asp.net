@@ -140,7 +140,6 @@ Public Class ParsePage
     Private basedir As String = ""
     Private data_top As Hashtable 'reference to the topmost hashtable
     Private is_found_last_hfvalue As Boolean = False
-    Private NOTAGS_CACHE As New Hashtable
 
     Public Sub New(fw As FW)
         Me.fw = fw
@@ -174,9 +173,6 @@ Public Class ParsePage
 
     Private Function _parse_page(ByVal tpl_name As String, ByVal hf As Hashtable, ByVal out_filename As String, ByVal page As String, ByRef parent_hf As Hashtable) As String
         If Left(tpl_name, 1) <> "/" Then tpl_name = basedir + "/" + tpl_name
-
-        'if we have this template in no tags cache - return immediately, no need to parse
-        If NOTAGS_CACHE.ContainsKey(tpl_name) Then Return NOTAGS_CACHE(tpl_name)
 
         'fw.logger("DEBUG", "ParsePage - Parsing template = " + tpl_name + ", pagelen=" & page.Length)
         If page.Length < 1 Then page = precache_file(TMPL_PATH + tpl_name)
@@ -296,8 +292,7 @@ Public Class ParsePage
 
                 Next tag_match
             Else
-                'no tags in this template - remember it for quick retrieval
-                NOTAGS_CACHE(tpl_name) = page
+                'no tags in this template
             End If
         End If
 
