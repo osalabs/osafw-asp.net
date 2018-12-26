@@ -224,6 +224,7 @@
             "lookup_model": "DemoDicts",
             "type": "select",
             "is_option0": true,
+            "option0_title": "- none -",
             "class_contents": "col-md-3"
         },
         {
