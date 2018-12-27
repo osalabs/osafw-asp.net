@@ -800,15 +800,7 @@ Public Class FW
     End Sub
 
     Public Overloads Sub route_redirect(ByVal action As String, ByVal controller As String, Optional ByVal args As Object = Nothing)
-        cur_action = action
-        If controller IsNot Nothing Then
-            'TODO implement set_controller 
-            cur_controller = controller
-        End If
-
-        G("controller") = cur_controller
-        G("action") = cur_action
-        G("controller.action") = cur_controller & "." & cur_action
+        setController(IIf(controller > "", controller, cur_controller), action)
 
         Dim calledType As Type = Type.GetType(cur_controller & "Controller", True)
         Dim mInfo As MethodInfo = calledType.GetMethod(cur_action & "Action")
@@ -830,6 +822,21 @@ Public Class FW
     'same as above just with default controller
     Public Overloads Sub routeRedirect(ByVal action As String, Optional ByVal args As Object = Nothing)
         route_redirect(action, cur_controller, args)
+    End Sub
+
+    ''' <summary>
+    ''' set cur_controller and optionally cur_action, updates G too
+    ''' </summary>
+    ''' <param name="controller"></param>
+    ''' <param name="action"></param>
+    Public Sub setController(controller As String, Optional action As String = "")
+        cur_controller = controller
+        If action > "" Then cur_action = action
+
+        G("controller") = cur_controller
+        G("action") = cur_action
+        G("controller.action") = cur_controller & "." & cur_action
+        'TODO set cur_controller_path too?
     End Sub
 
     'Call controller
