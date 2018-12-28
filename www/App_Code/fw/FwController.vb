@@ -59,8 +59,8 @@ Public MustInherit Class FwController
     End Sub
 
     'load controller config from json in template dir (based on base_url)
-    Public Overridable Sub loadControllerConfig()
-        Dim conf_file0 = base_url.ToLower() & "/config.json"
+    Public Overridable Sub loadControllerConfig(Optional config_filename As String = "config.json")
+        Dim conf_file0 = base_url.ToLower() & "/" & config_filename
         Dim conf_file = fw.config("template") & "/" & conf_file0
         If Not IO.File.Exists(conf_file) Then Throw New ApplicationException("Controller Config file not found in templates: " & conf_file0)
 
