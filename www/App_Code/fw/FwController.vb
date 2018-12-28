@@ -112,7 +112,7 @@ Public MustInherit Class FwController
             view_list_custom = Utils.f2str(Me.config("view_list_custom"))
 
             list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
-            search_fields = getViewListUserFields() 'just search in all visible fields
+            If search_fields = "" Then search_fields = getViewListUserFields() 'just search in all visible fields if no specific fields defined
         End If
 
     End Sub
