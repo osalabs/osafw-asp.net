@@ -58,7 +58,9 @@
 '  repeat.index  (0-based)
 '  repeat.iteration (1-based)
 
-'sub - this tag tell parser to use subhash for parse subtemplate ($hf hash should contain reference to hash)
+'sub - this tag tell parser to use subhash for parse subtemplate ($hf hash should contain reference to hash), examples:
+'   <~tag sub inline>...</~tag>- use $hf[tag] as hashtable for inline template
+'   <~tag sub="var"> - use $hf[var] as hashtable for template in "tag.html"
 'inline - this tag tell parser that subtemplate is not in file - it's between <~tag>...</~tag> , useful in combination with 'repeat' and 'if'
 'global - this tag is a global var, not in $hf hash
 ' global[var] - also possible
@@ -234,11 +236,7 @@ Public Class ParsePage
                                 value = _attr_select_name(tag, tpl_name, hf, attrs)
                                 If Not attrs.ContainsKey("noescape") Then value = Utils.htmlescape(value)
                             ElseIf attrs.ContainsKey("sub") Then
-                                If Not TypeOf (tag_value) Is Hashtable Then
-                                    fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag)
-                                    tag_value = New Hashtable
-                                End If
-                                value = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
+                                value = _attr_sub(tag, tpl_name, hf, attrs, inline_tpl, parent_hf, tag_value)
                             Else
                                 If attrs.ContainsKey("json") Then
                                     value = Utils.jsonEncode(tag_value)
@@ -271,11 +269,7 @@ Public Class ParsePage
 
                             '    #also checking for sub
                             If attrs.ContainsKey("sub") Then
-                                If Not TypeOf (tag_value) Is Hashtable Then
-                                    fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag)
-                                    tag_value = New Hashtable
-                                End If
-                                v = _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
+                                v = _attr_sub(tag, tpl_name, hf, attrs, inline_tpl, parent_hf, tag_value)
                             ElseIf is_found_last_hfvalue Then
                                 'value found but empty
                                 v = ""
@@ -478,6 +472,19 @@ Public Class ParsePage
 
         Return tag_value
     End Function
+
+    Private Function _attr_sub(tag As String, tpl_name As String, hf As Hashtable, attrs As Hashtable, inline_tpl As String, parent_hf As Hashtable, tag_value As Object) As String
+        If attrs("sub") > "" Then
+            'if sub attr contains name - use it to get value from hf (instead using tag_value)
+            tag_value = hfvalue(attrs("sub"), hf, parent_hf)
+        End If
+        If Not TypeOf (tag_value) Is Hashtable Then
+            fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag, ", sub=" & attrs("sub"))
+            tag_value = New Hashtable
+        End If
+        Return _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
+    End Function
+
     ' Check for misc if attrs
     Private Function _attr_if(ByVal attrs As Hashtable, ByVal hf As Hashtable) As Boolean
         If attrs.Count = 0 Then Return True ' if there are no if operation - return true anyway and early
