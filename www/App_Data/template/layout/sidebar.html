@@ -3,7 +3,7 @@
 </div>
 <ul class="nav flex-column">
   <~logged_menu if="SESSION[is_logged]" inline>
-     <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="Main">" ><a class="nav-link" href="<~/main/url>"><i class="glyphicon glyphicon-th-large"></i> Main Menu</a></li>
+     <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="Main">" ><a class="nav-link" href="<~/main/url>"><i class="glyphicon glyphicon-th-large"></i> <~/main/index/title></a></li>
 
      <~admin80_menu ifge="SESSION[access_level]" value="80" inline>
         <li class="nav-header">Operator Menu</li>
