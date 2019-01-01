@@ -47,15 +47,22 @@ Public Class MainController
         one("title") = "Logins per day"
         one("id") = "logins_per_day"
         'one("url") = "/Admin/Reports/sample"
-        'one("rows") = fw.model(Of Demos).getCount()
+        one("rows") = db.array("with zzz as (" _
+            & " select TOP 14 CAST(el.add_time as date) as idate, count(*) as ivalue from events ev, event_log el where ev.icode='login' and el.events_id=ev.id" _
+            & " group by CAST(el.add_time as date) order by CAST(el.add_time as date) desc)" _
+            & " select CONCAT(MONTH(idate),'/',DAY(idate)) as ilabel, ivalue from zzz order by idate")
+        logger(one("rows"))
         panes("logins") = one
 
         one = New Hashtable
         one("type") = "piechart"
-        one("title") = "User by Type"
+        one("title") = "Users by Type"
         one("id") = "user_types"
         'one("url") = "/Admin/Reports/sample"
-        'one("rows") = fw.model(Of Demos).getCount()
+        one("rows") = db.array("select access_level, count(*) as ivalue from users group by access_level order by count(*) desc")
+        For Each row As Hashtable In one("rows")
+            row("ilabel") = FormUtils.selectTplName("/common/sel/access_level.sel", row("access_level"))
+        Next
         panes("usertypes") = one
 
         Return ps

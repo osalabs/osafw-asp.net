@@ -5,88 +5,11 @@
         </~blink>
         <~btype1 ifeq="type" value="bignum" inline>
             <~bsubtitle if="title" inline><h6 class="card-subtitle mb-2 text-muted"><~title var></h6></~bsubtitle>
-            <h5><~value var></h5>            
+            <h5><~value var></h5>
         </~btype1>
-        <~btype2 ifeq="type" value="barchart" inline>
-            <~bsubtitle2 if="title" inline><h5 class="card-title"><~title var></h5></~bsubtitle2>
-            <canvas id="chart_<~id>"></canvas>
-
-            <script>
-                document.addEventListener("DOMContentLoaded", function(){
-                    var myChart = new Chart("chart_<~id>", {
-                        type: 'bar',
-                        data: {
-                            labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-                            datasets: [{
-                                data: [12, 19, 3, 5, 2, 3],
-                                backgroundColor: [
-                                    'rgba(255, 99, 132, 0.2)',
-                                    'rgba(54, 162, 235, 0.2)',
-                                    'rgba(255, 206, 86, 0.2)',
-                                    'rgba(75, 192, 192, 0.2)',
-                                    'rgba(153, 102, 255, 0.2)',
-                                    'rgba(255, 159, 64, 0.2)'
-                                ],
-                                borderColor: [
-                                    'rgba(255,99,132,1)',
-                                    'rgba(54, 162, 235, 1)',
-                                    'rgba(255, 206, 86, 1)',
-                                    'rgba(75, 192, 192, 1)',
-                                    'rgba(153, 102, 255, 1)',
-                                    'rgba(255, 159, 64, 1)'
-                                ]
-                            }]
-                        },
-                        options: {
-                            // scales: {
-                            //     yAxes: [{
-                            //         ticks: {
-                            //             beginAtZero:true
-                            //         }
-                            //     }]
-                            // }
-                        }
-                    });
-                });
-            </script>
-        </~btype2>        
-
-        <~btype3 ifeq="type" value="piechart" inline>
-            <~bsubtitle2 if="title" inline><h5 class="card-title"><~title var></h5></~bsubtitle2>
-            <canvas id="chart_<~id>"></canvas>
-
-            <script>
-                document.addEventListener("DOMContentLoaded", function(){
-                    var myChart = new Chart("chart_<~id>", {
-                        type: 'doughnut',
-                        data: {
-                            labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-                            datasets: [{
-                                data: [12, 19, 3, 5, 2, 3],
-                                backgroundColor: [
-                                    'rgba(255, 99, 132, 0.2)',
-                                    'rgba(54, 162, 235, 0.2)',
-                                    'rgba(255, 206, 86, 0.2)',
-                                    'rgba(75, 192, 192, 0.2)',
-                                    'rgba(153, 102, 255, 0.2)',
-                                    'rgba(255, 159, 64, 0.2)'
-                                ],
-                                borderColor: [
-                                    'rgba(255,99,132,1)',
-                                    'rgba(54, 162, 235, 1)',
-                                    'rgba(255, 206, 86, 1)',
-                                    'rgba(75, 192, 192, 1)',
-                                    'rgba(153, 102, 255, 1)',
-                                    'rgba(255, 159, 64, 1)'
-                                ]
-                            }]
-                        },
-                        options: {
-                            // responsive: true
-                        }
-                    });
-                });
-            </script>
-        </~btype3>        
+        <~type_barchart ifeq="type" value="barchart">
+        <~type_piechart ifeq="type" value="piechart">
+        <~type_table ifeq="type" value="table">
+        <~type_linechart ifeq="type" value="linechart">
     </div>
 </div>
