@@ -843,7 +843,7 @@ Public Class ParsePage
         If TypeOf seloptions Is ICollection Then
             ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
             ' "id" key is optional, if not present - iname will be used for values too
-            Dim value As String, desc As String
+            Dim value As String, desc As String, selected As String = ""
             For Each item As Hashtable In seloptions
                 desc = Utils.htmlescape(item("iname"))
                 If item.ContainsKey("id") Then
@@ -851,14 +851,18 @@ Public Class ParsePage
                 Else
                     value = Trim(item("iname"))
                 End If
+
+                'check for selected value before escaping
+                If Array.IndexOf(asel, value) <> -1 Then
+                    selected = " selected"
+                Else
+                    selected = ""
+                End If
+
                 value = Utils.htmlescape(value)
                 _replace_commons(desc)
 
-                result.Append("<option value=""").Append(value).Append("""")
-                If Array.IndexOf(asel, value) <> -1 Then
-                    result.Append(" selected ")
-                End If
-                result.Append(">").Append(desc).Append("</option>" & vbCrLf)
+                result.Append("<option value=""").Append(value).Append("""").Append(selected).Append(">").Append(desc).Append("</option>" & vbCrLf)
             Next
 
         Else
@@ -883,16 +887,19 @@ Public Class ParsePage
 
                 If desc.Length < 1 Then Continue For
                 _replace_commons(desc)
-                If Not attrs.ContainsKey("noescape") Then
-                    value = Utils.htmlescape(value)
-                    desc = Utils.htmlescape(desc)
-                End If
 
+                'check for selected value before escaping
                 If Array.IndexOf(asel, value) <> -1 Then
                     selected = " selected"
                 Else
                     selected = ""
                 End If
+
+                If Not attrs.ContainsKey("noescape") Then
+                    value = Utils.htmlescape(value)
+                    desc = Utils.htmlescape(desc)
+                End If
+
                 result.Append("<option value=""").Append(value).Append("""").Append(selected).Append(">").Append(desc).Append("</option>")
             Next
         End If
