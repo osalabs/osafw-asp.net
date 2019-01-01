@@ -7,7 +7,7 @@
 ' - SESSION, GLOBAL (from fw.G), SUBHASHES, SUBARRAYS, PARSEPAGE.TOP, PARSEPAGE.PARENT
 ' - <~tag if="var"> - var tested for true value (1, true, >"", but not "0")
 ' - CSRF shield - all vars escaped, if var shouldn't be escaped use "noescape" attr: <~raw_variable noescape>
-' - 'attrs("select") can contain strings with separator "," for multiple select
+' - 'attrs("select") can contain strings with separator ","(or custom defined) for multiple select
 '
 '# Supported attributes:
 
@@ -67,8 +67,9 @@
 'session - this tag is a $_SESSION var, not in $hf hash
 ' session[var] - also possible
 'TODO parent - this tag is a $parent_hf var, not in current $hf hash
-'select="var" - this tag tell parser to either load file with tag name and use it as value|display for <select> tag
+'select="var" [multi=","] - this tag tell parser to either load file with tag name and use it as value|display for <select> tag
 '               or if variable with tag name exists - use it as arraylist of hashtables with id/iname keys
+'             if "multi" attr defined and not empty - use it as separator for multi-values, if empty - no multi-values
 '     , example:
 '     <select name="item[fcombo]">
 '     <option value=""> - select -
@@ -813,18 +814,30 @@ Public Class ParsePage
         hpage_ref = Replace(hpage_ref, "<~" & tag_full & ">", value)
     End Sub
 
-    'attrs("select") can contain strings with separator "," for multiple select
+    'attrs("select") can contain strings with separator in attrs("multi") (default ",") for multiple select
     Private Function _attr_select(tag As String, tpl_name As String, ByRef hf As Hashtable, ByRef attrs As Hashtable) As String
         Dim result As New StringBuilder
 
         Dim sel_value As String = hfvalue(attrs("select"), hf)
         If sel_value Is Nothing Then sel_value = ""
 
-        Dim asel As Array = Split(sel_value, ",")
-        'trim all elements, so it would be simplier to compare
-        For i As Integer = LBound(asel) To UBound(asel)
-            asel(i) = Trim(asel(i))
-        Next
+        Dim multi_delim = ","
+        If attrs.ContainsKey("multi") Then
+            multi_delim = attrs("multi")
+        End If
+
+        Dim asel As Array
+        If multi_delim > "" Then
+            asel = Split(sel_value, multi_delim)
+            'trim all elements, so it would be simplier to compare
+            For i As Integer = LBound(asel) To UBound(asel)
+                asel(i) = Trim(asel(i))
+            Next
+        Else
+            'no multi value
+            asel = Array.CreateInstance(GetType(String), 0)
+            asel(0) = sel_value
+        End If
 
         Dim seloptions As Object = hfvalue(tag, hf)
         If TypeOf seloptions Is ICollection Then
