@@ -51,7 +51,6 @@ Public Class MainController
             & " select TOP 14 CAST(el.add_time as date) as idate, count(*) as ivalue from events ev, event_log el where ev.icode='login' and el.events_id=ev.id" _
             & " group by CAST(el.add_time as date) order by CAST(el.add_time as date) desc)" _
             & " select CONCAT(MONTH(idate),'/',DAY(idate)) as ilabel, ivalue from zzz order by idate")
-        logger(one("rows"))
         panes("logins") = one
 
         one = New Hashtable
@@ -64,6 +63,43 @@ Public Class MainController
             row("ilabel") = FormUtils.selectTplName("/common/sel/access_level.sel", row("access_level"))
         Next
         panes("usertypes") = one
+
+        one = New Hashtable
+        one("type") = "table"
+        one("title") = "Last Events"
+        'one("url") = "/Admin/Reports/sample"
+        one("rows") = db.array("select TOP 10 el.add_time as [On], ev.iname as Event from events ev, event_log el where el.events_id=ev.id order by el.id desc")
+        one("headers") = New ArrayList
+        If one("rows").Count > 0 Then
+            Dim fields = DirectCast(one("rows")(0), Hashtable).Keys.Cast(Of String).ToArray()
+            For Each key In fields
+                one("headers").Add(New Hashtable From {{"field_name", key}})
+            Next
+            For Each row As Hashtable In one("rows")
+                Dim cols As New ArrayList
+                For Each fieldname In fields
+                    cols.Add(New Hashtable From {
+                    {"row", row},
+                    {"field_name", fieldname},
+                    {"data", row(fieldname)}
+                })
+                Next
+                row("cols") = cols
+            Next
+        End If
+        panes("lastevents") = one
+
+
+        one = New Hashtable
+        one("type") = "linechart"
+        one("title") = "Events per day"
+        one("id") = "eventsctr"
+        'one("url") = "/Admin/Reports/sample"
+        one("rows") = db.array("with zzz as (" _
+            & " select TOP 14 CAST(el.add_time as date) as idate, count(*) as ivalue from events ev, event_log el where el.events_id=ev.id" _
+            & " group by CAST(el.add_time as date) order by CAST(el.add_time as date) desc)" _
+            & " select CONCAT(MONTH(idate),'/',DAY(idate)) as ilabel, ivalue from zzz order by idate")
+        panes("eventsctr") = one
 
         Return ps
     End Function

@@ -25,8 +25,9 @@ window.Chart.defaults = $.extend(true, window.Chart.defaults, {
             line: {
                 tension: 0.4,
                 borderWidth: 3,
-                borderColor: '#333333',
+                borderColor: '#007bff',
                 backgroundColor: '#007bff',
+                fill: false,
                 borderCapStyle: "rounded"
             },
             rectangle: {
@@ -78,10 +79,47 @@ window.Chart.defaults = $.extend(true, window.Chart.defaults, {
                 }
             }]
         }
+    },
+    line: {
+        scales: {
+            xAxes: [{
+                maxBarThickness: 10,
+                ticks: {
+                    padding: 10
+                },
+                gridLines: {
+                    drawBorder: false,
+                    drawOnChartArea: false,
+                    drawTicks: false
+                }
+            }],
+            yAxes: [{
+                gridLines: {
+                    borderDash: [3],
+                    borderDashOffset: [2],
+                    color: '#dddddd',
+                    drawBorder: false,
+                    drawTicks: false,
+                    lineWidth: 0,
+                    zeroLineWidth: 0,
+                    zeroLineColor: '#dddddd',
+                    zeroLineBorderDash: [3],
+                    zeroLineBorderDashOffset: [2]
+                },
+                ticks: {
+                    beginAtZero: true,
+                    padding: 5,
+                    callback: function(a) {
+                        if ((a % 10)===0)
+                            return a;
+                    }
+                }
+            }]
+        }        
     }
 });
 
-// console.log(window.Chart.defaults);
+console.log(window.Chart.defaults);
 
 // https://stackoverflow.com/questions/47186273/rounded-corners-on-chartjs-v-2-bar-charts-with-negative-values
 Chart.elements.Rectangle.prototype.draw = function () {
