@@ -1,7 +1,7 @@
 ﻿' Main Page for Logged user controller
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+' (c) 2009-2019 Oleg Savchuk www.osalabs.com
 
 Public Class MainController
     Inherits FwController

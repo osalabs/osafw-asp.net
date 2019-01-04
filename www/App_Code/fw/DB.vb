@@ -439,6 +439,20 @@ Public Class DB
         Return sql
     End Function
 
+    'return array of table names in current db
+    Public Function tables() As ArrayList
+        Dim result As New ArrayList
+
+        Dim conn As DbConnection = Me.connect()
+        Dim dataTable As DataTable = conn.GetSchema("Tables")
+        For Each row As DataRow In dataTable.Rows
+            Dim tblname As String = row("TABLE_NAME").ToString()
+            result.Add(tblname)
+        Next
+
+        Return result
+    End Function
+
     Public Function load_table_schema_full(table As String) As ArrayList
         'check if full schema already there
         If IsNothing(schemafull_cache) Then schemafull_cache = New Hashtable

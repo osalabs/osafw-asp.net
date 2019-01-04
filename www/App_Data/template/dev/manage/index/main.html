@@ -1,3 +1,7 @@
+<~/common/form/msg>
+
+<h4>Maintenance</h4>
+
 <ul>
     <li>
         <a href="<~/dev/url>/Configure" target="_blank">Check Configuration</a>
@@ -7,5 +11,36 @@
     </li>
     <li>
         <a href="<~../url>/(DumpLog)?seek=5000" target="_blank">Dump log</a>
+    </li>
+</ul>
+
+<hr>
+
+<h4>Development</h4>
+
+<ul>
+    <li>
+        <form method="post" action="<~../url>/(CreateModel)" class="form-inline">
+            <input type="hidden" name="XSS" value="<~session[XSS]>">
+            <select name="item[table_name]" class="form-control" style="width:200px">
+              <option value="">- select table -</option>
+              <~select_tables select="i[table_name]">
+            </select>
+            <input name="item[model_name]" maxlength="255" value="<~i[model_name]>" type="text" class="form-control ml-2" required placeholder="Model name (plural)" style="width:300px">
+
+            <button class="btn btn-default ml-2">Create Model</button>
+        </form>
+    </li>
+    <li class="mt-2">
+        <form method="post" action="<~../url>/(CreateController)" class="form-inline">
+            <input type="hidden" name="XSS" value="<~session[XSS]>">
+            <select name="item[model_name]" class="form-control" style="width:200px">
+              <option value="">- select model -</option>
+              <~select_models select="i[model_name]">
+            </select>
+            <input name="item[controller_url]" maxlength="255" value="<~i[controller_url]>" type="text" class="form-control ml-2" required placeholder="Controller URL (ex: /Admin/Demos)" style="width:300px">
+
+            <button class="btn btn-default ml-2">Create Controller</button>
+        </form>
     </li>
 </ul>

@@ -1,7 +1,7 @@
-﻿' Demo Dictionary model class
+﻿' DemoDicts model class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2015 Oleg Savchuk www.osalabs.com
+' (c) 2009-2019 Oleg Savchuk www.osalabs.com
 
 Public Class DemoDicts
     Inherits FwModel
