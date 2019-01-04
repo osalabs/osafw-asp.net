@@ -77,7 +77,9 @@ Public Class DevManageController
         Dim model_name = Trim(item("model_name"))
         Dim controller_url = Trim(item("controller_url"))
         Dim controller_name = Replace(controller_url, "/", "")
-        If model_name = "" OrElse controller_url = "" Then Throw New ApplicationException("No model or no controller name")
+        Dim controller_title = Trim(item("controller_title"))
+
+        If model_name = "" OrElse controller_url = "" OrElse controller_title = "" Then Throw New ApplicationException("No model or no controller name or no title")
         If _controllers.Contains(controller_name) Then Throw New ApplicationException("Such controller already exists")
 
         'copy DemoDicts.vb to model_name.vb
@@ -98,9 +100,15 @@ Public Class DevManageController
         Dim tpl_to = fw.config("template") & controller_url.ToLower()
         My.Computer.FileSystem.CopyDirectory(tpl_from, tpl_to)
 
-        'TODO
         'replace in templates: DemoDynamic to Title
         'replace in url.html /Admin/DemosDynamic to controller_url
+        Dim replacements As New Hashtable From {
+                {"/Admin/DemosDynamic", controller_url},
+                {"DemoDynamic", controller_title}
+            }
+        replaceInFiles(tpl_to, replacements)
+
+        'TODO
         'update config.json:
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
@@ -112,8 +120,38 @@ Public Class DevManageController
         ' show_form_fields - all, analyse if:
         '   field NOT NULL and no default - required
         '   field has foreign key - add that table as dropdown
+        Dim config_file = tpl_to & "/config.json"
+        Dim config = Utils.jsonDecode(FW.get_file_content(config_file))
+        If config Is Nothing Then config = New Hashtable
 
-        fw.FLASH("success", controller_name & ".vb controller created, " & controller_url & ", templates copied")
+        Dim model = fw.model(model_name)
+        Dim fields = db.load_table_schema_full(model.table_name)
+        Dim hfields As New Hashtable
+        Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
+
+        Dim alFields As New ArrayList
+        For Each fld In fields
+            hfields(fld("name")) = fld
+            If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then Continue For
+            alFields.Add(fld("name"))
+        Next
+        config("save_fields") = alFields
+        config("save_fields_checkboxes") = ""
+        config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
+        config("list_sortdef") = If(hfields.ContainsKey("iname"), "iname asc", "id desc") 'either sort by iname or id
+        config("list_sortmap") = "" 'N/A in dynamic controller
+        config("related_field_name") = "" 'TODO?
+        config("is_dynamic") = True
+        config("list_view") = model.table_name
+        config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+        config("view_list_map") = "" 'TODO fields to names?
+        config("view_list_custom") = "status"
+        config("show_fields") = New ArrayList 'TODO
+        config("showform_fields") = New ArrayList 'TODO
+
+        FW.set_file_content(config_file, Utils.jsonEncode(config))
+
+        fw.FLASH("success", controller_name & ".vb controller created, " & controller_url & ", templates copied, config.json updated")
         fw.redirect(base_url)
 
     End Function
@@ -136,5 +174,29 @@ Public Class DevManageController
                Select t.Name
                Order By Name
     End Function
+
+    'replaces strings in all files under defined dir
+    'RECURSIVE!
+    Private Sub replaceInFiles(dir As String, strings As Hashtable)
+        For Each filename As String In Directory.GetFiles(dir)
+            replaceInFile(filename, strings)
+        Next
+
+        'dive into dirs
+        For Each foldername As String In Directory.GetDirectories(dir)
+            replaceInFiles(foldername, strings)
+        Next
+    End Sub
+
+    Private Sub replaceInFile(filepath As String, strings As Hashtable)
+        Dim content = FW.get_file_content(filepath)
+        If content.Length = "" Then Return
+
+        For Each str As String In strings.Keys
+            content.Replace(str, strings(str))
+        Next
+
+        FW.set_file_content(filepath, content)
+    End Sub
 
 End Class
