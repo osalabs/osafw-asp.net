@@ -98,7 +98,7 @@ Public Class DevManageController
         'copy templates from /admin/demosdynamic to /controller/url
         Dim tpl_from = fw.config("template") & "/admin/demosdynamic"
         Dim tpl_to = fw.config("template") & controller_url.ToLower()
-        My.Computer.FileSystem.CopyDirectory(tpl_from, tpl_to)
+        My.Computer.FileSystem.CopyDirectory(tpl_from, tpl_to, True)
 
         'replace in templates: DemoDynamic to Title
         'replace in url.html /Admin/DemosDynamic to controller_url
@@ -108,7 +108,6 @@ Public Class DevManageController
             }
         replaceInFiles(tpl_to, replacements)
 
-        'TODO
         'update config.json:
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
@@ -121,37 +120,166 @@ Public Class DevManageController
         '   field NOT NULL and no default - required
         '   field has foreign key - add that table as dropdown
         Dim config_file = tpl_to & "/config.json"
-        Dim config = Utils.jsonDecode(FW.get_file_content(config_file))
+        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
         If config Is Nothing Then config = New Hashtable
 
         Dim model = fw.model(model_name)
+        db.connect()
         Dim fields = db.load_table_schema_full(model.table_name)
         Dim hfields As New Hashtable
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
-        Dim alFields As New ArrayList
+        Dim saveFields As New ArrayList
+        Dim hFieldsMap As New Hashtable
+        Dim showFields As New ArrayList
+        Dim showFormFields As New ArrayList
         For Each fld In fields
             hfields(fld("name")) = fld
+            hFieldsMap(fld("name")) = fld("name")
+
+            Dim sf As New Hashtable
+            Dim sff As New Hashtable
+            Dim is_skip = False
+            sf("field") = fld("name")
+            sf("label") = fld("name")
+            sf("type") = "plaintext"
+
+            sff("field") = fld("name")
+            sff("label") = fld("name")
+
+            If fld("is_nullable") = "0" AndAlso fld("default") = "" Then sff("required") = True 'if not nullable and no default - required
+
+            If Utils.f2int(fld("maxlen")) > 0 Then sff("maxlength") = Utils.f2int(fld("maxlen"))
+            If fld("internal_type") = "varchar" Then
+                If Utils.f2int(fld("maxlen")) = -1 Then 'large text
+                    sf("type") = "markdown"
+                    sff("type") = "textarea"
+                    sff("rows") = 5
+                    sff("class_control") = "markdown autoresize" 'or fw-html-editor or fw-html-editor-short
+                Else
+                    sff("type") = "input"
+                End If
+            ElseIf fld("internal_type") = "int" Then
+                If Right(fld("name"), 3) = "_id" AndAlso fld("name") <> "dict_link_auto_id" Then 'TODO remove dict_link_auto_id
+                    'TODO better detect if field has foreign key
+                    'if link to other table - make type=select
+                    Dim mname = _tablename2model(Left(fld("name"), Len(fld("name")) - 3))
+                    If mname = "Parent" Then mname = model_name
+
+                    sf("lookup_model") = mname
+                    'sf("lookup_field") = "iname"
+
+                    sff("type") = "select"
+                    sff("lookup_model") = mname
+                    sff("is_option0") = True
+                    sff("class_contents") = "col-md-3"
+                ElseIf fld("type") = "tinyint" Then
+                    'make it as yes/no radio
+                    sff("type") = "yesno"
+                    sff("is_inline") = True
+                Else
+                    sff("type") = "number"
+                    sff("min") = 0
+                    sff("max") = 999999
+                    sff("class_contents") = "col-md-3"
+                End If
+            ElseIf fld("internal_type") = "float" Then
+                sff("type") = "number"
+                sff("step") = 0.1
+                sff("class_contents") = "col-md-3"
+            ElseIf fld("internal_type") = "datetime" Then
+                sf("type") = "date"
+                sff("type") = "date_popup"
+                sff("class_contents") = "col-md-3"
+                'TODO distinguish between date and date with time
+            Else
+                'everything else - just input
+                sff("type") = "input"
+            End If
+
+            If fld("is_identity") = "1" Then
+                sff("type") = "group_id"
+                sff.Remove("required")
+            End If
+
+            'special fields
+            Select Case fld("name")
+                Case "iname"
+                    sff("validate") = "exists" 'unique field
+                Case "att_id" 'Single attachment field - TODO better detect on foreign key to "att" table
+                    sf("type") = "att"
+                    sf("label") = "Attachment"
+                    sf("class_contents") = "col-md-2"
+                    sff.Remove("lookup_model")
+
+                    sff("type") = "att_edit"
+                    sff("label") = "Attachment"
+                    sff("class_contents") = "col-md-3"
+                    sff("att_category") = "general"
+                    sff.Remove("class_contents")
+                    sff.Remove("lookup_model")
+                    sff.Remove("is_option0")
+                Case "status"
+                    sf("label") = "Status"
+                    sf("lookup_tpl") = "/common/sel/status.sel"
+
+                    sff("label") = "Status"
+                    sff("type") = "select"
+                    sff("lookup_tpl") = "/common/sel/status.sel"
+                    sff("class_contents") = "col-md-3"
+                Case "add_time"
+                    sf("label") = "Added on"
+                    sf("type") = "added"
+
+                    sff("label") = "Added on"
+                    sff("type") = "added"
+                Case "upd_time"
+                    sf("label") = "Updated on"
+                    sf("type") = "updated"
+
+                    sff("label") = "Updated on"
+                    sff("type") = "updated"
+                Case "add_users_id", "upd_users_id"
+                    is_skip = True
+                Case Else
+                    'nothing else
+            End Select
+
+            If Not is_skip Then
+                showFields.Add(sf)
+                showFormFields.Add(sff)
+            End If
+
             If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then Continue For
-            alFields.Add(fld("name"))
+            saveFields.Add(fld("name"))
         Next
-        config("save_fields") = alFields
+
+        config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
         config("list_sortdef") = If(hfields.ContainsKey("iname"), "iname asc", "id desc") 'either sort by iname or id
-        config("list_sortmap") = "" 'N/A in dynamic controller
+        config.Remove("list_sortmap") 'N/A in dynamic controller
+        config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
         config("is_dynamic") = True
         config("list_view") = model.table_name
         config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
-        config("view_list_map") = "" 'TODO fields to names?
+        config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
-        config("show_fields") = New ArrayList 'TODO
-        config("showform_fields") = New ArrayList 'TODO
+        config("show_fields") = showFields
+        config("showform_fields") = showFormFields
 
-        FW.set_file_content(config_file, Utils.jsonEncode(config))
+        'remove all commented items - name start with "#"
+        For Each key In config.Keys.Cast(Of String).ToArray()
+            If Left(key, 1) = "#" Then config.Remove(key)
+        Next
 
-        fw.FLASH("success", controller_name & ".vb controller created, " & controller_url & ", templates copied, config.json updated")
+        'Utils.jsonEncode(config) - can't use as it produces unformatted json string
+        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(config_file, config_str)
+
+        fw.FLASH("controller_created", controller_name)
+        fw.FLASH("controller_url", controller_url)
         fw.redirect(base_url)
 
     End Function
@@ -190,13 +318,23 @@ Public Class DevManageController
 
     Private Sub replaceInFile(filepath As String, strings As Hashtable)
         Dim content = FW.get_file_content(filepath)
-        If content.Length = "" Then Return
+        If content.Length = 0 Then Return
 
         For Each str As String In strings.Keys
-            content.Replace(str, strings(str))
+            content = content.Replace(str, strings(str))
         Next
 
         FW.set_file_content(filepath, content)
     End Sub
+
+    'demo_dicts => DemoDicts
+    Private Function _tablename2model(table_name As String) As String
+        Dim result As String = ""
+        Dim pieces As String() = Split(table_name, "_")
+        For Each piece As String In pieces
+            result &= Utils.capitalize(piece)
+        Next
+        Return result
+    End Function
 
 End Class

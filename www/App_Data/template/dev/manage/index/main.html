@@ -1,5 +1,10 @@
 <~/common/form/msg>
 
+<~controller_created if="GLOBAL[_flash][controller_created]" inline>
+    <div class="alert alert-success"><~GLOBAL[_flash][controller_created]>.vb controller created, <a href="<~ROOT_URL><~GLOBAL[_flash][controller_url]>"><~GLOBAL[_flash][controller_url]></a>, templates copied, config.json updated</div>
+</~controller_created>
+
+
 <h4>Maintenance</h4>
 
 <ul>
