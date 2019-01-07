@@ -1,7 +1,7 @@
 ﻿' Framework DB class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2013 Oleg Savchuk www.osalabs.com
+' (c) 2009-2019 Oleg Savchuk www.osalabs.com
 
 Imports System.Data.OleDb
 Imports System.Data.SqlClient
@@ -375,6 +375,7 @@ Public Class DB
 
     'join key/values with quoting values according to table
     ' h - already quoted! values
+    ' kv_delim = pass "" to autodetect " = " or " IS " (for NULL values)
     Public Function _join_hash(h As Hashtable, ByVal kv_delim As String, ByVal pairs_delim As String) As String
         Dim res As String = ""
         If h.Count < 1 Then Return res
@@ -384,7 +385,15 @@ Public Class DB
         Dim i As Integer = 0
         Dim k As String
         For Each k In h.Keys
-            ar(i) = k & kv_delim & h(k)
+            Dim delim = kv_delim
+            If delim = "" Then
+                If h(k) = "NULL" Then
+                    delim = " IS "
+                Else
+                    delim = "="
+                End If
+            End If
+            ar(i) = k & delim & h(k)
             i += 1
         Next k
         res = String.Join(pairs_delim, ar)
@@ -394,7 +403,7 @@ Public Class DB
     Private Function hash2sql_select(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "") As String
         where = quote(table, where)
         'FW.logger(where)
-        Dim where_string As String = _join_hash(where, "=", " and ")
+        Dim where_string As String = _join_hash(where, "", " and ")
         If where_string.Length > 0 Then where_string = " where " & where_string
 
         Dim sql As String = "select * from " & q_ident(table) & " " & where_string
@@ -407,7 +416,7 @@ Public Class DB
         where = quote(table, where)
 
         Dim update_string As String = _join_hash(fields, "=", ", ")
-        Dim where_string As String = _join_hash(where, "=", " and ")
+        Dim where_string As String = _join_hash(where, "", " and ")
 
         If where_string.Length > 0 Then where_string = " where " & where_string
 
@@ -432,7 +441,7 @@ Public Class DB
 
     Private Function hash2sql_d(ByVal table As String, ByVal where As Hashtable) As String
         where = quote(table, where)
-        Dim where_string As String = _join_hash(where, "=", " and ")
+        Dim where_string As String = _join_hash(where, "", " and ")
         If where_string.Length > 0 Then where_string = " where " & where_string
 
         Dim sql As String = "delete from " & q_ident(table) & " " & where_string
