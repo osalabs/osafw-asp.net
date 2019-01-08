@@ -106,7 +106,8 @@
 ' default
 ' urlencode
 ' json (was var2js) - produces json-compatible string, example: {success:true, msg:""}
-' markdown - convert markdown text to html using CommonMark.NET (optional). Note: may wrap tag with <p>
+' markdown      - convert markdown text to html using CommonMark.NET (optional). Note: may wrap tag with <p>
+' noparse       - doesn't parse file and just include file by tag path as is, ignores all other attrs except if
 
 Imports System.IO
 
@@ -266,6 +267,12 @@ Public Class ParsePage
                             '    # this is special case for '<index type=radio>' HTML tag
                             v = _attr_radio(tag_tplpath(tag, tpl_name), hf, attrs)
                             tag_replace(page, tag_full, v, attrs)
+                        ElseIf attrs.ContainsKey("noparse") Then
+                            '   # no need to parse file - just include as is
+                            Dim path = tag_tplpath(tag, tpl_name)
+                            If Left(path, 1) <> "/" Then path = basedir + "/" + path
+                            path = TMPL_PATH & path
+                            tag_replace(page, tag_full, precache_file(path), New Hashtable)
                         Else
 
                             '    #also checking for sub
