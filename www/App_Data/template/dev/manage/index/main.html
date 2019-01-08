@@ -49,4 +49,15 @@
             <button class="btn btn-default ml-2">Create Controller</button>
         </form>
     </li>
+    <li class="mt-2">
+        <form method="post" action="<~../url>/(ExtractController)" class="form-inline">
+            <input type="hidden" name="XSS" value="<~session[XSS]>">
+            <select name="item[controller_name]" class="form-control" style="width:200px">
+              <option value="">- select controller -</option>
+              <~select_controllers select="i[controller_name]">
+            </select>
+
+            <button class="btn btn-default ml-2">Extract Controller</button>
+        </form>
+    </li>
 </ul>

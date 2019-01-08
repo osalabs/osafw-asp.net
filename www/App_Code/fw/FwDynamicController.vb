@@ -51,7 +51,7 @@ Public Class FwDynamicController
         ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
         ps("list_view") = list_view
 
-        If is_dynamic Then
+        If is_dynamic_index Then
             'customizable headers
             setViewList(ps, reqh("search"))
         End If
@@ -70,7 +70,7 @@ Public Class FwDynamicController
         ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
         'dynamic fields
-        ps("fields") = prepareShowFields(item, ps)
+        If is_dynamic_show Then ps("fields") = prepareShowFields(item, ps)
 
         'userlists support
         ps("list_view") = IIf(list_view = "", model0.table_name, list_view)
@@ -117,7 +117,7 @@ Public Class FwDynamicController
         If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
         If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
 
-        ps("fields") = prepareShowFormFields(item, ps)
+        If is_dynamic_showform Then ps("fields") = prepareShowFormFields(item, ps)
         'TODO
         'ps("select_options_parent_id") = model.listSelectOptionsParent()
         'FormUtils.comboForDate(item("fdate_combo"), ps, "fdate_combo")
@@ -132,11 +132,11 @@ Public Class FwDynamicController
     End Function
 
     Public Overrides Function modelAddOrUpdate(id As Integer, fields As Hashtable) As Integer
-        processSaveShowFormFields(id, fields)
+        If is_dynamic_showform Then processSaveShowFormFields(id, fields)
 
         id = MyBase.modelAddOrUpdate(id, fields)
 
-        processSaveShowFormFieldsAfter(id, fields)
+        If is_dynamic_showform Then processSaveShowFormFieldsAfter(id, fields)
 
         Return id
     End Function
@@ -175,7 +175,7 @@ Public Class FwDynamicController
     Public Overridable Sub Validate(id As Integer, item As Hashtable)
         Dim result As Boolean = validateRequiredDynamic(item)
 
-        If result Then validateSimpleDynamic(id, item)
+        If result AndAlso is_dynamic_showform Then validateSimpleDynamic(id, item)
 
         'If result AndAlso Not SomeOtherValidation() Then
         '    FW.FERR("other field name") = "HINT_ERR_CODE"
@@ -186,7 +186,7 @@ Public Class FwDynamicController
 
     Protected Function validateRequiredDynamic(item As Hashtable) As Boolean
         Dim result = True
-        If Me.required_fields = "" Then
+        If Me.required_fields = "" AndAlso is_dynamic_showform Then
             'if required_fields not defined - fill from showform_fields
             Dim fields As ArrayList = Me.config("showform_fields")
             Dim req As New ArrayList
@@ -291,6 +291,7 @@ Public Class FwDynamicController
 
     '********************* support for autocomlete related items
     Public Function AutocompleteAction() As Hashtable
+        If model_related Is Nothing Then Throw New ApplicationException("No model_related defined")
         Dim items As ArrayList = model_related.getAutocompleteList(reqs("q"))
 
         Return New Hashtable From {{"_json", items}}
@@ -384,7 +385,7 @@ Public Class FwDynamicController
                     def("value") = def("lookup_row")(lookup_field)
 
                 ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
-                    def("lookup_row") = fw.model(def("lookup_model")).one(item(field))
+                    def("lookup_row") = fw.model(def("lookup_model")).one(Utils.f2int(item(field)))
 
                     Dim lookup_field = def("lookup_field")
                     If lookup_field = "" Then lookup_field = "iname"

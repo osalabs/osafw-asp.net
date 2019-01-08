@@ -32,6 +32,11 @@ Public Class DevManageController
             ps("select_models").add(New Hashtable From {{"id", model_name}, {"iname", model_name}})
         Next
 
+        ps("select_controllers") = New ArrayList
+        For Each controller_name As String In _controllers()
+            ps("select_controllers").add(New Hashtable From {{"id", controller_name}, {"iname", controller_name}})
+        Next
+
         Return ps
     End Function
 
@@ -284,6 +289,59 @@ Public Class DevManageController
 
     End Function
 
+    Public Function ExtractControllerAction() As Hashtable
+        Dim item = reqh("item")
+        Dim controller_name = Trim(item("controller_name"))
+
+        If Not _controllers.Contains(controller_name) Then Throw New ApplicationException("No controller found")
+
+        Dim cInstance As FwDynamicController = Activator.CreateInstance(Type.GetType(controller_name, True))
+        cInstance.init(fw)
+
+        Dim tpl_to = LCase(cInstance.base_url)
+        Dim tpl_path = fw.config("template") & tpl_to
+        Dim config_file = tpl_path & "/config.json"
+        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
+        If config Is Nothing Then config = New Hashtable
+
+        'extract ShowAction
+        config("is_dynamic_show") = False
+        Dim fitem As New Hashtable
+        Dim fields = cInstance.prepareShowFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+
+        Dim ps As New Hashtable
+        ps("fields") = fields
+        Dim parser As ParsePage = New ParsePage(fw)
+        Dim content As String = parser.parse_page(tpl_to & "/show", "/common/form/show/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        FW.set_file_content(tpl_path & "/show/form.html", content)
+
+        'extract ShowAction
+        config("is_dynamic_showform") = False
+        fields = cInstance.prepareShowFormFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+        ps = New Hashtable
+        ps("fields") = fields
+        parser = New ParsePage(fw)
+        content = parser.parse_page(tpl_to & "/show", "/common/form/showform/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
+        FW.set_file_content(tpl_path & "/showform/form.html", content)
+
+        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
+
+        'now we could remove dynamic field definitions - uncomment if necessary
+        'config.Remove("show_fields")
+        'config.Remove("showform_fields")
+
+        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(config_file, config_str)
+
+        fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
+        fw.redirect(base_url)
+    End Function
+
 
     Private Function _models() As IOrderedEnumerable(Of String)
         Dim baseType = GetType(FwModel)
@@ -336,5 +394,25 @@ Public Class DevManageController
         Next
         Return result
     End Function
+
+    Private Sub _makeValueTags(fields As ArrayList)
+        For Each def As Hashtable In fields
+            Dim tag = "<~i[" & def("field") & "]"
+            Select Case def("type")
+                Case "date"
+                    def("value") = tag & " date>"
+                Case "date_long"
+                    def("value") = tag & " date=""long"">"
+                Case "float"
+                    def("value") = tag & " number_format=""2"">"
+                Case "markdown"
+                    def("value") = tag & " markdown>"
+                Case "noescape"
+                    def("value") = tag & " noescape>"
+                Case Else
+                    def("value") = tag & ">"
+            End Select
+        Next
+    End Sub
 
 End Class

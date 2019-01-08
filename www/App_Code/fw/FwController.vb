@@ -34,10 +34,13 @@ Public MustInherit Class FwController
 
     'support of customizable view list
     'map of fileld names to screen names
-    Protected is_dynamic As Boolean = False         'true if controller is dynamic, then define below:
+    Protected is_dynamic_index As Boolean = False   'true if controller has dynamic IndexAction, then define below:
     Protected view_list_defaults As String = ""     'qw list of default columns
     Protected view_list_map As Hashtable            'list of all available columns fieldname|visiblename
     Protected view_list_custom As String = ""       'qw list of custom-formatted fields for the list_table
+
+    Protected is_dynamic_show As Boolean = False    'true if controller has dynamic ShowAction, requires "show_fields" to be defined in config.json
+    Protected is_dynamic_showform As Boolean = False 'true if controller has dynamic ShowFormAction, requires "showform_fields" to be defined in config.json
 
     Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
     Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
@@ -96,9 +99,9 @@ Public MustInherit Class FwController
 
         list_view = Utils.f2str(Me.config("list_view"))
 
-        is_dynamic = Utils.f2bool(Me.config("is_dynamic"))
-        If is_dynamic Then
-            'Whoah! this is fully dynamic form
+        is_dynamic_index = Utils.f2bool(Me.config("is_dynamic_index"))
+        If is_dynamic_index Then
+            'Whoah! list view is dynamic
             view_list_defaults = Utils.f2str(Me.config("view_list_defaults"))
 
             'since view_list_map could be defined as qw string or as hashtable - check and convert
@@ -114,6 +117,9 @@ Public MustInherit Class FwController
             list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
             If search_fields = "" Then search_fields = getViewListUserFields() 'just search in all visible fields if no specific fields defined
         End If
+
+        is_dynamic_show = Utils.f2bool(Me.config("is_dynamic_show"))
+        is_dynamic_showform = Utils.f2bool(Me.config("is_dynamic_showform"))
 
     End Sub
 
@@ -317,7 +323,7 @@ Public MustInherit Class FwController
         'advanced search
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
-            If hsearch(fieldname) > "" AndAlso (Not is_dynamic OrElse view_list_map.ContainsKey(fieldname)) Then
+            If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
                 Me.list_where &= " and " & db.q_ident(fieldname) & " LIKE " & db.q("%" & hsearch(fieldname) & "%")
             End If
         Next

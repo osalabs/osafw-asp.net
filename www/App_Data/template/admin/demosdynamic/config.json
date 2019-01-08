@@ -33,7 +33,7 @@
 
     "related_field_name": "demo_dicts_id",
 
-    "is_dynamic": true,
+    "is_dynamic_index": true,
     "list_view": "(select d.*, dd.iname as demo_dicts_iname from demos d LEFT OUTER JOIN demo_dicts dd ON dd.id=d.demo_dicts_id) t",
     "view_list_defaults": "demo_dicts_iname iname email add_time status",
     "###view_list_map": "demo_dicts_iname|DemoDicts iname|Title email|Email add_time|Added&nbsp;on status|Status id|id",
@@ -47,6 +47,7 @@
     },
     "view_list_custom": "status demo_dicts_iname",
 
+    "is_dynamic_show": true,
     "show_fields": [
         {
             "field": "parent_id",
@@ -212,6 +213,7 @@
         }
     ],
 
+    "is_dynamic_showform": true,
     "showform_fields": [
         {
             "field": "id",
