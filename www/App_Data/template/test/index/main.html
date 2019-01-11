@@ -9,6 +9,10 @@
         inline template: <b class="true"><~true_inline inline>TRUE INLINE</~true_inline></b><br>
     </li>
     <li>
+        hashtable: key1=<~hashtable[key1]>, key2=<~hashtable[key2]><br>
+        hashtable just name: #<~hashtable>#><br>
+    </li>
+    <li>
         ifeq="one" value="1": <b class="true"><~true_value ifeq="one" value="1"></b>
     </li>
     <li>
@@ -81,8 +85,8 @@
     </li>
     <li>
        json dump of parse data: 
-       <pre>
+       <div>
        <~myself json>
-       </pre>
+       </div>
     </li>
 </ul>

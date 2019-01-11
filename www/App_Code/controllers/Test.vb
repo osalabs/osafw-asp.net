@@ -27,6 +27,10 @@ Public Class TestController
         hf("minusone") = -1
         hf("booltrue") = True
         hf("boolfalse") = False
+        hf("hashtable") = New Hashtable From {
+                {"key1", "value1"},
+                {"key2", "value2"}
+            }
 
         hf("now") = Now()
 
