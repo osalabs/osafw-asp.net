@@ -22,6 +22,18 @@ Public Class Spages
         End If
     End Sub
 
+    Public Function isExistsByUrl(url As String, parent_id As Integer, not_id As Integer) As Boolean
+        Dim val As String = db.value("select 1 from " & table_name &
+                                     " where parent_id = " & db.qi(parent_id) &
+                                     "   and url = " & db.q(url) &
+                                     "   and id <>" & db.qi(not_id))
+        If val = "1" Then
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
     'retun one latest record by url (i.e. with most recent pub_time if there are more than one page with such url)
     Public Function oneByUrl(url As String, parent_id As Integer) As Hashtable
         Dim where As New Hashtable
@@ -34,17 +46,16 @@ Public Class Spages
     Public Function oneByFullUrl(full_url As String) As Hashtable
         Dim url_parts As String() = Split(full_url, "/")
         Dim parent_id As Integer = 0
-        Dim item As Hashtable = Nothing
+        Dim item As New Hashtable
         For i As Integer = 1 To url_parts.GetUpperBound(0)
             item = oneByUrl(url_parts(i), parent_id)
             If item.Count = 0 Then
-                item = Nothing
-                Exit For
+                Return item 'empty hashtable
             End If
             parent_id = item("id")
         Next
         'item now contains page data for the url
-        If item IsNot Nothing AndAlso item.Count > 0 Then
+        If item.Count > 0 Then
             If item("head_att_id") > "" Then
                 'item("head_att_id_url_s") = fw.model(Of Att).get_url_direct(item("head_att_id"), "s")
                 'item("head_att_id_url_m") = fw.model(Of Att).get_url_direct(item("head_att_id"), "m")
@@ -54,8 +65,23 @@ Public Class Spages
         End If
 
         'page[top_url] used in templates navigation
-        If item IsNot Nothing AndAlso url_parts.GetUpperBound(0) >= 1 Then
+        If url_parts.GetUpperBound(0) >= 1 Then
             item("top_url") = LCase(url_parts(1))
+        End If
+
+        'columns
+        If item("idesc_left") > "" Then
+            If item("idesc_right") > "" Then
+                item("is_col3") = True
+            Else
+                item("is_col2_left") = True
+            End If
+        Else
+            If item("idesc_right") > "" Then
+                item("is_col2_right") = True
+            Else
+                item("is_col1") = True
+            End If
         End If
 
         Return item
@@ -166,13 +192,15 @@ Public Class Spages
         Dim ps As New Hashtable
 
         Dim item As Hashtable = oneByFullUrl(full_url)
-        If IsNothing(item) Then
+        If item.Count = 0 Then
             ps("hide_sidebar") = True
             fw.parser("/error/404", ps)
             Exit Sub
         End If
 
         ps("page") = item
+        ps("meta_keywords") = item("meta_keywords")
+        ps("meta_description") = item("meta_description")
         ps("hide_sidebar") = True 'TODO - control via item[template]
         fw.parser("/home/spage", ps)
     End Sub

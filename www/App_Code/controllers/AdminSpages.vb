@@ -19,7 +19,7 @@ Public Class AdminSpagesController
         'initialization
         base_url = "/Admin/Spages"
         required_fields = "iname"
-        save_fields = "iname idesc idesc_right head_att_id template prio custom_css custom_js"
+        save_fields = "iname idesc idesc_left idesc_right head_att_id template prio meta_keywords meta_description custom_css custom_js"
 
         search_fields = "url iname idesc"
         list_sortdef = "iname asc"   'default sorting: name, asc|desc direction
@@ -95,7 +95,7 @@ Public Class AdminSpagesController
         ps("parent") = model.one(Utils.f2int(item("parent_id")))
 
         If item("head_att_id") > "" Then
-            ps("head_att_id_url_s") = fw.model(Of Att).getUrlDirect(item("head_att_id"), "s")
+            ps("att") = fw.model(Of Att).one(Utils.f2int(item("head_att_id")))
         End If
 
         If id > 0 Then
@@ -118,8 +118,22 @@ Public Class AdminSpagesController
             'for non-home page enable some fields
             Dim save_fields2 As String = Me.save_fields
             If item_old("is_home") <> "1" Then
-                required_fields &= " url"
                 save_fields2 &= " parent_id url status pub_time"
+            End If
+
+            'auto-generate url if it's empty
+            If item("url") = "" Then
+                item("url") = item("iname")
+                item("url") = Regex.Replace(item("url"), "^\W+", "")
+                item("url") = Regex.Replace(item("url"), "\W+$", "")
+                item("url") = Regex.Replace(item("url"), "\W+", "-")
+                If item("url") = "" Then
+                    If id > 0 Then
+                        item("url") = "page-" & id
+                    Else
+                        item("url") = "page-" & Utils.uuid()
+                    End If
+                End If
             End If
 
             Validate(id, item)
@@ -129,8 +143,8 @@ Public Class AdminSpagesController
             If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
             itemdb("prio") = Utils.f2int(itemdb("prio"))
 
-            'if no publish time defined - publish it now
-            If itemdb("pub_time") = "" Then itemdb("pub_time") = Now()
+                'if no publish time defined - publish it now
+                If itemdb("pub_time") = "" Then itemdb("pub_time") = Now()
 
             id = Me.modelAddOrUpdate(id, itemdb)
 
@@ -143,5 +157,24 @@ Public Class AdminSpagesController
 
         Return Me.saveCheckResult(success, id, is_new)
     End Function
+
+    Public Overrides Sub Validate(id As Integer, item As Hashtable)
+        Dim result As Boolean = Me.validateRequired(item, Me.required_fields)
+
+
+        If result AndAlso model.isExistsByUrl(item("url"), Utils.f2int(item("parent_id")), id) Then
+            fw.FERR("url") = "EXISTS"
+        End If
+
+        'If result AndAlso model0.isExists(item("iname"), id) Then
+        '    fw.FERR("iname") = "EXISTS"
+        'End If
+
+        'If result AndAlso Not SomeOtherValidation() Then
+        '    FW.FERR("other field name") = "HINT_ERR_CODE"
+        'End If
+
+        Me.validateCheckResult()
+    End Sub
 
 End Class

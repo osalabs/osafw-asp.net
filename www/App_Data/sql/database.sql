@@ -156,7 +156,7 @@ GO
 --TRUNCATE TABLE spages;
 INSERT INTO spages (parent_id, url, iname) VALUES
 (0,'','Home') --1
-,(1,'test','Test sub-home page') --2
+,(0,'test-page','Test  page') --2
 ;
 update spages set is_home=1 where id=1;
 
