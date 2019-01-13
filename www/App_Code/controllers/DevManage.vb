@@ -56,6 +56,17 @@ Public Class DevManageController
         sr.Close()
     End Function
 
+    Public Function ResetCacheAction() As Hashtable
+        fw.FLASH("success", "Application Caches cleared")
+
+        FwCache.clear()
+        db.clear_schema_cache()
+        Dim pp = New ParsePage(fw)
+        pp.clear_cache()
+
+        fw.redirect(base_url)
+    End Function
+
     Public Function CreateModelAction() As Hashtable
         Dim item = reqh("item")
         Dim table_name = Trim(item("table_name"))

@@ -302,6 +302,10 @@ Public Class ParsePage
         Return page
     End Function
 
+    Public Sub clear_cache()
+        FILE_CACHE.Clear()
+    End Sub
+
     Private Function precache_file(ByVal filename As String, Optional ByRef ErrInfo As String = "") As String
         Dim modtime As String = ""
         Dim file_data As String = ""

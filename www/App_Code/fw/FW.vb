@@ -998,7 +998,7 @@ Public Class FW
 
         hf("err_time") = Now()
         hf("err_msg") = msg
-        If Utils.f2bool(Me.config("is_debug")) AndAlso Me.config("debug_level") = "SCREEN" Then
+        If Utils.f2bool(Me.config("IS_DEV")) Then
             hf("is_dump") = True
             If Ex IsNot Nothing Then
                 hf("DUMP_STACK") = Ex.ToString()

@@ -559,6 +559,12 @@ Public Class DB
         Return schema(table)
     End Function
 
+    Public Sub clear_schema_cache()
+        If schemafull_cache IsNot Nothing Then schemafull_cache.Clear()
+        If schema_cache IsNot Nothing Then schema_cache.Clear()
+        If schema IsNot Nothing Then schema.Clear()
+    End Sub
+
     Private Function map_mssqltype2internal(mstype As String) As String
         Dim result As String = ""
         Select Case LCase(mstype)
