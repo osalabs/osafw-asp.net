@@ -27,6 +27,36 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 
 ## Documentation
 
+### Development
+1. in Visual Studio do `File -> Open -> Web Site...` (Shift+Alt+O) and open `/www` folder
+2. press Ctrl+F5 to run (or F5 if you really need debugger)
+3. review debug log in `/www/App_Data/main.log`
+4. edit or create new controllers and models in `/www/App_Code/controllers` and `/www/App_Code/models`
+5. modify templates in `/www/App_Data/template`
+
+### Directory structure
+```
+/App_Code          - all the VB.NET code is here
+  /controllers     - your controllers
+  /fw              - framework core libs
+  /models          - your models
+/App_Data          - non-public directory
+  /sql             - initial database.sql script and update sql scripts
+  /template        - all the html templates
+  /main.log        - application log (ensure to enable write rights for IIS)
+/assets            - your web frontend assets
+  /css
+  /fonts
+  /img
+  /js
+/bin               - additional .net dlls will be here if you install something from Nuget
+/upload            - upload dir for public files
+/error.html        - default error.html
+/robots.txt        - default robots.txt (empty)
+/favicon.ico       - change to your favicon!
+/web.config        - settings for db connection, mail, logging and for IIS/.NET stuff too
+```
+
 ### REST mappings
 Controllers automatically directly mapped to URLs, so developer doesn't need to write routing rules:
 
@@ -44,9 +74,3 @@ Controllers automatically directly mapped to URLs, so developer doesn't need to 
 For example `GET /Products` will call `ProductsController.IndexAction()`
 And this will cause rendering templates from `/www/App_Data/templates/products/index`
 
-## Development
-1. in Visual Studio do `File -> Open -> Web Site...` (Shift+Alt+O)
-2. press Ctrl+F5 to run
-3. review debug log in `/www/App_Data/main.log`
-4. edit or create new controllers and models in `/www/App_Code/controllers` and `/www/App_Code/models`
-5. modify templates in `/www/App_Data/template`
