@@ -115,6 +115,12 @@ table.list .search {
     vertical-align: top;
 }
 
+@media (min-width: 768px) {
+  .form-group.row > .col-form-label {
+    text-align: right;
+  }
+}
+
 form .required:before {
     content: "*";
     color:#ff0000;
