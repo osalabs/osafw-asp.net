@@ -74,3 +74,32 @@ Controllers automatically directly mapped to URLs, so developer doesn't need to 
 For example `GET /Products` will call `ProductsController.IndexAction()`
 And this will cause rendering templates from `/www/App_Data/templates/products/index`
 
+### How to Debug
+
+Main and recommended approach - use `fw.logger()` function, which is available in controllers and models (so no prefix required).
+Examples: `logger("some string to log", var_to_dump)`, `logger(LogLevel.WARN, "warning message")`
+All logged messages and var content (complex objects will be dumped wit structure when possible) written on debug console as well as to log file (default `/App_Data/main.log`)
+You could configure log level in `web.config` - search "log_level" in `appSettings`
+
+Another debug function that might be helpful is `fw.rw()` - but it output it's parameter directly into response output (i.e. you will see output right in the browser)
+
+### Best Practices / Recommendations
+- naming conventions:
+  - table name: `user_lists` (lowercase, underscore delimiters is optional)
+  - model name: `UserLists` (UpperCamelCase)
+  - controller name: `UserListsController` or `AdminUserListsController` (UpperCamelCase with "Controller" suffix)
+  - template path: `/template/userlists`  
+- keep all paths without trailing slash, use beginning slash where necessary
+- db updates:
+  - first, make changes in `/App_Data/sql/database.sql` - this file is used to create db from scratch
+  - then create a file `/App_Data/sql/updateYYYY-MM-DD.sql` with all the CREATE, ALTER, UPDATE... - this will allow to apply just this update to existing database instances
+- use `fw.route_redirect()` if you got request to one Controller.Action, but need to continue processing in another Controller.Action
+  - for example, if for a logged user you need to show detailed data and always skip list view - in the `IndexAction()` just use `fw.routeRedirect("ShowForm")`
+- uploads
+  - save all public-readable uploads under `/www/upload` (default, see "UPLOAD_DIR" in `web.config`)
+  - for non-public uploads use `/www/App_Data/upload`
+  - or `S3` model and upload to the cloud
+- put all validation code into controller's `Validate()`. See usage example in `AdminDemosController`
+- use `logger()` and review `/App_Data/main.log` if you stuck
+  - make sure you have "log_level" set to "DEBUG" in `web.config`
+
