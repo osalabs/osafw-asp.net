@@ -515,12 +515,10 @@ Public Class ParsePage
 
         Dim eqvalue As Object = hfvalue(eqvar, hf)
         If eqvalue Is Nothing Then eqvalue = ""
-        'detect if eqvalue is integer
-        Try
-            If RX_ALL_DIGITS.IsMatch(eqvalue.ToString()) Then eqvalue = Convert.ToInt32(eqvalue)
-        Catch ex As Exception
 
-        End Try
+        'detect if eqvalue is integer
+        Dim zzz As Integer = Int32.MinValue
+        If Int32.TryParse(eqvalue.ToString(), zzz) Then eqvalue = zzz
 
         Dim ravalue As Object
         If attrs.ContainsKey("value") OrElse attrs.ContainsKey("vvalue") Then
@@ -542,15 +540,11 @@ Public Class ParsePage
 
             ElseIf TypeOf (eqvalue) Is Int32 Then
                 'convert ravalue to Int32 for int comparisons
-                Try
-                    ravalue = Convert.ToInt32(ravalue)
-                Catch ex As Exception
+                If Not Int32.TryParse(eqvalue.ToString(), zzz) Then
                     'ravalue is not an integer, so try string comparison
-                    'fw.logger("WARN", "ParsePage - Error conversion ravalue to Int32 = " & ravalue)
-                    'ravalue = 0
                     ravalue = ravalue.ToString()
                     eqvalue = eqvalue.ToString()
-                End Try
+                End If
             ElseIf TypeOf (eqvalue) Is ICollection Then
                 'if we comparing to Hashtable or ArrayList - we actually compare to .Count
                 'so <~tag if="ArrayList"> will fail if ArrayList.Count=0 or success if ArrayList.Count>0
