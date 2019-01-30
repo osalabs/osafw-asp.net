@@ -153,13 +153,6 @@ form .has-danger label {
     white-space: nowrap;
 }
 
-.ico-wait {
-    display: inline-block;
-    background: url(../img/loading.gif) no-repeat;
-    width: 16px;
-    height: 16px;
-}
-
 .modal-overflowed {
     max-height: 450px;
     overflow: auto;

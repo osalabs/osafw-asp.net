@@ -5,7 +5,7 @@
 */
 
 window.fw={
-  HTML_LOADING : '<i class="ico-wait"></i> Loading...',
+  HTML_LOADING : '<span class="spinner-border spinner-border" role="status" aria-hidden="true"></span> Loading...',
 
   ok: function (str){
     $.jGrowl(str, {theme: 'hint_green'});

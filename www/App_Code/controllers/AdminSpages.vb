@@ -32,8 +32,10 @@ Public Class AdminSpagesController
 
         Me.setListSorting()
         Me.setListSearch()
+        Me.setListSearchStatus()
 
-        If list_filter("sortby") = "iname" AndAlso list_filter("s") = "" Then
+        If list_filter("sortby") = "iname" AndAlso list_filter("s") = "" And (Me.list_filter("status") = "" OrElse Me.list_filter("status") = "0") Then
+            'show tree only if sort by title and no search and status by all or active
             Me.list_count = db.value("select count(*) from " & model.table_name & " where " & Me.list_where)
             If Me.list_count > 0 Then
                 'build pages tree
