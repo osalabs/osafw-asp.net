@@ -10,6 +10,7 @@
 	- button can open/close, not just open - added toggle
 	- input will open/close too, not just button
 	- fixed leak for on document mousedown
+ * 2019-01-24 vlad - patch place function to pop UP if there is no space available below the .data element (i.e. at the bottom of the page)
  * !!!!!!!!!!!!
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,6 +146,8 @@
 				type: 'hide',
 				date: this.date
 			});
+			//vlad: for proper popup handling on window resize
+			this.picker.attr('style','');
 		},
 
 		set: function() {
@@ -172,9 +175,20 @@
 
 		place: function(){
 			//var offset = this.component ? this.component.offset() : this.element.offset();
-			var offset = this.component ? this.element.find('input').offset() : this.element.offset();
+			var offset = this.component ? this.element.find('input').offset() : this.element.offset();			
+
+			var el = this.component ? this.element.find('input') : this.element;
+			var top;
+			if (this.picker.outerHeight() > $(document).height() - el.offset().top - el.position().top - el.outerHeight()) {
+				top = offset.top - this.picker.outerHeight() - 3;
+				this.picker.addClass('datepicker-dropup')
+			} else {
+				top = offset.top + this.height;
+				this.picker.removeClass('datepicker-dropup')
+			}
+
 			this.picker.css({
-				top: offset.top + this.height,
+				top: top,
 				left: offset.left
 			});
 		},
