@@ -178,8 +178,15 @@
 			var offset = this.component ? this.element.find('input').offset() : this.element.offset();			
 
 			var el = this.component ? this.element.find('input') : this.element;
+			
+			var picker_height = this.picker.outerHeight();
+			var top_space = el.offset().top - $(window).scrollTop();
+			var bottom_space = $(window).scrollTop() + $(window).height() - el.offset().top - el.position().top - el.outerHeight();
+
 			var top;
-			if (this.picker.outerHeight() > $(document).height() - el.offset().top - el.position().top - el.outerHeight()) {
+			if ( (picker_height < top_space && picker_height > bottom_space) ||
+			     (picker_height < el.offset().top && picker_height > top_space && picker_height > bottom_space && top_space > bottom_space)
+			) {
 				top = offset.top - this.picker.outerHeight() - 3;
 				this.picker.addClass('datepicker-dropup')
 			} else {
