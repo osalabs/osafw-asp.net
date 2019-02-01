@@ -193,7 +193,12 @@ Public Class FwDynamicController
             For Each def As Hashtable In fields
                 If Utils.f2bool(def("required")) Then req.Add(def("field"))
             Next
-            result = Me.validateRequired(item, req.ToArray())
+
+            If req.Count > 0 Then
+                result = Me.validateRequired(item, req.ToArray())
+            Else
+                result = True
+            End If
         Else
             result = Me.validateRequired(item, Me.required_fields)
         End If
