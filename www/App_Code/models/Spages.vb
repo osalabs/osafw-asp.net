@@ -191,9 +191,13 @@ Public Class Spages
     Public Sub showPageByFullUrl(full_url As String)
         Dim ps As New Hashtable
 
+        'for navigation
+        Dim pages_tree = tree("status=0", "parent_id, prio desc, iname") 'published only
+        ps("pages") = getPagesTreeList(pages_tree, 0)
+
         Dim item As Hashtable = oneByFullUrl(full_url)
-        If item.Count = 0 Then
-            ps("hide_sidebar") = True
+        If item.Count = 0 OrElse item("status") = 127 AndAlso Not fw.model(Of Users).checkAccess(100, False) Then 'can show deleted only to Admin
+            ps("hide_std_sidebar") = True
             fw.parser("/error/404", ps)
             Exit Sub
         End If
@@ -201,7 +205,7 @@ Public Class Spages
         ps("page") = item
         ps("meta_keywords") = item("meta_keywords")
         ps("meta_description") = item("meta_description")
-        ps("hide_sidebar") = True 'TODO - control via item[template]
+        ps("hide_std_sidebar") = True 'TODO - control via item[template]
         fw.parser("/home/spage", ps)
     End Sub
 

@@ -172,7 +172,8 @@ Public Class FwAdminController
         Dim ps = New Hashtable From {
             {"i", model0.one(id)},
             {"related_id", Me.related_id},
-            {"return_url", Me.return_url}
+            {"return_url", Me.return_url},
+            {"base_url", Me.base_url}
         }
 
         fw.parser("/common/form/showdelete", ps)

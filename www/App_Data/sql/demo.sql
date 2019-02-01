@@ -7,7 +7,7 @@ CREATE TABLE demo_dicts (
   idesc                 NVARCHAR(MAX),
 
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
-  add_time              DATETIME2 NOT NULL DEFAULT getdate(), /*from date_joined*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
   upd_users_id          INT DEFAULT 0
