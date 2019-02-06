@@ -605,7 +605,7 @@ Public Class ParsePage
     'return ready HTML
     Private Function _attr_repeat(ByRef attrs As Hashtable, ByRef tag As String, ByRef tag_val_array As Object, ByRef tpl_name As String, ByRef inline_tpl As String, parent_hf As Hashtable) As String
         'Validate: if input doesn't contain array - return "" - nothing to repeat
-        If Not TypeOf (tag_val_array) Is ArrayList Then
+        If Not TypeOf (tag_val_array) Is IList Then
             If tag_val_array IsNot Nothing AndAlso tag_val_array.ToString() <> "" Then
                 fw.logger(LogLevel.DEBUG, "ParsePage - Not an ArrayList passed to repeat tag=", tag)
             End If
@@ -624,7 +624,7 @@ Public Class ParsePage
         Return value.ToString()
     End Function
 
-    Private Sub proc_repeat_modifiers(ByRef uftag As ArrayList, ByVal i As Integer, parent_hf As Hashtable)
+    Private Sub proc_repeat_modifiers(ByRef uftag As IList, ByVal i As Integer, parent_hf As Hashtable)
         Dim uftagi As Hashtable = uftag(i)
         Dim cnt As Integer = uftag.Count
 
