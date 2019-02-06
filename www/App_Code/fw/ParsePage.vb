@@ -540,7 +540,7 @@ Public Class ParsePage
 
             ElseIf TypeOf (eqvalue) Is Int32 Then
                 'convert ravalue to Int32 for int comparisons
-                If Not Int32.TryParse(eqvalue.ToString(), zzz) Then
+                If Not Int32.TryParse(ravalue.ToString(), zzz) Then
                     'ravalue is not an integer, so try string comparison
                     ravalue = ravalue.ToString()
                     eqvalue = eqvalue.ToString()
