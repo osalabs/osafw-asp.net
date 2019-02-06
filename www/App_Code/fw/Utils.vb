@@ -9,6 +9,7 @@ Imports System.Drawing.Imaging
 Imports System.Drawing.Drawing2D
 Imports System.Runtime.Serialization.Formatters.Binary
 Imports System.Security.Cryptography
+Imports System.Net
 
 Public Class Utils
     'convert "space" delimited string to an array
@@ -18,6 +19,7 @@ Public Class Utils
         arr = Split(Trim(str), " ")
 
         For i As Integer = LBound(arr) To UBound(arr)
+            If arr(i) Is Nothing Then arr(i) = ""
             arr(i) = Replace(arr(i), "&nbsp;", " ")
         Next
 
@@ -736,6 +738,77 @@ Public Class Utils
     ''' <returns></returns>
     Public Shared Function urlescape(str As String) As String
         Return HttpUtility.UrlEncode(str)
+    End Function
+
+    'sent multipart/form-data POST request to remote URL with files (key=fieldname, value=filepath) and formFields
+    Shared Function UploadFilesToRemoteUrl(ByVal url As String, ByVal files As Hashtable, ByVal Optional formFields As NameValueCollection = Nothing, Optional cert As X509Certificates.X509Certificate2 = Nothing) As String
+        Dim boundary As String = "----------------------------" & DateTime.Now.Ticks.ToString("x")
+        Dim request As HttpWebRequest = CType(WebRequest.Create(url), HttpWebRequest)
+        request.ContentType = "multipart/form-data; boundary=" & boundary
+        request.Method = "POST"
+        request.KeepAlive = True
+        If cert IsNot Nothing Then request.ClientCertificates.Add(cert)
+
+        Dim memStream As New System.IO.MemoryStream()
+        Dim boundarybytes = System.Text.Encoding.ASCII.GetBytes(vbCrLf & "--" & boundary & vbCrLf)
+        Dim endBoundaryBytes = System.Text.Encoding.ASCII.GetBytes(vbCrLf & "--" & boundary & "--")
+
+        'Dim formdataTemplate As String = vbCrLf & "--" & boundary & vbCrLf & "Content-Disposition: form-data; name=""{0}"";" & vbCrLf & vbCrLf & "{1}"
+        Dim formdataTemplate As String = "--" & boundary & vbCrLf & "Content-Disposition: form-data; name=""{0}"";" & vbCrLf & vbCrLf & "{1}" & vbCrLf
+        If formFields IsNot Nothing Then
+            For Each key As String In formFields.Keys
+                Dim formitem As String = String.Format(formdataTemplate, key, formFields(key))
+
+                If memStream.Length > 0 Then formitem = vbCrLf & formitem 'add crlf before the string only for second and further lines
+
+                Dim formitembytes As Byte() = System.Text.Encoding.UTF8.GetBytes(formitem)
+                memStream.Write(formitembytes, 0, formitembytes.Length)
+            Next
+        End If
+
+        Dim headerTemplate As String = "Content-Disposition: form-data; name=""{0}""; filename=""{1}""" & vbCrLf & "Content-Type: {2}" & vbCrLf & vbCrLf
+        For Each fileField As String In files.Keys
+            memStream.Write(boundarybytes, 0, boundarybytes.Length)
+
+            'mime (TODO use System.Web.MimeMapping.GetMimeMapping() for .net 4.5+)
+            Dim mimeType = "application/octet-stream"
+            If System.IO.Path.GetExtension(files(fileField)) = ".xml" Then mimeType = "text/xml"
+
+            Dim header = String.Format(headerTemplate, fileField, System.IO.Path.GetFileName(files(fileField)), mimeType)
+            Dim headerbytes = System.Text.Encoding.UTF8.GetBytes(header)
+            memStream.Write(headerbytes, 0, headerbytes.Length)
+
+            Using fileStream = New FileStream(files(fileField), FileMode.Open, FileAccess.Read)
+                Dim buffer = New Byte(1023) {}
+                Dim bytesRead = fileStream.Read(buffer, 0, buffer.Length)
+                While bytesRead <> 0
+                    memStream.Write(buffer, 0, bytesRead)
+                    bytesRead = fileStream.Read(buffer, 0, buffer.Length)
+                End While
+            End Using
+        Next
+
+        memStream.Write(endBoundaryBytes, 0, endBoundaryBytes.Length)
+        'Diagnostics.Debug.WriteLine("***")
+        'Diagnostics.Debug.WriteLine(Encoding.ASCII.GetString(memStream.ToArray()))
+        'Diagnostics.Debug.WriteLine("***")
+
+        request.ContentLength = memStream.Length
+        Using requestStream = request.GetRequestStream()
+            memStream.Position = 0
+
+            Dim tempBuffer As Byte() = New Byte(memStream.Length - 1) {}
+            memStream.Read(tempBuffer, 0, tempBuffer.Length)
+            memStream.Close()
+            requestStream.Write(tempBuffer, 0, tempBuffer.Length)
+        End Using
+
+        Using response = request.GetResponse()
+            Dim stream2 = response.GetResponseStream()
+            Dim reader2 As New StreamReader(stream2)
+            Return reader2.ReadToEnd()
+        End Using
+
     End Function
 
 End Class

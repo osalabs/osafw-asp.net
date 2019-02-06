@@ -68,6 +68,12 @@ Public Class DateUtils
         Return IIf(d <= theDate, d.AddDays(7), d)
     End Function
 
+    Public Shared Function Unix2Date(unixTimeStamp As Double) As DateTime
+        Dim result As DateTime = New DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+        result = result.AddSeconds(unixTimeStamp).ToLocalTime()
+        Return result
+    End Function
+
     'convert .net date to javascript timestamp
     Public Shared Function Date2JsTimestamp(dt As Date) As Long
         Dim span As TimeSpan = New TimeSpan(Date.Parse("1/1/1970").Ticks)

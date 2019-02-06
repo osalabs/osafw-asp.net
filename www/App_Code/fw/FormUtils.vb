@@ -76,6 +76,7 @@ Public Class FormUtils
             End If
 
             result.Append("<option value=""").Append(Utils.htmlescape(val)).Append("""")
+            If item.ContainsKey("class") Then result.Append(" class=""" & item("class") & """")
             If Array.IndexOf(asel, Trim(val)) <> -1 Then
                 result.Append(" selected ")
             End If

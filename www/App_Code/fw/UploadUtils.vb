@@ -165,7 +165,10 @@ Public Class UploadUtils
     End Function
 
     Public Shared Function removeUploadImgByPath(fw As FW, path As String) As Boolean
-        path = System.IO.Path.GetDirectoryName(path) & "\" & System.IO.Path.GetFileNameWithoutExtension(path) 'cut extension if any
+        Dim dir As String = System.IO.Path.GetDirectoryName(path)
+        path = dir & "\" & System.IO.Path.GetFileNameWithoutExtension(path) 'cut extension if any
+
+        If Not Directory.Exists(dir) Then Return False
 
         File.Delete(path & "_l.png")
         File.Delete(path & "_l.gif")
