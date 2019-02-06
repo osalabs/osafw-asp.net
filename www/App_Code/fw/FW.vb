@@ -1,7 +1,7 @@
 ﻿' Framework core class
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2017 Oleg Savchuk www.osalabs.com
+' (c) 2009-2019 Oleg Savchuk www.osalabs.com
 
 Imports System.IO
 Imports System.Net.Mail
@@ -10,6 +10,12 @@ Imports System.Reflection
 'Custom Exceptions
 <Serializable>
 Public Class AuthException : Inherits ApplicationException
+    Public Sub New(message As String)
+        MyBase.New(message)
+    End Sub
+End Class
+<Serializable>
+Public Class UserException : Inherits ApplicationException
     Public Sub New(message As String)
         MyBase.New(message)
     End Sub
@@ -108,6 +114,10 @@ Public Class FW
     'set session value by name - return Me in this case
     Public Overloads Function SESSION(name As String, Optional ByVal value As Object = Nothing) As Object
         If value Is Nothing Then
+            If context.Session Is Nothing Then
+                logger(LogLevel.ERROR, "CONTEXT SESSION IS Nothing")
+                Return Nothing
+            End If
             Return context.Session(name)
         Else
             context.Session(name) = value
@@ -429,6 +439,10 @@ Public Class FW
             If TypeOf (iex) Is RedirectException Then
                 'not an error, just exit via Redirect - TODO - remove here as already handled above?
                 logger(LogLevel.DEBUG, "Redirected...")
+            ElseIf TypeOf (iex) Is UserException Then
+                'no need to log/report detailed user exception
+                logger(LogLevel.INFO, "UserException: " & msg)
+                err_msg(msg, iex)
             Else
                 'it's ApplicationException, so just warning
                 logger(LogLevel.WARN, "===== ERROR DUMP APP =====")
@@ -648,7 +662,7 @@ Public Class FW
                     str.Append(intend & "]" & vbCrLf)
                 ElseIf TypeOf (dmp_obj) Is ICollection Then 'Hashtable
                     str.Append(intend & "{" & vbCrLf)
-                    Dim k As String
+                    Dim k As Object
                     For Each k In dmp_obj.keys
                         str.Append(intend & " " & k & " => " & dumper(dmp_obj(k), level) & vbCrLf)
                     Next k
@@ -987,14 +1001,32 @@ Public Class FW
         Me.send_email("", Me.config("admin_email"), Left(msg, 512), msg)
     End Sub
 
-    Public Function load_url(ByVal url As String) As String
+    Public Function load_url(ByVal url As String, Optional params As Hashtable = Nothing) As String
         Dim client As System.Net.WebClient = New System.Net.WebClient
-        Dim content As String = client.DownloadString(url)
+        Dim Content As String
+        If params IsNot Nothing Then
+            'POST
+            Dim nv As New NameValueCollection()
+            For Each key In params.Keys
+                nv.Add(key, params(key))
+            Next
+            content = (New Text.UTF8Encoding).GetString(client.UploadValues(url, "POST", nv))
+        Else
+            'GET
+            content = client.DownloadString(url)
+        End If
+
         Return content
     End Function
 
     Public Sub err_msg(ByVal msg As String, Optional Ex As Exception = Nothing)
         Dim hf As Hashtable = New Hashtable
+        Dim tpl_dir = "/error"
+
+        'no need to log/report user exception
+        If Ex IsNot Nothing AndAlso TypeOf (Ex) Is UserException Then
+            tpl_dir &= "/client"
+        End If
 
         hf("err_time") = Now()
         hf("err_msg") = msg
@@ -1010,7 +1042,8 @@ Public Class FW
         hf("success") = False
         hf("message") = msg
         hf("_json") = True
-        parser("/error", hf)
+
+        parser(tpl_dir, hf)
     End Sub
 
     'return model object by type
