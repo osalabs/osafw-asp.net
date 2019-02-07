@@ -8,6 +8,7 @@ Public MustInherit Class FwController
 
     Public Shared route_default_action As String = "" 'supported values - "" (use Default Parser for unknown actions), index (use IndexAction for unknown actions), show (assume action is id and use ShowAction)
     Public base_url As String 'base url for the controller
+    Public base_url_suffix As String 'additional base url suffix
 
     Public form_new_defaults As Hashtable   'optional, defaults for the fields in new form
     Public required_fields As String        'optional, default required fields, space-separated
@@ -25,7 +26,7 @@ Public MustInherit Class FwController
     Protected list_where As String = " 1=1 "       ' where to use in list sql, default is non-deleted records (see setListSearch() )
     Protected list_count As Integer                ' count of list rows returned from db
     Protected list_rows As ArrayList               ' list rows returned from db (array of hashes)
-    Protected list_pager As ArrayList              ' pager for the list from FormUtils.get_pager
+    Protected list_pager As ArrayList              ' pager for the list from FormUtils.getPager
     Protected list_sortdef As String               ' required for Index, default list sorting: name asc|desc
     Protected list_sortmap As Hashtable            ' required for Index, sortmap fields
     Protected search_fields As String              ' optional, search fields, space-separated 
@@ -151,9 +152,14 @@ Public MustInherit Class FwController
         fw.rw(str)
     End Sub
 
-    '----------------- just a covenience methods
-    Public Sub logger(ByRef dmp_obj As Object)
-        fw.logger("DEBUG", dmp_obj)
+    'methods from fw - just for a covenience, so no need to use "fw.", as they are used quite frequently
+    Public Overloads Sub logger(ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        fw._logger(LogLevel.DEBUG, args)
+    End Sub
+    Public Overloads Sub logger(level As LogLevel, ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        fw._logger(level, args)
     End Sub
 
     'return hashtable of filter values
