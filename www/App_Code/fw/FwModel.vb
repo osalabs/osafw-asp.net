@@ -97,7 +97,7 @@ Public MustInherit Class FwModel
     'add new record and return new record id
     Public Overridable Function add(item As Hashtable) As Integer
         'item("add_time") = Now() 'not necessary because add_time field in db should have default value now() or getdate()
-        If field_add_users_id > "" AndAlso Not item.ContainsKey("add_users_id") AndAlso fw.SESSION("is_logged") Then item("add_users_id") = fw.SESSION("user_id")
+        If field_add_users_id > "" AndAlso Not item.ContainsKey(field_add_users_id) AndAlso fw.SESSION("is_logged") Then item(field_add_users_id) = fw.SESSION("user_id")
         Dim id As Integer = db.insert(table_name, item)
         fw.logEvent(table_name & "_add", id)
         Return id
@@ -106,7 +106,7 @@ Public MustInherit Class FwModel
     'update exising record
     Public Overridable Function update(id As Integer, item As Hashtable) As Boolean
         If field_upd_time > "" Then item("upd_time") = Now()
-        If field_upd_users_id > "" AndAlso Not item.ContainsKey("upd_users_id") AndAlso fw.SESSION("is_logged") Then item("upd_users_id") = fw.SESSION("user_id")
+        If field_upd_users_id > "" AndAlso Not item.ContainsKey(field_upd_users_id) AndAlso fw.SESSION("is_logged") Then item(field_upd_users_id) = fw.SESSION("user_id")
 
         Dim where As New Hashtable
         where(Me.field_id) = id
@@ -131,7 +131,7 @@ Public MustInherit Class FwModel
             Dim vars As New Hashtable
             vars(field_status) = 127
             If field_upd_time > "" Then vars(field_upd_time) = Now()
-            If field_add_users_id > "" AndAlso fw.SESSION("is_logged") Then vars("add_users_id") = fw.SESSION("user_id")
+            If field_add_users_id > "" AndAlso fw.SESSION("is_logged") Then vars(field_add_users_id) = fw.SESSION("user_id")
 
             db.update(table_name, vars, where)
         End If

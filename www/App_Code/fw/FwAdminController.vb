@@ -13,6 +13,7 @@ Public Class FwAdminController
 
         'DEFINE in inherited controllers like this:
         'base_url = "/Admin/Base"
+        'base_url_suffix = "?parent_id=123"
         'required_fields = "iname"
         'save_fields = "iname idesc status"
         'save_fields_checkboxes = ""
