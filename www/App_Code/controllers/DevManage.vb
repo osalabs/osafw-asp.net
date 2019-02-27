@@ -277,7 +277,6 @@ Public Class DevManageController
         config.Remove("list_sortmap") 'N/A in dynamic controller
         config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
-        config("is_dynamic") = True
         config("list_view") = model.table_name
         config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
         config("view_list_map") = hFieldsMap 'fields to names
