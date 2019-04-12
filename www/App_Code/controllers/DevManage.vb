@@ -270,6 +270,7 @@ Public Class DevManageController
             saveFields.Add(fld("name"))
         Next
 
+        config("model") = model_name
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
