@@ -14,6 +14,7 @@ Public MustInherit Class FwController
     Public required_fields As String        'optional, default required fields, space-separated
     Public save_fields As String            'required, fields to save from the form to db, space-separated
     Public save_fields_checkboxes As String 'optional, checkboxes fields to save from the form to db, qw string: "field|def_value field2|def_value2"
+    Public save_fields_nullable As String   'optional, nullable fields that should be set to null in db if form submit as ''
 
     Protected fw As FW
     Protected db As DB
@@ -73,6 +74,9 @@ Public MustInherit Class FwController
         'logger("loaded config:")
         'logger(Me.config)
 
+        Dim model_name = Utils.f2str(Me.config("model"))
+        If model_name > "" Then model0 = fw.model(model_name)
+
         'check/conv to str
         required_fields = Utils.f2str(Me.config("required_fields"))
 
@@ -90,6 +94,14 @@ Public MustInherit Class FwController
             save_fields_checkboxes = Utils.qhRevert(save_fields_checkboxes_raw) 'not optimal, but simplest for now
         Else
             save_fields_checkboxes = Utils.f2str(save_fields_checkboxes_raw)
+        End If
+
+        'save_fields_nullable could be defined as qw string - check and convert
+        Dim save_fields_nullable_raw = Me.config("save_fields_nullable")
+        If TypeOf save_fields_nullable_raw Is IDictionary Then
+            save_fields_nullable = Utils.qhRevert(save_fields_nullable_raw) 'not optimal, but simplest for now
+        Else
+            save_fields_nullable = Utils.f2str(save_fields_nullable_raw)
         End If
 
         search_fields = Utils.f2str(Me.config("search_fields"))

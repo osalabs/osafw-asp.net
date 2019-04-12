@@ -19,28 +19,28 @@ Public Class MainController
         one("title") = "Pages"
         one("url") = "/Admin/Spages"
         one("value") = fw.model(Of Spages).getCount()
-        panes("pages") = one
+        panes("plate1") = one
 
         one = New Hashtable
         one("type") = "bignum"
         one("title") = "Uploads"
         one("url") = "/Admin/Att"
         one("value") = fw.model(Of Att).getCount()
-        panes("uploads") = one
+        panes("plate2") = one
 
         one = New Hashtable
         one("type") = "bignum"
         one("title") = "Users"
         one("url") = "/Admin/Users"
         one("value") = fw.model(Of Users).getCount()
-        panes("users") = one
+        panes("plate3") = one
 
         one = New Hashtable
         one("type") = "bignum"
         one("title") = "Demo items"
         one("url") = "/Admin/DemosDynamic"
         one("value") = fw.model(Of Demos).getCount()
-        panes("demos") = one
+        panes("plate4") = one
 
         one = New Hashtable
         one("type") = "barchart"
@@ -51,7 +51,7 @@ Public Class MainController
             & " select TOP 14 CAST(el.add_time as date) as idate, count(*) as ivalue from events ev, event_log el where ev.icode='login' and el.events_id=ev.id" _
             & " group by CAST(el.add_time as date) order by CAST(el.add_time as date) desc)" _
             & " select CONCAT(MONTH(idate),'/',DAY(idate)) as ilabel, ivalue from zzz order by idate")
-        panes("logins") = one
+        panes("barchart") = one
 
         one = New Hashtable
         one("type") = "piechart"
@@ -62,7 +62,7 @@ Public Class MainController
         For Each row As Hashtable In one("rows")
             row("ilabel") = FormUtils.selectTplName("/common/sel/access_level.sel", row("access_level"))
         Next
-        panes("usertypes") = one
+        panes("piechart") = one
 
         one = New Hashtable
         one("type") = "table"
@@ -87,7 +87,7 @@ Public Class MainController
                 row("cols") = cols
             Next
         End If
-        panes("lastevents") = one
+        panes("tabledata") = one
 
 
         one = New Hashtable
@@ -99,7 +99,7 @@ Public Class MainController
             & " select TOP 14 CAST(el.add_time as date) as idate, count(*) as ivalue from events ev, event_log el where el.events_id=ev.id" _
             & " group by CAST(el.add_time as date) order by CAST(el.add_time as date) desc)" _
             & " select CONCAT(MONTH(idate),'/',DAY(idate)) as ilabel, ivalue from zzz order by idate")
-        panes("eventsctr") = one
+        panes("linechart") = one
 
         Return ps
     End Function

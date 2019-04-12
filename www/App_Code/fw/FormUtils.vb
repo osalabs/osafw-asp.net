@@ -244,8 +244,18 @@ Public Class FormUtils
             Next
         End If
         Return True
-
     End Function
+
+    'fore each name in $name - check if value is empty '' and make it null
+    'not necessary in this framework As DB knows field types, it's here just for compatibility with php framework
+    Public Shared Sub filterNullable(itemdb As Hashtable, name As String)
+        Dim anames = Utils.qw(name)
+        For Each fld As String In anames
+            If itemdb.ContainsKey(fld) AndAlso (itemdb(fld) = "" OrElse itemdb(fld) = "0") Then
+                itemdb(fld) = Nothing
+            End If
+        Next
+    End Sub
 
 
     'join ids from form to comma-separated string

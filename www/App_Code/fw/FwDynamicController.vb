@@ -156,6 +156,7 @@ Public Class FwDynamicController
 
             Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
             If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
+            If Me.save_fields_nullable > "" Then FormUtils.filterNullable(itemdb, save_fields_nullable)
 
             id = Me.modelAddOrUpdate(id, itemdb)
         Catch ex As ApplicationException

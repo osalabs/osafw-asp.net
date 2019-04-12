@@ -44,7 +44,7 @@ Public Class SignupController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        Dim item As Hashtable = reqh("item")
+        Dim item = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
         Try
@@ -52,23 +52,21 @@ Public Class SignupController
             'load old record if necessary
             'Dim itemdb As Hashtable = model.one(id)
 
-            item = FormUtils.filter(item, Utils.qw("email pwd fname lname"))
+            Dim itemdb = FormUtils.filter(item, Utils.qw("email pwd fname lname"))
 
-            If id > 0 Then
-                model.update(id, item)
-                fw.FLASH("record_updated", 1)
-            Else
+            If id = 0 Then
                 item("access_level") = 0
                 item("add_users_id") = 0
-                id = model.add(item)
-                fw.FLASH("record_added", 1)
             End If
+            id = modelAddOrUpdate(id, itemdb)
+
+            fw.send_email_tpl(itemdb("email"), "signup.txt", itemdb)
 
             model.doLogin(id)
             fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
 
         Catch ex As ApplicationException
-            fw.G("err_msg") = ex.Message
+            Me.setFormError(ex)
             Dim args() As [String] = {id}
             fw.route_redirect("ShowForm", Nothing, args)
         End Try

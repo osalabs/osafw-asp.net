@@ -12,6 +12,7 @@ Public Class AdminUsersController
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
         model.init(fw)
+        model0 = model
 
         required_fields = "email access_level"
         base_url = "/Admin/Users"
@@ -108,7 +109,7 @@ Public Class AdminUsersController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        Dim item As Hashtable = reqh("item")
+        Dim item = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
         Try
@@ -116,16 +117,11 @@ Public Class AdminUsersController
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname phone pwd access_level title address1 address2 city state zip phone status"))
+            Dim itemdb = FormUtils.filter(item, Utils.qw("email fname lname phone pwd access_level title address1 address2 city state zip phone status"))
+            itemdb("pwd") = Trim(itemdb("pwd") & "")
+            If Not itemdb("pwd") > "" Then itemdb.Remove("pwd")
 
-            If id > 0 Then
-                If Not itemdb("pwd") > "" Then itemdb.Remove("pwd")
-                model.update(id, itemdb)
-                fw.FLASH("record_updated", 1)
-            Else
-                id = model.add(itemdb)
-                fw.FLASH("record_added", 1)
-            End If
+            id = modelAddOrUpdate(id, itemdb)
 
             If id = model.meId() Then model.reloadSession()
 
@@ -224,12 +220,23 @@ Public Class AdminUsersController
         Dim ps As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        Dim hU As Hashtable = model.one(id)
-
-        fw.send_email_tpl(hU("email"), "email_pwd.txt", hU)
+        model.send_pwd_reset(id)
 
         ps("success") = True
         ps("_json") = True
         Return ps
     End Function
+
+    'for migration to hashed passwords
+    Public Function HashPasswordsAction() As Hashtable
+        rw("hashing passwords")
+        Dim rows = db.array("select id, pwd from " & db.q_ident(model.table_name) & " order by id")
+        For Each row As Hashtable In rows
+            If Left(row("pwd"), 2) = "$2" Then Continue For 'already hashed
+            Dim hashed = model.hashPwd(row("pwd"))
+            db.update(model.table_name, New Hashtable From {{"pwd", hashed}}, New Hashtable From {{"id", row("id")}})
+        Next
+        rw("done")
+    End Function
+
 End Class

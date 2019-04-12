@@ -1,4 +1,5 @@
 {
+    "model": "Demos",
     "required_fields": "",
     "###save_fields": "parent_id demo_dicts_id iname idesc email fint ffloat fcombo fradio fyesno fdate_pop fdatetime ftime att_id status dict_link_auto_id dict_link_multi fdate_combo",
     "###save_fields_checkboxes": "is_checkbox|0",
@@ -26,6 +27,7 @@
     "save_fields_checkboxes": {
         "is_checkbox":"0"
     },
+    "save_fields_nullable": "demo_dicts_id att_id fdate_pop",
 
     "search_fields": "iname idesc",
     "list_sortdef": "iname asc",
@@ -225,10 +227,10 @@
             "label": "Parent (TODO)",
             "lookup_model": "DemoDicts",
             "type": "select",
-            "is_option0": true,
+            "is_option_empty": true,
             "option0_title": "- none -",
             "class_contents": "col-md-3",
-            "attrs_control": "data-noautosave=true"
+            "attrs_control": "data-noautosave=\"true\""
         },
         {
             "field": "demo_dicts_id",

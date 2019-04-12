@@ -11,11 +11,13 @@ Public Class AdminDemosDynamicController
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
-        model0 = fw.model(Of Demos)()
-        model = model0
+        'use if config doesn't contains model name
+        'model0 = fw.model(Of Demos)()
+        'model = model0
 
         base_url = "/Admin/DemosDynamic"
         Me.loadControllerConfig()
+        model = model0
 
         model_related = fw.model(Of DemoDicts)()
     End Sub

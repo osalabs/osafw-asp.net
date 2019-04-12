@@ -1,61 +1,3 @@
-DROP TABLE users;
-CREATE TABLE users (
-  id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-
-  email                 NVARCHAR(128) NOT NULL DEFAULT '',
-  pwd                   NVARCHAR(32) NOT NULL DEFAULT '',
-  access_level          TINYINT NOT NULL,  /*0 - usual user, 80 - moderator, 100 - admin*/
-
-  fname                 NVARCHAR(32) NOT NULL DEFAULT '',
-  lname                 NVARCHAR(32) NOT NULL DEFAULT '',
-  title                 NVARCHAR(128) NOT NULL DEFAULT '',
-
-  address1              NVARCHAR(128) NOT NULL DEFAULT '',
-  address2              NVARCHAR(64) NOT NULL DEFAULT '',
-  city                  NVARCHAR(64) NOT NULL DEFAULT '',
-  state                 NVARCHAR(4) NOT NULL DEFAULT '',
-  zip                   NVARCHAR(16) NOT NULL DEFAULT '',
-  phone                 NVARCHAR(16) NOT NULL DEFAULT '',
-
-  notes                 NVARCHAR(MAX),
-  login_time            DATETIME2,
-
-  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
-  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_users_id          INT DEFAULT 0,
-  upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-)
-CREATE UNIQUE INDEX users_email ON users (email);
-INSERT INTO users (fname, lname, email, pwd, access_level)
-VALUES ('Website','Admin','admin@admin.com','CHANGE_ME',100);
-
-
-/*Site Settings - special table for misc site settings*/
-DROP TABLE settings;
-CREATE TABLE settings (
-  id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-  icat                  NVARCHAR(64) NOT NULL DEFAULT '', /*settings category: ''-system, 'other' -site specific*/
-  icode                 NVARCHAR(64) NOT NULL DEFAULT '', /*settings internal code*/
-  ivalue                NVARCHAR(MAX) NOT NULL DEFAULT '', /*value*/
-
-  iname                 NVARCHAR(64) NOT NULL DEFAULT '', /*settings visible name*/
-  idesc                 NVARCHAR(MAX),                    /*settings visible description*/
-  input                 TINYINT NOT NULL default 0,       /*form input type: 0-input, 10-textarea, 20-select, 21-select multi, 30-checkbox, 40-radio, 50-date*/
-  allowed_values        NVARCHAR(MAX),                    /*space-separated values, use &nbsp; for space, used for: select, select multi, checkbox, radio*/
-
-  is_user_edit          TINYINT DEFAULT 0,  /* if 1 - use can edit this value*/
-
-  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
-  add_users_id          INT DEFAULT 0,
-  upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-);
-CREATE UNIQUE INDEX settings_icode ON settings (icode);
-CREATE INDEX settings_icat ON settings (icat);
-INSERT INTO settings (is_user_edit, input, icat, icode, ivalue, iname, idesc) VALUES
-(1, 10, '', 'test', 'novalue', 'test settings', 'description');
-
 /* upload categories */
 DROP TABLE att_categories;
 CREATE TABLE att_categories (
@@ -118,6 +60,67 @@ CREATE TABLE att_table_link (
   add_users_id          INT DEFAULT 0,
 );
 CREATE UNIQUE INDEX att_table_link_UX ON att_table_link (table_name, item_id, att_id);
+
+
+DROP TABLE users;
+CREATE TABLE users (
+  id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+
+  email                 NVARCHAR(128) NOT NULL DEFAULT '',
+  pwd                   NVARCHAR(255) NOT NULL DEFAULT '', -- hashed password
+  access_level          TINYINT NOT NULL,  /*0 - usual user, 80 - moderator, 100 - admin*/
+
+  fname                 NVARCHAR(32) NOT NULL DEFAULT '',
+  lname                 NVARCHAR(32) NOT NULL DEFAULT '',
+  title                 NVARCHAR(128) NOT NULL DEFAULT '',
+
+  address1              NVARCHAR(128) NOT NULL DEFAULT '',
+  address2              NVARCHAR(64) NOT NULL DEFAULT '',
+  city                  NVARCHAR(64) NOT NULL DEFAULT '',
+  state                 NVARCHAR(4) NOT NULL DEFAULT '',
+  zip                   NVARCHAR(16) NOT NULL DEFAULT '',
+  phone                 NVARCHAR(16) NOT NULL DEFAULT '',
+
+  notes                 NVARCHAR(MAX),
+  att_id                INT NULL FOREIGN KEY REFERENCES att(id),                -- avatar
+
+  login_time            DATETIME2,
+
+  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0,
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+)
+CREATE UNIQUE INDEX users_email ON users (email);
+INSERT INTO users (fname, lname, email, pwd, access_level)
+VALUES ('Website','Admin','admin@admin.com','CHANGE_ME',100);
+
+
+/*Site Settings - special table for misc site settings*/
+DROP TABLE settings;
+CREATE TABLE settings (
+  id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+  icat                  NVARCHAR(64) NOT NULL DEFAULT '', /*settings category: ''-system, 'other' -site specific*/
+  icode                 NVARCHAR(64) NOT NULL DEFAULT '', /*settings internal code*/
+  ivalue                NVARCHAR(MAX) NOT NULL DEFAULT '', /*value*/
+
+  iname                 NVARCHAR(64) NOT NULL DEFAULT '', /*settings visible name*/
+  idesc                 NVARCHAR(MAX),                    /*settings visible description*/
+  input                 TINYINT NOT NULL default 0,       /*form input type: 0-input, 10-textarea, 20-select, 21-select multi, 30-checkbox, 40-radio, 50-date*/
+  allowed_values        NVARCHAR(MAX),                    /*space-separated values, use &nbsp; for space, used for: select, select multi, checkbox, radio*/
+
+  is_user_edit          TINYINT DEFAULT 0,  /* if 1 - use can edit this value*/
+
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0,
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
+CREATE UNIQUE INDEX settings_icode ON settings (icode);
+CREATE INDEX settings_icat ON settings (icat);
+INSERT INTO settings (is_user_edit, input, icat, icode, ivalue, iname, idesc) VALUES
+(1, 10, '', 'test', 'novalue', 'test settings', 'description');
 
 /*Static pages*/
 DROP TABLE spages;

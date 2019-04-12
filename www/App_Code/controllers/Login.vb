@@ -38,18 +38,20 @@ Public Class LoginController
 
     Public Sub SaveAction()
         Try
+            Dim item = reqh("item")
             Dim gourl = reqs("gourl")
-            Dim login As String = Trim(reqh("item")("login"))
-            Dim pwd As String = reqh("item")("pwdh")
+            Dim login As String = Trim(item("login"))
+            Dim pwd As String = item("pwdh")
             'if use field with masked chars - read masked field
-            If reqh("item")("chpwd") = "1" Then pwd = reqh("item")("pwd")
-            pwd = Left(Trim(pwd), 32)
+            If item("chpwd") = "1" Then pwd = item("pwd")
+            pwd = Trim(pwd)
 
             'for dev config only - login as first admin
+            Dim is_dev_login = False
             If Utils.f2bool(fw.config("IS_DEV")) AndAlso login = "" AndAlso pwd = "~" Then
                 Dim dev = db.row("select TOP 1 email, pwd from users where status=0 and access_level=100 order by id")
                 login = dev("email")
-                pwd = dev("pwd")
+                is_dev_login = True
             End If
 
             If login.Length = 0 Or pwd.Length = 0 Then
@@ -57,13 +59,9 @@ Public Class LoginController
                 Throw New ApplicationException("")
             End If
 
-            Dim where As Hashtable = New Hashtable
-            where("email") = login
-            where("pwd") = pwd
-            Dim hU As Hashtable = db.row("users", where)
-
-            If Not hU.ContainsKey("access_level") OrElse hU("status") <> "0" Then
-                Throw New ApplicationException("User Authentication Error")
+            Dim hU = model.oneByEmail(login)
+            If Not is_dev_login Then
+                If hU.Count = 0 OrElse hU("status") <> "0" OrElse Not model.checkPwd(pwd, hU("pwd")) Then Throw New ApplicationException("User Authentication Error")
             End If
 
             model.doLogin(hU("id"))

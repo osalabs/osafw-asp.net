@@ -24,9 +24,9 @@ Public Class MyPasswordController
             fw.G("green_msg") = "Login/Password has been changed"
         End If
 
-        Dim hf As Hashtable = New Hashtable
+        Dim ps As New Hashtable
         Dim item As Hashtable
-        Dim id As Integer = fw.SESSION("user_id")
+        Dim id As Integer = fw.model(Of Users).meId()
 
         If fw.cur_method = "GET" Then 'read from db
             If id > 0 Then
@@ -44,31 +44,25 @@ Public Class MyPasswordController
             'here make additional changes if necessary
         End If
 
-        hf("id") = id
-        hf("i") = item
-        hf("ERR") = fw.FERR
-        Return hf
+        ps("id") = id
+        ps("i") = item
+        ps("ERR") = fw.FERR
+        Return ps
     End Function
 
     Public Sub SaveAction()
-        Dim item As New Hashtable
-        Dim id As Integer = fw.SESSION("user_id")
+        Dim id As Integer = fw.model(Of Users).meId()
 
         Try
             Validate(id, reqh("item"))
             'load old record if necessary
             'Dim itemdb As Hashtable = Users.one(id)
 
-            item = FormUtils.filter(reqh("item"), Utils.qw("email pwd"))
+            Dim itemdb = FormUtils.filter(reqh("item"), Utils.qw("email pwd"))
+            itemdb("pwd") = Trim(itemdb("pwd"))
 
             If id > 0 Then
-                'update
-                item("upd_time") = Now()
-                item("upd_users_id") = fw.SESSION("user_id")
-
-                Dim where As New Hashtable
-                where("id") = id
-                db.update("users", item, where)
+                model.update(id, itemdb)
 
                 fw.logEvent("chpwd")
                 fw.FLASH("record_updated", 1)

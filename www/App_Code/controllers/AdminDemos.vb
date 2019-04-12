@@ -33,7 +33,7 @@ Public Class AdminDemosController
 
         'add/modify rows from db if necessary
         For Each row As Hashtable In Me.list_rows
-            row("demo_dicts") = model_related.one(row("demo_dicts_id"))
+            row("demo_dicts") = model_related.one(Utils.f2int(row("demo_dicts_id")))
         Next
     End Sub
 

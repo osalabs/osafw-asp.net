@@ -45,6 +45,7 @@ Public Class ReportSample
                 where &
                 " order by el.id desc"
         ps("rows") = db.array(sql)
+        ps("count") = ps("rows").Count
 
         'perform calculations and add additional info for each result row
         'For Each row As Hashtable In ps("rows")

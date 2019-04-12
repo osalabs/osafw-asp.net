@@ -44,7 +44,7 @@ Public Class Utils
     ' or "AAA BBB CCC DDD" => AAA=1, BBB=1, CCC=1, DDD=1
     'WARN! replaces all "&nbsp;" to spaces (after convert)
     Public Shared Function qh(str As String, Optional default_value As Object = 1) As Hashtable
-        Dim result As Hashtable = New Hashtable
+        Dim result As New Hashtable
         If str IsNot Nothing AndAlso str > "" Then
             Dim arr() As String = Regex.Split(str, "\s+")
             For Each v As String In arr

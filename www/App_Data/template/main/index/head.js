@@ -119,7 +119,7 @@ window.Chart.defaults = $.extend(true, window.Chart.defaults, {
     }
 });
 
-console.log(window.Chart.defaults);
+//console.log(window.Chart.defaults);
 
 // https://stackoverflow.com/questions/47186273/rounded-corners-on-chartjs-v-2-bar-charts-with-negative-values
 Chart.elements.Rectangle.prototype.draw = function () {
