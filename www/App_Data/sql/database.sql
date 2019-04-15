@@ -85,6 +85,8 @@ CREATE TABLE users (
   att_id                INT NULL FOREIGN KEY REFERENCES att(id),                -- avatar
 
   login_time            DATETIME2,
+  pwd_reset             NVARCHAR(255) NULL,
+  pwd_reset_time        datetime2 NULL,
 
   status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),

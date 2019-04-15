@@ -2,9 +2,8 @@
 <script src="<~GLOBAL[ASSETS_URL]>/js/bootstrap-datepicker.js"></script>
 <script>
     $(document).ready(function() {
-        $('.date').datepicker({format: 'mm/dd/yyyy'});
-        $('.date').on('changeDate', function (e) {
-            $(this).closest('form').trigger('autosave');
-        })
+        $('.date').datepicker({format: 'mm/dd/yyyy'}).on('changeDate', function (e) {
+            $(this).find('input').trigger('blur');
+        });
     });
 </script>
