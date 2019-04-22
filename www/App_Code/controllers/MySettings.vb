@@ -18,7 +18,7 @@ Public Class MySettingsController
 
     Public Sub IndexAction()
         Dim args() As [String] = {}
-        fw.route_redirect("ShowForm", Nothing, args)
+        fw.routeRedirect("ShowForm", Nothing, args)
     End Sub
 
 
@@ -62,7 +62,7 @@ Public Class MySettingsController
         Catch ex As ApplicationException
             fw.G("err_msg") = ex.Message
             Dim args() As [String] = {id}
-            fw.route_redirect("ShowForm", Nothing, args)
+            fw.routeRedirect("ShowForm", Nothing, args)
         End Try
     End Sub
 

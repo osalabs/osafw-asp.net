@@ -68,7 +68,7 @@ Public Class SignupController
         Catch ex As ApplicationException
             Me.setFormError(ex)
             Dim args() As [String] = {id}
-            fw.route_redirect("ShowForm", Nothing, args)
+            fw.routeRedirect("ShowForm", Nothing, args)
         End Try
     End Sub
 

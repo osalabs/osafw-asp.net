@@ -81,7 +81,7 @@ Public MustInherit Class FwModel
 
     'check if item exists for a given field
     Public Overridable Function isExistsByField(uniq_key As Object, not_id As Integer, field As String) As Boolean
-        Dim val As String = db.value("select 1 from " & table_name & " where " & field & " = " & db.q(uniq_key) & " and id <>" & db.qi(not_id))
+        Dim val As String = db.value("select 1 from " & table_name & " where " & field & " = " & db.q(uniq_key) & " and " & db.q_ident(field_id) & " <>" & db.qi(not_id))
         If val = "1" Then
             Return True
         Else

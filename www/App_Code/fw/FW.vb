@@ -768,7 +768,7 @@ Public Class FW
 
         If hf.ContainsKey("_route_redirect") Then
             Dim rr = hf("_route_redirect")
-            Me.route_redirect(rr("method"), rr("controller"), rr("args"))
+            Me.routeRedirect(rr("method"), rr("controller"), rr("args"))
             Return 'no further processing
         End If
 
@@ -813,7 +813,7 @@ Public Class FW
         If is_exception Then Throw New RedirectException
     End Sub
 
-    Public Overloads Sub route_redirect(ByVal action As String, ByVal controller As String, Optional ByVal args As Object = Nothing)
+    Public Overloads Sub routeRedirect(ByVal action As String, ByVal controller As String, Optional ByVal args As Object = Nothing)
         setController(IIf(controller > "", controller, cur_controller), action)
 
         Dim calledType As Type = Type.GetType(cur_controller & "Controller", True)
@@ -835,7 +835,7 @@ Public Class FW
     End Sub
     'same as above just with default controller
     Public Overloads Sub routeRedirect(ByVal action As String, Optional ByVal args As Object = Nothing)
-        route_redirect(action, cur_controller, args)
+        routeRedirect(action, cur_controller, args)
     End Sub
 
     ''' <summary>
@@ -1003,7 +1003,7 @@ Public Class FW
 
     Public Function load_url(ByVal url As String, Optional params As Hashtable = Nothing) As String
         Dim client As System.Net.WebClient = New System.Net.WebClient
-        Dim Content As String
+        Dim content As String
         If params IsNot Nothing Then
             'POST
             Dim nv As New NameValueCollection()

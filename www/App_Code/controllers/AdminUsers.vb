@@ -129,7 +129,7 @@ Public Class AdminUsersController
         Catch ex As ApplicationException
             fw.G("err_msg") = ex.Message
             Dim args() As [String] = {id}
-            fw.route_redirect("ShowForm", Nothing, args)
+            fw.routeRedirect("ShowForm", Nothing, args)
         End Try
     End Sub
 

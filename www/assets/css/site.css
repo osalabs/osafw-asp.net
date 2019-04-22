@@ -116,7 +116,9 @@ table.list .search {
 }
 
 @media (min-width: 768px) {
-  .form-group.row > .col-form-label {
+  .form-group.row > .col-form-label,
+  .form-row > .col-form-label
+  {
     text-align: right;
   }
 }

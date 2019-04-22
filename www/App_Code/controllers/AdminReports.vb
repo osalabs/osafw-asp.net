@@ -61,12 +61,12 @@ Public Class AdminReportsController
             Else
                 fw.FORM("is_run") = 1
                 Dim args() As [String] = {repcode}
-                fw.route_redirect("Show", Nothing, args)
+                fw.routeRedirect("Show", Nothing, args)
             End If
         Catch ex As ApplicationException
             fw.G("err_msg") = ex.Message
             Dim args() As [String] = {repcode}
-            fw.route_redirect("Show", Nothing, args)
+            fw.routeRedirect("Show", Nothing, args)
         End Try
     End Sub
 

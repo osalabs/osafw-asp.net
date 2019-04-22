@@ -16,7 +16,7 @@ Public Class MyPasswordController
 
     Public Sub IndexAction()
         Dim args() As [String] = {}
-        fw.route_redirect("ShowForm", "MyPassword", args)
+        fw.routeRedirect("ShowForm", "MyPassword", args)
     End Sub
 
     Public Function ShowFormAction() As Hashtable

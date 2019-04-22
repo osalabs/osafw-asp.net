@@ -25,7 +25,7 @@ Public Class DB
     Private current_db As String
     Private conf As Hashtable
     Private dbtype As String
-    Private schema As Hashtable 'schema for currently connected db
+    Private schema As New Hashtable 'schema for currently connected db
 
     Public Sub New(fw As FW)
         Me.fw = fw
@@ -95,9 +95,9 @@ Public Class DB
         Return dbread
     End Function
 
-    'exectute without results (so db reader will be closed)
+    'exectute without results (so db reader will be closed), return number of rows affected.
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
-    Public Sub exec(ByVal sql As String)
+    Public Function exec(ByVal sql As String) As Integer
         connect()
         fw.logger(LogLevel.INFO, "DB:", current_db, ", SQL QUERY: ", sql)
 
@@ -108,8 +108,8 @@ Public Class DB
             dbcomm = New OleDbCommand(sql, dbconn_cache(current_db))
         End If
 
-        dbcomm.ExecuteNonQuery()
-    End Sub
+        Return dbcomm.ExecuteNonQuery()
+    End Function
 
 
     Public Overloads Function row(ByVal sql As String) As Hashtable
@@ -201,6 +201,22 @@ Public Class DB
     'string will be Left(Trim(str),length)
     Public Function left(str As String, length As Integer) As String
         Return Strings.Left(Trim(str), length)
+    End Function
+
+    'create "IN (1,2,3)" sql or IN (NULL) if empty params passed
+    'examples:
+    ' where = " field "& db.insql("a,b,c,d")
+    ' where = " field "& db.insql(string())
+    ' where = " field "& db.insql(ArrayList)
+    Public Function insql(params As String) As String
+        Return insql(Split(params, ","))
+    End Function
+    Public Function insql(params As IList) As String
+        Dim result As New ArrayList
+        For Each param As String In params
+            result.Add(Me.q(param))
+        Next
+        Return " IN (" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
     End Function
 
     'quote identifier: table => [table]
@@ -342,15 +358,16 @@ Public Class DB
         Return insert_id
     End Function
 
-    Public Overloads Sub update(ByVal sql As String)
-        exec(sql)
-    End Sub
+    Public Overloads Function update(ByVal sql As String) As Integer
+        Return exec(sql)
+    End Function
 
-    Public Overloads Sub update(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable)
-        exec(hash2sql_u(table, fields, where))
-    End Sub
+    Public Overloads Function update(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable) As Integer
+        Return exec(hash2sql_u(table, fields, where))
+    End Function
 
-    Public Sub update_or_insert(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable)
+    'retrun number of affected rows
+    Public Function update_or_insert(ByVal table As String, ByVal fields As Hashtable, ByVal where As Hashtable) As Integer
         ' merge fields and where
         Dim allfields As New Hashtable
         Dim k As String
@@ -366,12 +383,13 @@ Public Class DB
         Dim insert_sql As String = hash2sql_i(table, allfields)
         Dim full_sql As String = update_sql & "  IF @@ROWCOUNT = 0 " & insert_sql
 
-        exec(full_sql)
-    End Sub
+        Return exec(full_sql)
+    End Function
 
-    Public Sub del(ByVal table As String, ByVal where As Hashtable)
-        exec(hash2sql_d(table, where))
-    End Sub
+    'retrun number of affected rows
+    Public Function del(ByVal table As String, ByVal where As Hashtable) As Integer
+        Return exec(hash2sql_d(table, where))
+    End Function
 
     'join key/values with quoting values according to table
     ' h - already quoted! values

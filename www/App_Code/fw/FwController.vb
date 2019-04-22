@@ -336,13 +336,28 @@ Public MustInherit Class FwController
 
     ''' <summary>
     ''' set list_where based on search[] filter
+    '''      - exact: "=term"
+    '''      - Not equals "!=term"
+    '''      - Not contains: "!term"
     ''' </summary>
     Public Overridable Sub setListSearchAdvanced()
         'advanced search
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
-                Me.list_where &= " and " & db.q_ident(fieldname) & " LIKE " & db.q("%" & hsearch(fieldname) & "%")
+                Dim str = ""
+                Dim value = hsearch(fieldname)
+                If Left(value, 1) = "=" Then
+                    str = " = " & db.q(Mid(value, 2))
+                ElseIf Left(value, 2) = "!=" Then
+                    str = " <> " & db.q(Mid(value, 3))
+                ElseIf Left(value, 1) = "!" Then
+                    str = " NOT LIKE " & db.q("%" & Mid(value, 2) & "%")
+                Else
+                    str = " LIKE " & db.q("%" & value & "%")
+                End If
+
+                Me.list_where &= " and " & db.q_ident(fieldname) & str
             End If
         Next
     End Sub
@@ -465,6 +480,8 @@ Public MustInherit Class FwController
         Else
             url = Me.base_url
         End If
+
+        If base_url_suffix > "" Then url_q &= "&" & base_url_suffix
 
         If url_q > "" Then
             url_q = Regex.Replace(url_q, "^\&", "") 'make url clean

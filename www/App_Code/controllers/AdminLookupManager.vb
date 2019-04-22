@@ -67,7 +67,7 @@ Public Class AdminLookupManagerController
             Dim row = model.topByTname(defs("tname"))
             'fw.redirect(base_url & "/" & row(id_fname) & "/edit/?d=" & dict)
             Dim args() As [String] = {row(id_fname)}
-            fw.route_redirect("ShowForm", Nothing, args)
+            fw.routeRedirect("ShowForm", Nothing, args)
             Return Nothing
         End If
 
@@ -353,7 +353,7 @@ Public Class AdminLookupManagerController
         Catch ex As ApplicationException
             fw.G("err_msg") = ex.Message
             Dim args() As [String] = {id}
-            fw.route_redirect("ShowForm", Nothing, args)
+            fw.routeRedirect("ShowForm", Nothing, args)
         End Try
     End Sub
 
