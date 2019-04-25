@@ -256,7 +256,7 @@ Public Class Att
     Public Function oneByTableName(item_table_name As String, id As Integer) As Hashtable
         Return db.row(table_name, New Hashtable From {
                       {"table_name", item_table_name},
-                      {"id", id}
+                      {"item_id", id}
                       })
     End Function
 
