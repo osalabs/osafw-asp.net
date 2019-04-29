@@ -98,8 +98,10 @@ window.fw={
         if ($fis.val()=='1'){
             //if search ON - add search fields to the form
             var html=[];
-            $('table.list .search input').each(function (i, el) {
+            $('table.list:first .search input').each(function (i, el) {
+              if (el.value>''){
                 html.push( '<input type="hidden" name="'+el.name.replace(/"/g,'&quot;')+'" value="'+el.value.replace(/"/g,'&quot;')+'">');
+              }
             });
             $f.append(html.join(''));
         }
@@ -314,7 +316,7 @@ window.fw={
                   $f.data('is-ajaxsubmit',false);
                   //auto-save error - highlight errors
                   if (data.ERR) fw.process_form_errors($f, data.ERR);
-                  if (data.err_msg) fw.error(data.err_msg, hint_options);
+                  fw.error(data.err_msg ? data.err_msg : 'Auto-save error. Press Save manually.', hint_options);
               }
               if (data.msg) fw.ok(data.msg, hint_options);
               $f.trigger('autosave-success',[data]);
