@@ -64,13 +64,22 @@ Public Class Users
     End Function
 
     ''' <summary>
+    ''' performs any required password cleaning (for now - just limit pwd length at 32 and trim)
+    ''' </summary>
+    ''' <param name="plain_pwd">non-encrypted plain pwd</param>
+    ''' <returns>clean plain pwd</returns>
+    Public Function cleanPwd(plain_pwd As String) As String
+        Return Trim(Left(plain_pwd, 32))
+    End Function
+
+    ''' <summary>
     ''' generate password hash from plain password
     ''' </summary>
     ''' <param name="plain_pwd">plain pwd</param>
     ''' <returns>hash using 'https://github.com/BcryptNet/bcrypt.net</returns>
     Public Function hashPwd(plain_pwd As String) As String
         Try
-            Return EnhancedHashPassword(plain_pwd)
+            Return EnhancedHashPassword(cleanPwd(plain_pwd))
         Catch ex As Exception
             'Invalid salt version
         End Try
@@ -85,7 +94,7 @@ Public Class Users
     ''' <returns></returns>
     Public Function checkPwd(plain_pwd As String, pwd_hash As String) As Boolean
         Try
-            Return EnhancedVerify(plain_pwd, pwd_hash)
+            Return EnhancedVerify(cleanPwd(plain_pwd), pwd_hash)
         Catch ex As Exception
             'Invalid salt version
         End Try

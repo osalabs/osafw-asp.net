@@ -88,7 +88,7 @@ Public Class MyPasswordController
             fw.FERR("email") = "WRONG"
         End If
 
-        If result AndAlso item("pwd") <> item("pwd2") Then
+        If result AndAlso model.cleanPwd(item("pwd")) <> model.cleanPwd(item("pwd2")) Then
             result = False
             fw.FERR("pwd2") = "NOTEQUAL"
         End If
