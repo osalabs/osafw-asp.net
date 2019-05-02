@@ -112,8 +112,21 @@ window.fw={
         this.form.submit();
     });
 
-    //pagesize change TODO
+    //pager click via form filter submit so all filters applied
+    $(document).on('click', '.pagination .page-link[data-pagenum]', function (e){
+      var $this = $(this);
+      var pagenum = $this.data('pagenum');
+      var $f = $this.data('filter') ? $($this.data('filter')) : $('form[data-list-filter]:first');
+      if ($f){
+        e.preventDefault();
+        $('<input type="hidden" name="f[pagenum]">').val(pagenum).appendTo($f);
+        $f.submit();
+      }
+    });
+
+    //pagesize change
     $(document).on('change', '.on-pagesize-change', function (e){
+      e.preventDefault();
       var $this = $(this);
       var $f = $this.data('filter') ? $($this.data('filter')) : $('form[data-list-filter]:first');
       if ($f){
