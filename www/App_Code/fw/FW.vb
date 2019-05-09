@@ -778,15 +778,16 @@ Public Class FW
         End If
 
         Me.resp.CacheControl = cache_control
+                
+        Dim layout As String = ""
         If format = "pjax" Then
-            Dim layout As String = G("PAGE_LAYOUT_PJAX")
-            parser(bdir, layout, hf)
-
+            layout = G("PAGE_LAYOUT_PJAX")
         Else
-            Dim layout As String = G("PAGE_LAYOUT")
-            If hf.ContainsKey("_layout") Then layout = hf("_layout")
-            parser(bdir, layout, hf)
+            layout = G("PAGE_LAYOUT")
         End If
+
+        If hf.ContainsKey("_layout") Then layout = hf("_layout")
+        parser(bdir, layout, hf)
 
     End Sub
 
