@@ -337,7 +337,7 @@ div.jGrowl div.jGrowl-notification
         position: -webkit-sticky;
         position: sticky;
         /*top: 48px;*/
-        height: calc(100vh - 48px);
+        height: calc(100vh - 88px);
         padding-top: .5rem;
         overflow-x: hidden;
         overflow-y: auto;
