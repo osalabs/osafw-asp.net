@@ -778,28 +778,33 @@ Public Class FW
         End If
 
         Me.resp.CacheControl = cache_control
+        Dim layout As String
         If format = "pjax" Then
-            Dim layout As String = G("PAGE_LAYOUT_PJAX")
-            parser(bdir, layout, hf)
-
+            layout = G("PAGE_LAYOUT_PJAX")
         Else
-            Dim layout As String = G("PAGE_LAYOUT")
-            If hf.ContainsKey("_layout") Then layout = hf("_layout")
-            parser(bdir, layout, hf)
+            layout = G("PAGE_LAYOUT")
         End If
 
+        If hf.ContainsKey("_layout") Then layout = hf("_layout")
+        _parser(bdir, layout, hf)
     End Sub
 
     '- show page from template  /controller/action = parser('/controller/action/', $layout, $ps)
     Public Overloads Sub parser(ByVal bdir As String, ByVal tpl_name As String, ByVal hf As Hashtable)
+        hf("_layout") = tpl_name
+        parser(bdir, hf)
+    End Sub
+
+    'actually uses ParsePage
+    Public Sub _parser(ByVal bdir As String, ByVal tpl_name As String, ByVal hf As Hashtable)
         logger(LogLevel.DEBUG, "parsing page bdir=", bdir, ", tpl=", tpl_name)
-        Dim parser_obj As ParsePage = New ParsePage(Me)
+        Dim parser_obj As New ParsePage(Me)
         Dim page As String = parser_obj.parse_page(bdir, tpl_name, hf)
         resp.Write(page)
     End Sub
 
     Public Sub parser_json(ByVal hf As Object)
-        Dim parser_obj As ParsePage = New ParsePage(Me)
+        Dim parser_obj As New ParsePage(Me)
         Dim page As String = parser_obj.parse_json(hf)
         resp.AddHeader("Content-type", "application/json; charset=utf-8")
         resp.Write(page)
