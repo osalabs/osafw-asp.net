@@ -253,10 +253,10 @@ Public Class Att
     End Function
 
     'return one att record with additional check by table_name
-    Public Function oneByTableName(item_table_name As String, id As Integer) As Hashtable
+    Public Function oneByTableName(item_table_name As String, item_id As Integer) As Hashtable
         Return db.row(table_name, New Hashtable From {
                       {"table_name", item_table_name},
-                      {"id", id}
+                      {"item_id", item_id}
                       })
     End Function
 
