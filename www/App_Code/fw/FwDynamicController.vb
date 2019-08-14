@@ -423,6 +423,11 @@ Public Class FwDynamicController
             Dim dtype = def("type") 'type is required
             Dim field = def("field") & ""
 
+            If id = 0 AndAlso (dtype = "added" OrElse dtype = "updated") Then
+                'special case - hide if new item screen
+                def("class") = "d-none"
+            End If
+
             If dtype = "row" OrElse dtype = "row_end" OrElse dtype = "col" OrElse dtype = "col_end" Then
                 'structural tags
                 def("is_structure") = True
