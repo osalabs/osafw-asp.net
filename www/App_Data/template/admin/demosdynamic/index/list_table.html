@@ -8,7 +8,7 @@
         <tr data-sortby="<~f[sortby]>" data-sortdir="<~f[sortdir]>">
             <th><input type="checkbox" name="all" value="1" class="on-list-chkall"></th>
             <~headers repeat inline>
-                <th data-sort="<~field_name>"><~field_name_visible></th>
+                <th <~dsort if="is_sortable" inline>data-sort="<~field_name>"</~dsort>><~field_name_visible></th>
             </~headers>
             <th class="nobold text-right"><a href="#" class="px-2 mr-2 on-toggle-search" title="`Filter Columns`"><i class="glyphicon glyphicon-filter"></i></a><a href="#" class="on-custom-cols" title="Customize Columns"><i class="glyphicon glyphicon-cog"></i></a></th>
         </tr>

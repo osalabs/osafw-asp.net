@@ -127,7 +127,7 @@ Public MustInherit Class FwController
 
             view_list_custom = Utils.f2str(Me.config("view_list_custom"))
 
-            list_sortmap = getViewListSortmap() 'just add all fields from view_list_map
+            If list_sortmap.Count = 0 Then list_sortmap = getViewListSortmap() 'just add all fields from view_list_map if no list_sortmap in config
             If search_fields = "" Then search_fields = getViewListUserFields() 'just search in all visible fields if no specific fields defined
         End If
 
@@ -556,7 +556,12 @@ Public MustInherit Class FwController
         Dim fields_added As New Hashtable
         If fields > "" Then
             For Each fieldname In Utils.qw(fields)
-                result.Add(New Hashtable From {{"field_name", fieldname}, {"field_name_visible", view_list_map(fieldname)}, {"is_checked", True}})
+                result.Add(New Hashtable From {
+                           {"field_name", fieldname},
+                           {"field_name_visible", view_list_map(fieldname)},
+                           {"is_checked", True},
+                           {"is_sortable", list_sortmap(fieldname) > ""}
+                          })
                 fields_added(fieldname) = True
             Next
         End If
@@ -569,7 +574,11 @@ Public MustInherit Class FwController
                 'If UBound(asub) < 1 Then Throw New ApplicationException("Wrong Format for view_list_map")
                 If fields_added.ContainsKey(k) Then Continue For
 
-                result.Add(New Hashtable From {{"field_name", k}, {"field_name_visible", view_list_map(k)}})
+                result.Add(New Hashtable From {
+                           {"field_name", k},
+                           {"field_name_visible", view_list_map(k)},
+                           {"is_sortable", list_sortmap(k) > ""}
+                          })
             Next
         End If
         Return result
