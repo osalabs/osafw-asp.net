@@ -53,10 +53,11 @@ Public Class FormUtils
     Public Shared Function selectOptions(ByVal arr As ArrayList, ByVal isel As String, Optional is_multi As Boolean = False) As String
         If isel Is Nothing Then isel = ""
 
-        Dim asel(1) As String
+        Dim asel() As String
         If is_multi Then
             asel = Split(isel, ",")
         Else
+            ReDim asel(0)
             asel(0) = isel
         End If
 
