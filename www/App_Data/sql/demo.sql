@@ -54,3 +54,15 @@ CREATE TABLE demos (
 );
 CREATE UNIQUE INDEX demos_email ON demos (email);
 
+/*multi link table*/
+DROP TABLE demos_demo_dicts_link;
+CREATE TABLE demos_demo_dicts_link (
+  demos_id              INT NULL FOREIGN KEY REFERENCES demos(id),
+  demo_dicts_id         INT NULL FOREIGN KEY REFERENCES demo_dicts(id),
+
+  status                TINYINT DEFAULT 0,        /*0-ok, 1-under change, deleted instantly*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0,
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
