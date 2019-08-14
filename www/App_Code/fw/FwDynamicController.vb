@@ -365,7 +365,11 @@ Public Class FwDynamicController
 
             ElseIf dtype = "multi" Then
                 'complex field
-                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                If def("table_link") > "" Then
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                Else
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                End If
 
             ElseIf dtype = "att" Then
                 def("att") = fw.model(Of Att).one(Utils.f2int(item(field)))
@@ -434,7 +438,12 @@ Public Class FwDynamicController
 
             ElseIf dtype = "multicb" Then
                 'complex field
-                def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                If def("table_link") > "" Then
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                Else
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                End If
+
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
                     row("field") = def("field")
                 Next
@@ -530,6 +539,10 @@ Public Class FwDynamicController
         For Each def As Hashtable In Me.config("showform_fields")
             If def("type") = "att_links_edit" Then
                 fw.model(Of Att).updateAttLinks(model0.table_name, id, reqh("att")) 'TODO make att configurable
+            ElseIf def("type") = "multicb" Then
+                If def("table_link") > "" Then
+                    model0.updateLinked(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"), reqh(def("field") & "_multi"))
+                End If
             End If
         Next
 

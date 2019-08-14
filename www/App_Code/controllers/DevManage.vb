@@ -149,6 +149,8 @@ Public Class DevManageController
         Dim hFieldsMap As New Hashtable
         Dim showFields As New ArrayList
         Dim showFormFields As New ArrayList
+
+        Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("name")
@@ -262,13 +264,70 @@ Public Class DevManageController
             End Select
 
             If Not is_skip Then
-                showFields.Add(sf)
-                showFormFields.Add(sff)
+                Dim sf_index = showFields.Add(sf)
+                Dim sff_index = showFormFields.Add(sff)
+                If fld("name") = "status" Then
+                    isf_status = sf_index
+                    isff_status = sff_index
+                End If
             End If
 
             If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then Continue For
             saveFields.Add(fld("name"))
         Next
+
+        'special case - "Lookup via Link Table" - could be multiple tables
+        Dim rx_table_link = "^" & Regex.Escape(model.table_name) & "_(.+?)_link$"
+        Dim tables = db.tables()
+        Dim table_name_linked = ""
+        Dim table_name_link = ""
+        For Each table In tables
+            Dim m = Regex.Match(table, rx_table_link)
+            If m.Success Then
+                table_name_linked = m.Groups(1).Value
+                table_name_link = table
+
+                If table_name_linked > "" Then
+                    'if table "MODELTBL_TBL2_link" exists - add control for linked table
+                    Dim sflink As New Hashtable From {
+                        {"field", table_name_linked & "_link"},
+                        {"label", "Linked " & table_name_linked},
+                        {"type", "multi"},
+                        {"lookup_model", _tablename2model(table_name_linked)},
+                        {"table_link", table_name_link},
+                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_linked_id_name", table_name_linked & "_id"}
+                    }
+                    Dim sfflink As New Hashtable From {
+                        {"field", table_name_linked & "_link"},
+                        {"label", "Linked " & table_name_linked},
+                        {"type", "multicb"},
+                        {"lookup_model", _tablename2model(table_name_linked)},
+                        {"table_link", table_name_link},
+                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_linked_id_name", table_name_linked & "_id"}
+                    }
+
+                    'add linked table before Status 
+                    If isf_status > 0 Then
+                        showFields.Insert(isf_status, sflink)
+                        isf_status += 1
+                    Else
+                        showFields.Add(sflink)
+                    End If
+
+                    If isff_status > 0 Then
+                        showFormFields.Insert(isff_status, sfflink)
+                        isff_status += 1
+                    Else
+                        showFormFields.Add(sfflink)
+                    End If
+                End If
+
+            End If
+        Next
+        'end special case for link table
+
 
         config("model") = model_name
         config("save_fields") = saveFields 'save all non-system

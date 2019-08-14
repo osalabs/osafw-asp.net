@@ -139,6 +139,16 @@
             "lookup_params": "some optional params"
         },
         {
+            "field": "demo_dicts_link",
+            "label": "DemoDicts via Link Table",
+            "type": "link",
+            "lookup_model": "DemoDicts",
+            "lookup_params": "some optional params",
+            "table_link": "demos_demo_dicts_link",
+            "table_link_id_name": "demos_id",
+            "table_link_linked_id_name": "demo_dicts_id"
+        },
+        {
             "field": "fcombo",
             "label": "Combo",
             "type": "plaintext",
@@ -225,9 +235,9 @@
         {
             "field": "parent_id",
             "label": "Parent (TODO)",
-            "lookup_model": "DemoDicts",
+            "lookup_model": "Demos",
             "type": "select",
-            "is_option_empty": true,
+            "is_option0": true,
             "option0_title": "- none -",
             "class_contents": "col-md-3",
             "attrs_control": "data-noautosave=\"true\""
@@ -329,6 +339,16 @@
             "type": "multicb",
             "lookup_model": "DemoDicts",
             "lookup_params": "some optional params"
+        },
+        {
+            "field": "demo_dicts_link",
+            "label": "DemoDicts via Link Table",
+            "type": "multicb",
+            "lookup_model": "DemoDicts",
+            "lookup_params": "some optional params",
+            "table_link": "demos_demo_dicts_link",
+            "table_link_id_name": "demos_id",
+            "table_link_linked_id_name": "demo_dicts_id"
         },
         {
             "field": "fcombo",
