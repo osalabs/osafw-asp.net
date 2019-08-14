@@ -82,7 +82,13 @@ Public Class AdminLookupManagerController
         Dim f As Hashtable = initFilter("_filter_lookupmanager_" & list_table_name)
 
         'sorting
-        If f("sortby") = "" Then f("sortby") = cols(0)("name") 'by default - sort by first column
+        If f("sortby") = "" Then
+            If cols.Count > 0 Then
+                f("sortby") = cols(0)("name") 'by default - sort by first column
+            Else
+                f("sortby") = ""
+            End If
+        End If
         If f("sortdir") <> "desc" Then f("sortdir") = "asc"
         Dim SORTSQL As New Hashtable
         Dim fields_headers As New ArrayList
@@ -155,7 +161,10 @@ Public Class AdminLookupManagerController
             Dim offset As Integer = f("pagenum") * f("pagesize")
             Dim limit As Integer = f("pagesize")
             Dim orderby As String = SORTSQL(f("sortby"))
-            If Not orderby > "" Then Throw New Exception("No orderby defined for [" & f("sortby") & "]")
+            If Not orderby > "" Then
+                orderby = "1"
+                'Throw New Exception("No orderby defined for [" & f("sortby") & "]")
+            End If
             If f("sortdir") = "desc" Then
                 If InStr(orderby, ",") Then orderby = Replace(orderby, ",", " desc,")
                 orderby = orderby & " desc"

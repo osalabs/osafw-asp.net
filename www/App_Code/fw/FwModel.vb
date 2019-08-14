@@ -196,10 +196,9 @@ Public MustInherit Class FwModel
         Return db.col(sql)
     End Function
 
-    'sel_ids - comma-separated ids
+    'sel_ids - selected ids in the list()
     'params - to use - override in your model
-    Public Overridable Function getMultiList(sel_ids As String, Optional params As Object = Nothing) As ArrayList
-        Dim ids As New ArrayList(Split(sel_ids, ","))
+    Public Overridable Function getMultiListAL(ids As ArrayList, Optional params As Object = Nothing) As ArrayList
         Dim rows As ArrayList = Me.list()
         For Each row As Hashtable In rows
             row("is_checked") = ids.Contains(row(Me.field_id))
@@ -207,42 +206,50 @@ Public MustInherit Class FwModel
         Return rows
     End Function
 
+    'overloaded version for string comma-separated ids
+    'sel_ids - comma-separated ids
+    'params - to use - override in your model
+    Public Overridable Function getMultiList(sel_ids As String, Optional params As Object = Nothing) As ArrayList
+        Dim ids As New ArrayList(Split(sel_ids, ","))
+        Return Me.getMultiListAL(ids, params)
+    End Function
+
     ''' <summary>
     '''     return comma-separated ids of linked elements - TODO refactor to use arrays, not comma-separated string
     ''' </summary>
-    ''' <param name="table_name">link table name that contains id_name and link_id_name fields</param>
+    ''' <param name="link_table_name">link table name that contains id_name and link_id_name fields</param>
     ''' <param name="id">main id</param>
     ''' <param name="id_name">field name for main id</param>
     ''' <param name="link_id_name">field name for linked id</param>
     ''' <returns></returns>
-    Public Overridable Function getLinkIds(table_name As String, id As Integer, id_name As String, link_id_name As String) As String
+    Public Overridable Function getLinkedIds(link_table_name As String, id As Integer, id_name As String, link_id_name As String) As ArrayList
         Dim where As New Hashtable
         where(id_name) = id
-        Dim rows As ArrayList = db.array(table_name, where)
-        Dim res As New ArrayList
+        Dim rows As ArrayList = db.array(link_table_name, where)
+        Dim result As New ArrayList
         For Each row As Hashtable In rows
-            res.Add(row(link_id_name))
+            result.Add(row(link_id_name))
         Next
 
-        Return FormUtils.col2comma_str(res)
+        Return result
     End Function
 
     ''' <summary>
     '''  update (and add/del) linked table
     ''' </summary>
-    ''' <param name="table_name">link table name that contains id_name and link_id_name fields</param>
+    ''' <param name="link_table_name">link table name that contains id_name and link_id_name fields</param>
     ''' <param name="id">main id</param>
     ''' <param name="id_name">field name for main id</param>
     ''' <param name="link_id_name">field name for linked id</param>
     ''' <param name="linked_keys">hashtable with keys as link id (as passed from web)</param>
-    Public Overridable Sub updateLinked(table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
+    Public Overridable Sub updateLinked(link_table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
         Dim fields As New Hashtable
         Dim where As New Hashtable
 
         'set all fields as under update
         fields("status") = 1
         where(id_name) = id
-        db.update(table_name, fields, where)
+        db.update(link_table_name, fields, where)
 
         If linked_keys IsNot Nothing Then
             For Each link_id As String In linked_keys.Keys
@@ -254,7 +261,7 @@ Public MustInherit Class FwModel
                 where = New Hashtable
                 where(id_name) = id
                 where(link_id_name) = link_id
-                db.update_or_insert(table_name, fields, where)
+                db.update_or_insert(link_table_name, fields, where)
             Next
         End If
 
@@ -262,11 +269,12 @@ Public MustInherit Class FwModel
         where = New Hashtable
         where(id_name) = id
         where("status") = 1
-        db.del(table_name, where)
+        db.del(link_table_name, where)
     End Sub
 
 
     Public Overridable Function findOrAddByIname(iname As String, ByRef Optional is_added As Boolean = False) As Integer
+        If Trim(iname) = "" Then Return 0
         Dim result As Integer
         Dim item As Hashtable = Me.oneByIname(iname)
         If item.ContainsKey(Me.field_id) Then

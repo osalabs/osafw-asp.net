@@ -6,6 +6,8 @@
 Public Class Demos
     Inherits FwModel
 
+    Public table_link As String = "demos_demo_dicts_link"
+
     Public Sub New()
         MyBase.New()
         table_name = "demos"

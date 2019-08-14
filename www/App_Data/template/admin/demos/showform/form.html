@@ -102,6 +102,20 @@
     </div>
 
     <div class="form-group row">
+      <label class="col-form-label col-md-3" for="demo_dicts_link">DemoDicts via Link Table</label>
+      <div class="col-md-9">
+        <div class="field-multi-value">
+          <~multi_datarow_link repeat inline>
+            <div class="custom-control custom-checkbox">
+              <input type="checkbox" class="custom-control-input" id="demo_dicts_link$<~id>" name="demo_dicts_link[<~id>]" value="1" <~/common/checked if="is_checked">>
+              <label class="custom-control-label" for="demo_dicts_link$<~id>"><~iname></label>
+            </div>
+          </~multi_datarow_link>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group row">
       <label class="col-form-label col-md-3" for="fcombo">Combo</label>
       <div class="col-md-3">
         <select id="fcombo" name="item[fcombo]" class="form-control">

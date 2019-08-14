@@ -40,13 +40,15 @@ Public Class AdminDemosController
     Public Overrides Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
         Dim ps As Hashtable = MyBase.ShowAction(form_id)
         Dim item As Hashtable = ps("i")
+        Dim id = Utils.f2int(item("id"))
 
         ps("parent") = model.one(Utils.f2int(item("parent_id")))
         ps("demo_dicts") = model_related.one(Utils.f2int(item("demo_dicts_id")))
         ps("dict_link_auto") = model_related.one(Utils.f2int(item("dict_link_auto_id")))
         ps("multi_datarow") = model_related.getMultiList(item("dict_link_multi"))
+        ps("multi_datarow_link") = model_related.getMultiListAL(model.getLinkedIds(model.table_link, id, "demos_id", "demo_dicts_id"))
         ps("att") = fw.model(Of Att).one(Utils.f2int(item("att_id")))
-        ps("att_links") = fw.model(Of Att).getAllLinked(model.table_name, Utils.f2int(item("id")))
+        ps("att_links") = fw.model(Of Att).getAllLinked(model.table_name, id)
 
         Return ps
     End Function
@@ -59,14 +61,16 @@ Public Class AdminDemosController
 
         'read dropdowns lists from db
         Dim item As Hashtable = ps("i")
+        Dim id = Utils.f2int(item("id"))
         ps("select_options_parent_id") = model.listSelectOptionsParent()
         ps("select_options_demo_dicts_id") = model_related.listSelectOptions()
         ps("dict_link_auto_id_iname") = model_related.iname(item("dict_link_auto_id"))
         ps("multi_datarow") = model_related.getMultiList(item("dict_link_multi"))
+        ps("multi_datarow_link") = model_related.getMultiListAL(model.getLinkedIds(model.table_link, id, "demos_id", "demo_dicts_id"))
         FormUtils.comboForDate(item("fdate_combo"), ps, "fdate_combo")
 
         ps("att") = fw.model(Of Att).one(Utils.f2int(item("att_id")))
-        ps("att_links") = fw.model(Of Att).getAllLinked(model.table_name, Utils.f2int(item("id")))
+        ps("att_links") = fw.model(Of Att).getAllLinked(model.table_name, id)
 
         Return ps
     End Function
@@ -94,6 +98,7 @@ Public Class AdminDemosController
 
             id = Me.modelAddOrUpdate(id, itemdb)
 
+            model.updateLinked(model.table_link, id, "demos_id", "demo_dicts_id", reqh("demo_dicts_link"))
             fw.model(Of Att).updateAttLinks(model.table_name, id, reqh("att"))
 
         Catch ex As ApplicationException
