@@ -41,22 +41,18 @@
     </div>
     <div class="form-group row">
       <label class="col-form-label col-md-3" for="city">`City`</label>
-      <div class="col-md-5">
+      <div class="col-md-3">
         <input id="city" name="item[city]" maxlength="64" value="<~i[city]>" type="text" class="form-control">
       </div>
-    </div>
-    <div class="form-group row">
-      <label class="col-form-label col-md-3" for="state">`State`</label>
-      <div class="col-md-4">
+      <label class="col-form-label col-md-1" for="state">`State`</label>
+      <div class="col-md-2">
         <select id="state" name="item[state]" class="form-control">
           <option value=""></option>
           <~/common/sel/state.sel select="i[state]">
         </select>
       </div>
-    </div>
-    <div class="form-group row">
-      <label class="col-form-label col-md-3" for="zip">`Zip`</label>
-      <div class="col-md-3">
+      <label class="col-form-label col-md-1" for="zip">`Zip`</label>
+      <div class="col-md-2">
         <input id="zip" name="item[zip]" maxlength="16" value="<~i[zip]>" type="text" class="form-control">
       </div>
     </div>
@@ -64,6 +60,15 @@
       <label class="col-form-label col-md-3" for="phone">`Phone`</label>
       <div class="col-md-3">
         <input id="phone" name="item[phone]" maxlength="16" value="<~i[phone]>" type="text" class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <label class="col-form-label col-md-3" for="lang">`Language`</label>
+      <div class="col-md-2">
+        <select id="lang" name="item[lang]" class="form-control">
+          <~/common/sel/lang.sel select="i[lang]">
+        </select>
       </div>
     </div>
 

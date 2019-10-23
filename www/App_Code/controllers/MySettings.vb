@@ -14,6 +14,8 @@ Public Class MySettingsController
         model.init(fw)
         required_fields = "email" 'default required fields, space-separated
         base_url = "/My/Settings" 'base url for the controller
+
+        save_fields = "email fname lname address1 address2 city state zip phone lang"
     End Sub
 
     Public Sub IndexAction()
@@ -25,7 +27,7 @@ Public Class MySettingsController
     Public Function ShowFormAction() As Hashtable
         Dim hf As Hashtable = New Hashtable
         Dim item As Hashtable
-        Dim id As Integer = fw.SESSION("user_id")
+        Dim id = model.meId()
 
         If fw.cur_method = "GET" Then 'read from db
             item = model.one(id)
@@ -44,19 +46,19 @@ Public Class MySettingsController
     End Function
 
     Public Sub SaveAction()
-        Dim item As Hashtable = reqh("item")
-        Dim id As Integer = fw.SESSION("user_id")
+        Dim item = reqh("item")
+        Dim id = model.meId()
 
         Try
             Validate(id, item)
             'load old record if necessary
             'Dim itemold As Hashtable = model.one(id)
 
-            Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("email fname lname address1 address2 city state zip phone"))
+            Dim itemdb As Hashtable = FormUtils.filter(item, save_fields)
             model.update(id, itemdb)
             fw.FLASH("record_updated", 1)
 
-            If id = model.meId Then model.reloadSession()
+            model.reloadSession()
 
             fw.redirect(base_url & "/" & id & "/edit")
         Catch ex As ApplicationException

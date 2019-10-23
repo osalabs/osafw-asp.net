@@ -48,6 +48,9 @@ Public Class DevConfigureController
         'check if dir is writable
         ps("is_write_dirs") = isWritable(upload_dir)
 
+        ps("is_write_langok") = True
+        If isWritable(fw.config("template") & "/lang") AndAlso Not Utils.f2bool(fw.config("IS_DEV")) Then ps("is_write_langok") = False
+
         'obsolete in .net 4
         'If System.Security.SecurityManager.IsGranted(writePermission) Then ps("is_write_dirs") = True
 

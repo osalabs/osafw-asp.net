@@ -144,6 +144,7 @@ Public Class Users
         fw.SESSION("user_id", id)
         fw.SESSION("login", hU("email"))
         fw.SESSION("access_level", Utils.f2int(hU("access_level")))
+        fw.SESSION("lang", hU("lang"))
         'fw.SESSION("user", hU)
         Dim fname = Trim(hU("fname"))
         Dim lname = Trim(hU("lname"))

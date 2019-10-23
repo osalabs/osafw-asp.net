@@ -72,5 +72,14 @@
             </td>
             <td>Ensure dev mode is not enabled on production environment</td>
         </tr>
+        <tr>
+            <td>Writable /template/lang</td>
+            <td><~ok if="is_write_langok"><~warn unless="is_write_langok"></td>
+            <td>
+                <~failmsg4 unless="is_write_langok" inline>
+                    Ensure that /template/lang is only writable for development and not writable by web server
+                </~failmsg4>
+            </td>
+        </tr>
     </tbody>
 </table>

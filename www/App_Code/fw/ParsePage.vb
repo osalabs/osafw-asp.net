@@ -82,10 +82,11 @@
 'TODO nolang - for subtemplates - use default language instead of current (usually english)
 'htmlescape - replace special symbols by their html equivalents (such as <>,",')
 
-'TODO support `text` => replaced by multilang from $site_templ/lang/$lang.txt according to $GLOBAL['lang'] (if !='' - english by default)
-'  example: <b>`Hello`</b>
+'multi-language support `text` => replaced by language string from $site_templ/lang/$lang.txt according to fw.config('lang') (english by default)
+'  example: <b>`Hello`</b>  -> become -> <b>Hola</b>
 '  lang.txt line format:
 '           english string === lang string
+'           Hello === Hola
 'support modifiers:
 ' htmlescape
 ' date          - format as datetime, sample "d M yyyy HH:mm", see https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
@@ -124,6 +125,7 @@ Public Class ParsePage
     Private Shared RX_EXT As New Regex("\.[^\/]+$", RegexOptions.Compiled)
 
     Private Shared FILE_CACHE As New Hashtable
+    Private Shared LANG_CACHE As New Hashtable
     Private Shared IFOPERS() As String = {"if", "unless", "ifne", "ifeq", "ifgt", "iflt", "ifge", "ifle"}
 
     Private Shared DATE_FORMAT_DEF As String = "M/d/yyyy" ' for US, TODO make based on user settigns (with fallback to server's settings)
@@ -144,11 +146,24 @@ Public Class ParsePage
     Private basedir As String = ""
     Private data_top As Hashtable 'reference to the topmost hashtable
     Private is_found_last_hfvalue As Boolean = False
+    Private lang As String = "en"
+    Private lang_parse As Boolean = True 'parse lang strings in `` or not - true - parse(default), false - no
+    Private lang_update As Boolean = True 'save unknown matches to lang file (helps during development) 
+    Private lang_evaluator As MatchEvaluator
 
     Public Sub New(fw As FW)
         Me.fw = fw
         TMPL_PATH = fw.config("template")
         is_check_file_modifications = fw.config("log_level") >= LogLevel.DEBUG
+        lang = fw.G("lang")
+        If lang = "" Then lang = fw.config("lang")
+        If lang = "" Then lang = "en"
+
+        'load cache for all current lang matches 
+        If LANG_CACHE(lang) Is Nothing Then
+            load_lang()
+        End If
+        lang_evaluator = New MatchEvaluator(AddressOf Me.lang_replacer)
     End Sub
 
     Public Function parse_json(ByVal hf As Object) As String
@@ -304,6 +319,7 @@ Public Class ParsePage
 
     Public Sub clear_cache()
         FILE_CACHE.Clear()
+        LANG_CACHE.Clear()
     End Sub
 
     Private Function precache_file(ByVal filename As String, Optional ByRef ErrInfo As String = "") As String
@@ -346,11 +362,6 @@ Public Class ParsePage
         Return file_data
 
     End Function
-
-    Private Sub parse_lang(ByRef page As String)
-        'TODO implement
-        page = RX_LANG.Replace(page, "$1")
-    End Sub
 
     Private Function get_full_tags(ByRef page As String) As MatchCollection
         Return RX_FULL_TAGS.Matches(page)
@@ -1029,6 +1040,42 @@ Public Class ParsePage
         ' ${ $_[0] }=~ s/<~ROOT_DOMAIN>/$PATH{ROOT_DOMAIN}/ig;
         ' ${ $_[0] }=~ s/<~ROOT_URL>/$PATH{ROOT_URL}/ig;
         ' ${ $_[0] }=~ s/<~STATIC_URL>/$PATH{STATIC_URL}/ig;
+    End Sub
+
+    'parse all `multilang` strings and replace to corresponding current language string
+    Private Sub parse_lang(ByRef page As String)
+        If Not lang_parse Then Exit Sub 'don't parse langs if told so
+
+        page = RX_LANG.Replace(page, lang_evaluator)
+    End Sub
+
+    Private Function lang_replacer(m As Match) As String
+        Dim result = ""
+        Dim value = Trim(m.Groups(1).Value)
+        'fw.logger("checking:", lang, value)
+        result = LANG_CACHE(lang)(value)
+        If result = "" Then
+            'if no language - return original string
+            result = value
+        End If
+        Return result
+    End Function
+
+    Private Sub load_lang()
+        'fw.logger("load lang: " & TMPL_PATH & "\" & lang & ".txt")
+        Dim lines = FW.get_file_lines(TMPL_PATH & "\lang\" & lang & ".txt")
+
+        If LANG_CACHE(lang) Is Nothing Then
+            LANG_CACHE(lang) = New Hashtable
+        End If
+
+        For Each line In lines
+            line = Trim(line)
+            If line = "" OrElse Not line.Contains("===") Then Continue For
+            Dim pair = Split(line, "===", 2)
+            'fw.logger("added to cache:", Trim(pair(0)))
+            LANG_CACHE(lang)(Trim(pair(0))) = pair(1)
+        Next
     End Sub
 
 End Class

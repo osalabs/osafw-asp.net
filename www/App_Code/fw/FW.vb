@@ -97,6 +97,12 @@ Public Class FW
         db = New DB(Me)
 
         G = config().Clone() 'by default G contains conf
+
+        'override default lang with user's lang
+        If SESSION("lang") > "" Then
+            G("lang") = SESSION("lang")
+        End If
+
         FERR = New Hashtable 'reset errors
         parse_form()
 
