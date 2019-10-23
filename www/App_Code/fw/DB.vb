@@ -22,9 +22,9 @@ Public Class DB
     Private fw As FW
     Private dbconn_cache As New Hashtable 'that's ok because we using connections just for the time or request (i.e. it's not Shared/Static cache)
 
-    Private current_db As String
-    Private conf As Hashtable
-    Private dbtype As String
+    Public current_db As String = ""
+    Private conf As New Hashtable
+    Private dbtype As String = "SQL"
     Private schema As New Hashtable 'schema for currently connected db
 
     Public Sub New(fw As FW)
@@ -46,20 +46,28 @@ Public Class DB
             schema = New Hashtable
 
             Dim oConnStr As String = conf("connection_string")
-            If dbtype = "SQL" Then
-                conn = New SqlConnection(oConnStr)
-            ElseIf dbtype = "OLE" Then
-                conn = New OleDbConnection(oConnStr)
-            Else
-                Dim msg As String = "Unknown type [" & dbtype & "] for db " & current_db
-                fw.logger(LogLevel.FATAL, msg)
-                Throw New ApplicationException(msg)
-            End If
-            conn.Open()
-            dbconn_cache(current_db) = conn
+            conn = create_connection(oConnStr, dbtype)
         End If
 
         Return conn
+    End Function
+
+    Public Function create_connection(conn_str As String, Optional dbtype As String = "SQL") As DbConnection
+        Dim result As DbConnection
+        If dbtype = "SQL" Then
+            result = New SqlConnection(conn_str)
+        ElseIf dbtype = "OLE" Then
+            result = New OleDbConnection(conn_str)
+        Else
+            Dim msg As String = "Unknown type [" & dbtype & "]"
+            fw.logger(LogLevel.FATAL, msg)
+            Throw New ApplicationException(msg)
+        End If
+
+        result.Open()
+        dbconn_cache(current_db) = result
+
+        Return result
     End Function
 
     Public Sub check_create_mdb(filepath As String)

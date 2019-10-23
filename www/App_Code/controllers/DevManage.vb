@@ -412,6 +412,49 @@ Public Class DevManageController
         fw.redirect(base_url)
     End Function
 
+    'analyse database tables and create db.json describing entities, fields and relationships
+    Public Function AnalyseDBAction() As Hashtable
+        Dim ps As New Hashtable
+        Dim item = reqh("item")
+        Dim connstr As String = item("connstr") & ""
+
+        Dim dbtype = "SQL"
+        If connstr.Contains("OLE") Then dbtype = "OLE"
+
+        Try
+            Dim db = New DB(fw)
+            Dim conn = db.create_connection(connstr, dbtype)
+            Dim tables = db.tables()
+            rw(FW.dumper(tables))
+            'If InStr(tblname, "MSys", CompareMethod.Binary) = 0 Then
+            'MSysAccessStorage
+            'MSysAccessXML
+            'MSysACEs
+            'MSysComplexColumns
+            'MSysNameMap
+            'MSysNavPaneGroupCategories
+            'MSysNavPaneGroups
+            'MSysNavPaneGroupToObjects
+            'MSysNavPaneObjectIDs
+            'MSysObjects
+            'MSysQueries
+            'MSysRelationships
+            'MSysResources
+
+            'Dim dataTable As Data.DataTable = conn.GetSchema("Tables")
+            'logger(dataTable.Rows)
+            'For Each row As Data.DataRow In dataTable.Rows
+            '    Dim tblname As String = row("TABLE_NAME").ToString()
+            '    logger(tblname)
+            'Next
+        Catch ex As Exception
+            fw.FLASH("err_msg", ex.Message)
+            fw.redirect(base_url)
+        End Try
+
+        Return ps
+    End Function
+
 
     Private Function _models() As IOrderedEnumerable(Of String)
         Dim baseType = GetType(FwModel)
