@@ -421,38 +421,83 @@ Public Class DevManageController
         Dim dbtype = "SQL"
         If connstr.Contains("OLE") Then dbtype = "OLE"
 
-        Try
-            Dim db = New DB(fw)
-            Dim conn = db.create_connection(connstr, dbtype)
-            Dim tables = db.tables()
-            rw(FW.dumper(tables))
-            'If InStr(tblname, "MSys", CompareMethod.Binary) = 0 Then
-            'MSysAccessStorage
-            'MSysAccessXML
-            'MSysACEs
-            'MSysComplexColumns
-            'MSysNameMap
-            'MSysNavPaneGroupCategories
-            'MSysNavPaneGroups
-            'MSysNavPaneGroupToObjects
-            'MSysNavPaneObjectIDs
-            'MSysObjects
-            'MSysQueries
-            'MSysRelationships
-            'MSysResources
+        'Try
+        Dim db = New DB(fw)
+        Dim conn = db.create_connection(connstr, dbtype)
 
-            'Dim dataTable As Data.DataTable = conn.GetSchema("Tables")
-            'logger(dataTable.Rows)
-            'For Each row As Data.DataRow In dataTable.Rows
-            '    Dim tblname As String = row("TABLE_NAME").ToString()
-            '    logger(tblname)
-            'Next
-        Catch ex As Exception
-            fw.FLASH("err_msg", ex.Message)
-            fw.redirect(base_url)
-        End Try
+        Dim entities = dbschema2entities(db)
+
+        'save db.json
+        saveJson(entities, fw.config("template") & "/db.json")
+
+        conn.Close()
+        'Catch ex As Exception
+        '    fw.FLASH("error", ex.Message)
+        '    fw.redirect(base_url)
+        'End Try
 
         Return ps
+    End Function
+
+    Private Sub saveJson(data As Object, filename As String)
+        Dim json_str = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(filename, json_str)
+    End Sub
+
+    Private Function dbschema2entities(db As DB) As ArrayList
+        Dim result As New ArrayList
+        'Access System tables:
+        'MSysAccessStorage
+        'MSysAccessXML
+        'MSysACEs
+        'MSysComplexColumns
+        'MSysNameMap
+        'MSysNavPaneGroupCategories
+        'MSysNavPaneGroups
+        'MSysNavPaneGroupToObjects
+        'MSysNavPaneObjectIDs
+        'MSysObjects
+        'MSysQueries
+        'MSysRelationships
+        'MSysResources
+        Dim tables = db.tables()
+        For Each tblname In tables
+            If InStr(tblname, "MSys", CompareMethod.Binary) = 1 Then Continue For
+
+            'get table schema
+            Dim tblschema = db.load_table_schema_full(tblname)
+            'logger(tblschema)
+
+            Dim table_entity As New Hashtable
+            table_entity("table") = tblname
+            table_entity("iname") = tblname 'TODO human table name
+            table_entity("fields") = tableschema2entity(tblschema)
+            result.Add(table_entity)
+        Next
+
+        'TODO for Access - get relationships from MSysRelationships
+
+        Return result
+    End Function
+
+    Private Function tableschema2entity(schema As ArrayList) As ArrayList
+        Dim result As New ArrayList(schema)
+
+        For Each fldschema As Hashtable In schema
+            'TODO fix field names: State/Province -> State_Province
+            'result(fldschema("name")) = fldschema
+        Next
+        'result("xxxx") = "yyyy"
+        'attrs used to build UI
+        'name
+        'default
+        'maxlen
+        'is_nullable
+        'type
+        'internal_type
+        'is_identity
+
+        Return result
     End Function
 
 

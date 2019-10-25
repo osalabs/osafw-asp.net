@@ -24,7 +24,7 @@ Public Class DB
 
     Public current_db As String = ""
     Private conf As New Hashtable
-    Private dbtype As String = "SQL"
+    Public dbtype As String = "SQL"
     Private schema As New Hashtable 'schema for currently connected db
 
     Public Sub New(fw As FW)
@@ -54,6 +54,7 @@ Public Class DB
 
     Public Function create_connection(conn_str As String, Optional dbtype As String = "SQL") As DbConnection
         Dim result As DbConnection
+        Me.dbtype = dbtype
         If dbtype = "SQL" Then
             result = New SqlConnection(conn_str)
         ElseIf dbtype = "OLE" Then
@@ -527,23 +528,32 @@ Public Class DB
                 dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
                 New Object() {Nothing, Nothing, table, Nothing})
 
+            Dim fieldslist = New List(Of Hashtable)
             For Each row As DataRow In schemaTable.Rows
-                'COLUMN_NAME
-                'COLUMN_HASDEFAULT
-                'COLUMN_DEFAULT
-                'IS_NULLABLE
-                'DATA_TYPE
-                'CHARACTER_MAXIMUM_LENGTH
-                'fw.logger(row("COLUMN_NAME"))
-                'fw.logger(row("DATA_TYPE"))
-                'fw.logger(row("CHARACTER_MAXIMUM_LENGTH"))
+                'unused:
+                'COLUMN_HASDEFAULT True False
+                'COLUMN_FLAGS   74 86 90(auto) 102 106 114 122(date) 226 230 234
+                'CHARACTER_OCTET_LENGTH
+                'DATETIME_PRECISION=0
+                'DESCRIPTION
                 Dim h = New Hashtable
-                h("name") = row("COLUMN_NAME").ToString().ToLower()
+                h("name") = row("COLUMN_NAME").ToString()
                 h("type") = row("DATA_TYPE")
                 h("internal_type") = map_oletype2internal(row("DATA_TYPE"))
-                'TODO - add more schema fields if necessary
-                result.Add(h)
+                h("is_nullable") = IIf(row("IS_NULLABLE"), 1, 0)
+                h("default") = row("COLUMN_DEFAULT") '"=Now()" "0" "No"
+                h("maxlen") = row("CHARACTER_MAXIMUM_LENGTH")
+                h("numeric_precision") = row("NUMERIC_PRECISION")
+                h("numeric_scale") = row("NUMERIC_SCALE")
+                h("charset") = row("CHARACTER_SET_NAME")
+                h("collation") = row("COLLATION_NAME")
+                h("pos") = row("ORDINAL_POSITION")
+                h("desc") = row("DESCRIPTION")
+                h("is_identity") = IIf(row("DATA_TYPE") = OleDbType.Integer AndAlso row("COLUMN_FLAGS") = 90, 1, 0) 'TODO actually this also triggers for Long Integers, need to change somehow
+                fieldslist.Add(h)
             Next
+            'order by ORDINAL_POSITION
+            result.AddRange(fieldslist.OrderBy(Function(h) h("pos")).ToList())
         End If
 
         'save to cache
