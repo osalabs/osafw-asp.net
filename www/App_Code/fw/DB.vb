@@ -9,6 +9,55 @@ Imports System.Data
 Imports System.Data.Common
 Imports System.IO
 
+Public Enum DBOps As Integer
+    [EQ]
+    [NOT]
+    [ISNULL]
+    [ISNOTNULL]
+    [IN]
+    [NOTIN]
+    [LIKE]
+    [NOTLIKE]
+End Enum
+
+'describes DB operation
+Public Class DBOperation
+    Public op As DBOps
+    Public opstr As String 'string value for op
+    Public is_value As Boolean = True 'if false - operation is unary (no value)
+    Public value As Object 'can be array for IN, NOT IN, OR
+    Public quoted_value As String
+    Public Sub New(op As DBOps, Optional value As Object = Nothing)
+        Me.op = op
+        Me.setOpStr()
+        Me.value = value
+    End Sub
+    Public Sub setOpStr()
+        Select Case op
+            Case DBOps.ISNULL
+                opstr = "IS NULL"
+                is_value = False
+            Case DBOps.ISNOTNULL
+                opstr = "IS NOT NULL"
+                is_value = False
+            Case DBOps.EQ
+                opstr = "="
+            Case DBOps.NOT
+                opstr = "<>"
+            Case DBOps.IN
+                opstr = "IN"
+            Case DBOps.NOTIN
+                opstr = "NOT IN"
+            Case DBOps.LIKE
+                opstr = "LIKE"
+            Case DBOps.NOTLIKE
+                opstr = "NOT LIKE"
+            Case Else
+                Throw New ApplicationException("Wrong DB OP")
+        End Select
+    End Sub
+End Class
+
 Public Class DB
     Implements IDisposable
     Private Shared schemafull_cache As Hashtable 'cache for the full schema, lifetime = app lifetime
@@ -286,10 +335,10 @@ Public Class DB
         If Not schema.ContainsKey(table) Then Throw New ApplicationException("table [" & table & "] does not defined in FW.config(""schema"")")
 
         Dim fieldsq As New Hashtable
-        Dim k, q As String
+        Dim k As String
 
         For Each k In fields.Keys
-            q = qone(table, k, fields(k))
+            Dim q = qone(table, k, fields(k))
             'quote field name too
             If q IsNot Nothing Then fieldsq(q_ident(k)) = q
         Next k
@@ -297,19 +346,57 @@ Public Class DB
         Return fieldsq
     End Function
 
-    Public Function qone(ByVal table As String, ByVal field_name As String, ByVal field_value As Object) As String
+    'can return String or DBOperation class
+    Public Function qone(ByVal table As String, ByVal field_name As String, ByVal field_value_or_op As Object) As Object
         connect()
         load_table_schema(table)
         field_name = field_name.ToLower()
         If Not schema(table).containskey(field_name) Then Throw New ApplicationException("field " & table & "." & field_name & " does not defined in FW.config(""schema"") ")
 
-        Dim quoted As String = ""
+        Dim field_value As Object
+        Dim dbop As DBOperation
+        If TypeOf field_value_or_op Is DBOperation Then
+            dbop = DirectCast(field_value_or_op, DBOperation)
+            field_value = dbop.value
+        Else
+            field_value = field_value_or_op
+        End If
+
+        Dim field_type As String = schema(table)(field_name)
+        Dim quoted As String
+        If dbop IsNot Nothing Then
+            If dbop.op = DBOps.IN OrElse dbop.op = DBOps.NOTIN Then
+                If dbop.value IsNot Nothing AndAlso TypeOf (dbop.value) Is IList Then
+                    Dim result As New ArrayList
+                    For Each param In dbop.value
+                        result.Add(qone_by_type(field_type, param))
+                    Next
+                    quoted = "(" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
+                Else
+                    quoted = qone_by_type(field_type, field_value)
+                End If
+            Else
+                quoted = qone_by_type(field_type, field_value)
+            End If
+        Else
+            quoted = qone_by_type(field_type, field_value)
+        End If
+
+        If dbop IsNot Nothing Then
+            dbop.quoted_value = quoted
+            Return field_value_or_op
+        Else
+            Return quoted
+        End If
+    End Function
+
+    Function qone_by_type(field_type As String, field_value As Object) As String
+        Dim quoted As String
 
         'if value set to Nothing or DBNull - assume it's NULL in db
         If field_value Is Nothing OrElse IsDBNull(field_value) Then
             quoted = "NULL"
         Else
-            Dim field_type As String = schema(table)(field_name)
             'fw.logger(table & "." & field_name & " => " & field_type & ", value=[" & field_value & "]")
             If Regex.IsMatch(field_type, "int") Then
                 If field_value IsNot Nothing AndAlso Regex.IsMatch(field_value, "true", RegexOptions.IgnoreCase) Then
@@ -342,9 +429,94 @@ Public Class DB
                 End If
             End If
         End If
-
         Return quoted
     End Function
+
+    'operations support for non-raw sql methods
+    ''' <summary>
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opNOT(127)}})
+    ''' select * from users where field<>127
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opNOT(value As Object) As DBOperation
+        Return New DBOperation(DBOps.NOT, value)
+    End Function
+    ''' <summary>
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opISNULL()}})
+    ''' select * from users where field IS NULL
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function opISNULL() As DBOperation
+        Return New DBOperation(DBOps.ISNULL)
+    End Function
+    ''' <summary>
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opISNOTNULL()}})
+    ''' select * from users where field IS NOT NULL
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function opISNOTNULL() As DBOperation
+        Return New DBOperation(DBOps.ISNOTNULL)
+    End Function
+    ''' <summary>
+    ''' Example: Dim rows = DB.array("users", New Hashtable From {{"address1", db.opLIKE("%Orlean%")}})
+    ''' select * from users where address1 LIKE '%Orlean%'
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opLIKE(value As Object) As DBOperation
+        Return New DBOperation(DBOps.LIKE, value)
+    End Function
+    ''' <summary>
+    ''' Example: Dim rows = DB.array("users", New Hashtable From {{"address1", db.opNOTLIKE("%Orlean%")}})
+    ''' select * from users where address1 NOT LIKE '%Orlean%'
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opNOTLIKE(value As Object) As DBOperation
+        Return New DBOperation(DBOps.NOTLIKE, value)
+    End Function
+
+    ''' <summary>
+    ''' 2 ways to call:
+    ''' opIN(1,2,4) - as multiple arguments
+    ''' opIN(array) - as one array of values
+    ''' 
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"id", db.opIN(1, 2)}})
+    ''' select * from users where id IN (1,2)
+    ''' </summary>
+    ''' <param name="args"></param>
+    ''' <returns></returns>
+    Public Function opIN(ParamArray args() As Object) As DBOperation
+        Dim values As Object
+        If args.Count = 1 AndAlso IsArray(args(0)) Then
+            values = args(0)
+        Else
+            values = args
+        End If
+        Return New DBOperation(DBOps.IN, values)
+    End Function
+
+    ''' <summary>
+    ''' 2 ways to call:
+    ''' opIN(1,2,4) - as multiple arguments
+    ''' opIN(array) - as one array of values
+    ''' 
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"id", db.opNOTIN(1, 2)}})
+    ''' select * from users where id NOT IN (1,2)
+    ''' </summary>
+    ''' <param name="args"></param>
+    ''' <returns></returns>
+    Public Function opNOTIN(ParamArray args() As Object) As DBOperation
+        Dim values As Object
+        If args.Count = 1 AndAlso IsArray(args(0)) Then
+            values = args(0)
+        Else
+            values = args
+        End If
+        Return New DBOperation(DBOps.NOTIN, values)
+    End Function
+
 
     'return last inserted id
     Public Function insert(ByVal table As String, ByVal fields As Hashtable) As Integer
@@ -412,15 +584,26 @@ Public Class DB
         Dim i As Integer = 0
         Dim k As String
         For Each k In h.Keys
+            Dim vv = h(k)
+            Dim v = ""
             Dim delim = kv_delim
             If delim = "" Then
-                If h(k) = "NULL" Then
-                    delim = " IS "
+                If TypeOf vv Is DBOperation Then
+                    Dim dbop = DirectCast(vv, DBOperation)
+                    delim = " " & dbop.opstr & " "
+                    If dbop.is_value Then
+                        v = dbop.quoted_value
+                    End If
                 Else
-                    delim = "="
+                    v = vv
+                    If vv = "NULL" Then
+                        delim = " IS "
+                    Else
+                        delim = "="
+                    End If
                 End If
             End If
-            ar(i) = k & delim & h(k)
+            ar(i) = k & delim & v
             i += 1
         Next k
         res = String.Join(pairs_delim, ar)
