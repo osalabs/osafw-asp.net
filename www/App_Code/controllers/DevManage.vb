@@ -470,26 +470,32 @@ Public Class DevManageController
 
             Dim table_entity As New Hashtable
             table_entity("table") = tblname
-            table_entity("iname") = tblname 'TODO human table name
-            table_entity("fields") = tableschema2entity(tblschema)
+            table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
+            table_entity("iname") = name2human(tblname) 'human table name
+            table_entity("fields") = tableschema2fields(tblschema)
+            table_entity("foreign_keys") = db.get_foreign_keys(tblname)
             result.Add(table_entity)
         Next
-
-        'TODO for Access - get relationships from MSysRelationships
 
         Return result
     End Function
 
-    Private Function tableschema2entity(schema As ArrayList) As ArrayList
+    Private Function tableschema2fields(schema As ArrayList) As ArrayList
         Dim result As New ArrayList(schema)
 
         For Each fldschema As Hashtable In schema
-            'TODO fix field names: State/Province -> State_Province
-            'result(fldschema("name")) = fldschema
+            'prepare system/human field names: State/Province -> state_province
+            If fldschema("is_identity") = 1 Then
+                fldschema("fw_name") = "id" 'identity fields always id
+                fldschema("iname") = "ID"
+            Else
+                fldschema("fw_name") = name2fw(fldschema("name"))
+                fldschema("iname") = name2human(fldschema("name"))
+            End If
         Next
         'result("xxxx") = "yyyy"
         'attrs used to build UI
-        'name
+        'name => fw_field or iname
         'default
         'maxlen
         'is_nullable
@@ -497,6 +503,35 @@ Public Class DevManageController
         'internal_type
         'is_identity
 
+        Return result
+    End Function
+
+    'convert/normalize external table/field name to fw standard name
+    '"SomeCrazy/Name" => "some_crazy_name"
+    Private Function name2fw(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl,dbo prefixes if any
+        result = Regex.Replace(result, "([A-Z]+)", "_$1") 'split CamelCase to underscore, but keep abbrs together ZIP/Code -> zip_code
+
+        result = Regex.Replace(result, "\W+", "_") 'replace all non-alphanum to underscore
+        result = Regex.Replace(result, "_+", "_") 'deduplicate underscore
+        result = Regex.Replace(result, "^_+|_+$", "") 'remove first and last _ if any
+        result = result.ToLower() 'and finally to lowercase
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert some system name to human-friendly name'
+    '"system_name_id" => "System Name ID"
+    Private Function name2human(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
+        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
+        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
+        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
+        result = Utils.capitalize(result) 'Title Case
+        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
+        result = result.Trim()
         Return result
     End Function
 

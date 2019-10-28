@@ -23,8 +23,8 @@ Public Class DB
     Private dbconn_cache As New Hashtable 'that's ok because we using connections just for the time or request (i.e. it's not Shared/Static cache)
 
     Public current_db As String = ""
-    Private conf As New Hashtable
     Public dbtype As String = "SQL"
+    Private conf As New Hashtable
     Private schema As New Hashtable 'schema for currently connected db
 
     Public Sub New(fw As FW)
@@ -482,6 +482,13 @@ Public Class DB
         Dim conn As DbConnection = Me.connect()
         Dim dataTable As DataTable = conn.GetSchema("Tables")
         For Each row As DataRow In dataTable.Rows
+            'fw.logger("************ TABLE" & row("TABLE_NAME"))
+            'For Each cl As DataColumn In dataTable.Columns
+            '    fw.logger(cl.ToString & " = " & row(cl))
+            'Next
+
+            'skip any system tables or views (VIEW, ACCESS TABLE, SYSTEM TABLE)
+            If row("TABLE_TYPE") <> "TABLE" AndAlso row("TABLE_TYPE") <> "BASE TABLE" AndAlso row("TABLE_TYPE") <> "PASS-THROUGH" Then Continue For
             Dim tblname As String = row("TABLE_NAME").ToString()
             result.Add(tblname)
         Next
@@ -525,8 +532,7 @@ Public Class DB
         Else
             'OLE DB (Access)
             Dim schemaTable As DataTable =
-                dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns,
-                New Object() {Nothing, Nothing, table, Nothing})
+                dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, New Object() {Nothing, Nothing, table, Nothing})
 
             Dim fieldslist = New List(Of Hashtable)
             For Each row As DataRow In schemaTable.Rows
@@ -560,6 +566,32 @@ Public Class DB
         schemafull_cache(current_db)(table) = result
 
         Return result
+    End Function
+
+    'return database foreign keys, optionally filtered by table (that contains foreign keys)
+    Public Function get_foreign_keys(Optional table As String = "") As ArrayList
+        Dim result As New ArrayList
+        If dbtype = "SQL" Then
+            'TODO implement for SQL Server
+        Else
+            Dim dt = dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Foreign_Keys, New Object() {Nothing})
+            For Each row As DataRow In dt.Rows
+                If table > "" AndAlso row("FK_TABLE_NAME") <> table Then Continue For
+
+                result.Add(New Hashtable From {
+                            {"table", row("FK_TABLE_NAME")},
+                            {"column", row("FK_COLUMN_NAME")},
+                            {"name", row("FK_NAME")},
+                            {"pk_table", row("PK_TABLE_NAME")},
+                            {"pk_column", row("PK_COLUMN_NAME")},
+                            {"on_update", row("UPDATE_RULE")},
+                            {"on_delete", row("DELETE_RULE")}
+                       })
+                'on_update or on_delete can contain: NO ACTION, CASCASE
+            Next
+        End If
+
+        Return Result
     End Function
 
     'load table schema from db
