@@ -6,11 +6,14 @@
 Imports System.IO
 
 Public MustInherit Class FwModel
+    Const STATUS_ACTIVE = 0
+    Const STATUS_DELETED = 127
+
     Protected fw As FW
     Protected db As DB
     Public table_name As String = "" 'must be assigned in child class
-    Public csv_export_fields As String = "*"
-    Public csv_export_headers As String = ""
+    Public csv_export_fields As String = "" 'all or Utils.qw format
+    Public csv_export_headers As String = "" 'comma-separated format
 
     Public field_id As String = "id" 'default primary key name
     Public field_iname As String = "iname"
@@ -52,24 +55,28 @@ Public MustInherit Class FwModel
     'return standard list of id,iname where status=0 order by iname
     Public Overridable Function list() As ArrayList
         Dim where As New Hashtable
-        If field_status > "" Then where("status") = 0
+        If field_status > "" Then where(field_status) = STATUS_ACTIVE
         Return db.array(table_name, where, field_iname)
     End Function
 
     'override if id/iname differs in table
     'params - to use - override in your model
     Public Overridable Function listSelectOptions(Optional params As Object = Nothing) As ArrayList
-        Dim where = ""
-        If field_status > "" Then where = " where status=0 "
-        Dim sql As String = "select " & field_id & " as id, " & field_iname & " as iname from " & table_name & where & " order by " & field_iname
-        Return db.array(sql)
+        Dim where As New Hashtable
+        If field_status > "" Then where(field_status) = STATUS_ACTIVE
+
+        Dim select_fields As New Hashtable From {
+                {field_id, "id"},
+                {field_iname, "iname"}
+            }
+        Return db.array(table_name, where, db.q_ident(field_iname), select_fields)
     End Function
 
     'return count of all non-deleted
     Public Function getCount() As Integer
-        Dim where = ""
-        If field_status > "" Then where = " where status<>127 "
-        Return db.value("select count(*) from " & table_name & where)
+        Dim where As New Hashtable
+        If field_status > "" Then where(field_status) = db.opNOT(STATUS_DELETED)
+        Return db.value(table_name, where, "count(*)")
     End Function
 
     'just return first row by iname field (you may want to make it unique)
@@ -81,7 +88,10 @@ Public MustInherit Class FwModel
 
     'check if item exists for a given field
     Public Overridable Function isExistsByField(uniq_key As Object, not_id As Integer, field As String) As Boolean
-        Dim val As String = db.value("select 1 from " & table_name & " where " & field & " = " & db.q(uniq_key) & " and " & db.q_ident(field_id) & " <>" & db.qi(not_id))
+        Dim where As New Hashtable
+        where(field) = uniq_key
+        where(field_id) = db.opNOT(not_id)
+        Dim val As String = db.value(table_name, where, "1")
         If val = "1" Then
             Return True
         Else
@@ -105,7 +115,7 @@ Public MustInherit Class FwModel
 
     'update exising record
     Public Overridable Function update(id As Integer, item As Hashtable) As Boolean
-        If field_upd_time > "" Then item("upd_time") = Now()
+        If field_upd_time > "" Then item(field_upd_time) = Now()
         If field_upd_users_id > "" AndAlso Not item.ContainsKey(field_upd_users_id) AndAlso fw.SESSION("is_logged") Then item(field_upd_users_id) = fw.SESSION("user_id")
 
         Dim where As New Hashtable
@@ -129,7 +139,7 @@ Public MustInherit Class FwModel
             fw.cache.requestRemove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
         Else
             Dim vars As New Hashtable
-            vars(field_status) = 127
+            vars(field_status) = STATUS_DELETED
             If field_upd_time > "" Then vars(field_upd_time) = Now()
             If field_add_users_id > "" AndAlso fw.SESSION("is_logged") Then vars(field_add_users_id) = fw.SESSION("user_id")
 
@@ -189,11 +199,10 @@ Public MustInherit Class FwModel
     End Function
 
     Public Overridable Function getAutocompleteList(q As String) As ArrayList
-        Dim where = field_iname & " like " & db.q("%" & q & "%")
-        If field_status > "" Then where &= " and status<>127 "
-
-        Dim sql As String = "select " & field_iname & " as iname from " & table_name & " where " & where
-        Return db.col(sql)
+        Dim where As New Hashtable
+        where(field_iname) = db.opLIKE("%" & q & "%")
+        If field_status > "" Then where(field_status) = db.opNOT(STATUS_DELETED)
+        Return db.col(table_name, where, field_iname)
     End Function
 
     'sel_ids - selected ids in the list()
@@ -245,9 +254,10 @@ Public MustInherit Class FwModel
     Public Overridable Sub updateLinked(link_table_name As String, id As Integer, id_name As String, link_id_name As String, linked_keys As Hashtable)
         Dim fields As New Hashtable
         Dim where As New Hashtable
+        Dim link_table_field_status = "status"
 
         'set all fields as under update
-        fields("status") = 1
+        fields(link_table_field_status) = 1
         where(id_name) = id
         db.update(link_table_name, fields, where)
 
@@ -256,7 +266,7 @@ Public MustInherit Class FwModel
                 fields = New Hashtable
                 fields(id_name) = id
                 fields(link_id_name) = link_id
-                fields("status") = 0
+                fields(link_table_field_status) = 0
 
                 where = New Hashtable
                 where(id_name) = id
@@ -268,7 +278,7 @@ Public MustInherit Class FwModel
         'remove those who still not updated (so removed)
         where = New Hashtable
         where(id_name) = id
-        where("status") = 1
+        where(link_table_field_status) = 1
         db.del(link_table_name, where)
     End Sub
 
@@ -291,11 +301,23 @@ Public MustInherit Class FwModel
     End Function
 
     Public Overridable Function getCSVExport() As StringBuilder
-        Dim where = ""
-        If field_status > "" Then where = " where status=0 "
+        'Dim where = ""
+        'If field_status > "" Then where = " where status=0 "
 
-        Dim rows As ArrayList = db.array("select " & csv_export_fields & " from " & table_name & where)
+        'Dim rows As ArrayList = db.array("select " & csv_export_fields & " from " & table_name & where)
+        'Return Utils.getCSVExport(csv_export_headers, csv_export_fields, rows)
+
+        Dim where As New Hashtable
+        If field_status > "" Then where(field_status) = STATUS_ACTIVE
+
+        Dim aselect_fields As String()
+        If csv_export_fields > "" Then
+            aselect_fields = Utils.qw(csv_export_fields)
+        End If
+
+        Dim rows = db.array(table_name, where, "", aselect_fields)
         Return Utils.getCSVExport(csv_export_headers, csv_export_fields, rows)
+
     End Function
 End Class
 

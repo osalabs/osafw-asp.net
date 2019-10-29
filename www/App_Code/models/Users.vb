@@ -15,7 +15,7 @@ Public Class Users
     Public Sub New()
         MyBase.New()
         table_name = "users"
-        csv_export_fields = "id,fname,lname,email,add_time"
+        csv_export_fields = "id fname lname email add_time"
         csv_export_headers = "id,First Name,Last Name,Email,Registered"
     End Sub
 
@@ -44,12 +44,7 @@ Public Class Users
 
     'check if user exists for a given email
     Public Overrides Function isExists(uniq_key As Object, not_id As Integer) As Boolean
-        Dim val As String = db.value("select 1 from users where email=" & db.q(uniq_key) & " and id <>" & db.qi(not_id))
-        If val = "1" Then
-            Return True
-        Else
-            Return False
-        End If
+        Return isExistsByField(uniq_key, not_id, "email")
     End Function
 
     Public Overrides Function add(item As Hashtable) As Integer

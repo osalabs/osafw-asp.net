@@ -226,21 +226,61 @@ Public Class DB
         Return a
     End Function
 
-    Public Overloads Function array(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "") As ArrayList
-        Return array(hash2sql_select(table, where, order_by))
+    ''' <summary>
+    ''' return all rows with all fields from the table based on coditions/order
+    ''' array("table", where, "id asc", Utils.qh("field1|id field2|iname"))
+    ''' </summary>
+    ''' <param name="table">table name</param>
+    ''' <param name="where">where conditions</param>
+    ''' <param name="order_by">optional order by, MUST BE QUOTED</param>
+    ''' <param name="aselect_fields">optional select fields array or hashtable(for aliases), if not set * returned</param>
+    ''' <returns></returns>
+    Public Overloads Function array(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "", Optional aselect_fields As ICollection = Nothing) As ArrayList
+        Dim select_fields = "*"
+        If aselect_fields IsNot Nothing Then
+            Dim quoted As New ArrayList
+            If TypeOf aselect_fields Is IDictionary Then
+                For Each field In DirectCast(aselect_fields, IDictionary).Keys
+                    quoted.Add(Me.q_ident(field) & " as " & Me.q_ident(DirectCast(aselect_fields, IDictionary).Item(field))) 'field as alias
+                Next
+            Else 'IList
+                For Each field As String In aselect_fields
+                    quoted.Add(Me.q_ident(field))
+                Next
+            End If
+            select_fields = IIf(quoted.Count > 0, Join(quoted.ToArray(), ", "), "*")
+        End If
+
+        Return array(hash2sql_select(table, where, order_by, select_fields))
     End Function
 
     'return just first column values as arraylist
     Public Overloads Function col(ByVal sql As String) As ArrayList
         Dim dbread As DbDataReader = query(sql)
         Dim a As New ArrayList
-        Dim last_col_num As Integer = dbread.FieldCount
         While dbread.Read()
             a.Add(dbread(0).ToString())
         End While
 
         dbread.Close()
         Return a
+    End Function
+
+    ''' <summary>
+    ''' return just one column values as arraylist
+    ''' </summary>
+    ''' <param name="table">table name</param>
+    ''' <param name="where">where conditions</param>
+    ''' <param name="field_name">optional field name, if empty - first field returned</param>
+    ''' <param name="order_by">optional order by (MUST be quoted)</param>
+    ''' <returns></returns>
+    Public Overloads Function col(table As String, where As Hashtable, Optional field_name As String = "", Optional ByRef order_by As String = "") As ArrayList
+        If field_name = "" Then
+            field_name = "*"
+        Else
+            field_name = q_ident(field_name)
+        End If
+        Return col(hash2sql_select(table, where, order_by, field_name))
     End Function
 
     'return just first value from column
@@ -250,10 +290,34 @@ Public Class DB
 
         While dbread.Read()
             result = dbread(0)
+            Exit While 'just return first row
         End While
 
         dbread.Close()
         Return result
+    End Function
+
+    ''' <summary>
+    ''' Return just one field value:
+    ''' value("table", where)
+    ''' value("table", where, "field1")
+    ''' value("table", where, "1") 'just return 1, useful for exists queries
+    ''' value("table", where, "count(*)", "id asc")
+    ''' </summary>
+    ''' <param name="table"></param>
+    ''' <param name="where"></param>
+    ''' <param name="field_name">field name, special cases: "1", "count(*)"</param>
+    ''' <param name="order_by"></param>
+    ''' <returns></returns>
+    Public Overloads Function value(table As String, where As Hashtable, Optional field_name As String = "", Optional ByRef order_by As String = "") As Object
+        If field_name = "" Then
+            field_name = "*"
+        ElseIf field_name = "count(*)" OrElse field_name = "1" Then
+            'no changes
+        Else
+            field_name = q_ident(field_name)
+        End If
+        Return value(hash2sql_select(table, where, order_by, field_name))
     End Function
 
     'string will be Left(Trim(str),length)
@@ -602,6 +666,8 @@ Public Class DB
                         delim = "="
                     End If
                 End If
+            Else
+                v = vv
             End If
             ar(i) = k & delim & v
             i += 1
@@ -610,13 +676,21 @@ Public Class DB
         Return res
     End Function
 
-    Private Function hash2sql_select(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "") As String
+    ''' <summary>
+    ''' build SELECT sql string
+    ''' </summary>
+    ''' <param name="table">table name</param>
+    ''' <param name="where">where conditions</param>
+    ''' <param name="order_by">optional order by string</param>
+    ''' <param name="select_fields">MUST already be quoted!</param>
+    ''' <returns></returns>
+    Private Function hash2sql_select(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "", Optional select_fields As String = "*") As String
         where = quote(table, where)
         'FW.logger(where)
         Dim where_string As String = _join_hash(where, "", " and ")
         If where_string.Length > 0 Then where_string = " where " & where_string
 
-        Dim sql As String = "select * from " & q_ident(table) & " " & where_string
+        Dim sql As String = "select " & select_fields & " from " & q_ident(table) & " " & where_string
         If order_by.Length > 0 Then sql = sql & " order by " & order_by
         Return sql
     End Function

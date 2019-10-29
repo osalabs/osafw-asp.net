@@ -236,7 +236,13 @@ Public Class Utils
         Return result.ToString()
     End Function
 
-    'standard function for exporting to csv
+    ''' <summary>
+    ''' standard function for exporting to csv
+    ''' </summary>
+    ''' <param name="csv_export_headers">CSV headers row, comma-separated format</param>
+    ''' <param name="csv_export_fields">empty, * or Utils.qw format</param>
+    ''' <param name="rows">DB array</param>
+    ''' <returns></returns>
     Public Shared Function getCSVExport(csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As StringBuilder
         Dim headers_str As String = csv_export_headers
         Dim csv As New StringBuilder
@@ -248,7 +254,7 @@ Public Class Utils
                 headers_str = Join(fields, ",")
             End If
         Else
-            fields = Split(csv_export_fields, ",")
+            fields = Utils.qw(csv_export_fields)
         End If
 
         csv.Append(headers_str & vbLf)
