@@ -71,6 +71,292 @@ Public Class DevManageController
         Dim item = reqh("item")
         Dim table_name = Trim(item("table_name"))
         Dim model_name = Trim(item("model_name"))
+
+        createModel(table_name, model_name)
+
+        fw.FLASH("success", model_name & ".vb model created")
+        fw.redirect(base_url)
+    End Function
+
+    Public Function CreateControllerAction() As Hashtable
+        Dim item = reqh("item")
+        Dim model_name = Trim(item("model_name"))
+        Dim controller_url = Trim(item("controller_url"))
+        Dim controller_title = Trim(item("controller_title"))
+
+        createController(model_name, controller_url, controller_title)
+        Dim controller_name = Replace(controller_url, "/", "")
+
+        fw.FLASH("controller_created", controller_name)
+        fw.FLASH("controller_url", controller_url)
+        fw.redirect(base_url)
+
+    End Function
+
+    Public Function ExtractControllerAction() As Hashtable
+        Dim item = reqh("item")
+        Dim controller_name = Trim(item("controller_name"))
+
+        If Not _controllers.Contains(controller_name) Then Throw New ApplicationException("No controller found")
+
+        Dim cInstance As FwDynamicController = Activator.CreateInstance(Type.GetType(controller_name, True))
+        cInstance.init(fw)
+
+        Dim tpl_to = LCase(cInstance.base_url)
+        Dim tpl_path = fw.config("template") & tpl_to
+        Dim config_file = tpl_path & "/config.json"
+        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
+        If config Is Nothing Then config = New Hashtable
+
+        'extract ShowAction
+        config("is_dynamic_show") = False
+        Dim fitem As New Hashtable
+        Dim fields = cInstance.prepareShowFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+
+        Dim ps As New Hashtable
+        ps("fields") = fields
+        Dim parser As ParsePage = New ParsePage(fw)
+        Dim content As String = parser.parse_page(tpl_to & "/show", "/common/form/show/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        FW.set_file_content(tpl_path & "/show/form.html", content)
+
+        'extract ShowAction
+        config("is_dynamic_showform") = False
+        fields = cInstance.prepareShowFormFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+        ps = New Hashtable
+        ps("fields") = fields
+        parser = New ParsePage(fw)
+        content = parser.parse_page(tpl_to & "/show", "/common/form/showform/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
+        FW.set_file_content(tpl_path & "/showform/form.html", content)
+
+        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
+
+        'now we could remove dynamic field definitions - uncomment if necessary
+        'config.Remove("show_fields")
+        'config.Remove("showform_fields")
+
+        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(config_file, config_str)
+
+        fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
+        fw.redirect(base_url)
+    End Function
+
+    'analyse database tables and create db.json describing entities, fields and relationships
+    Public Function AnalyseDBAction() As Hashtable
+        Dim ps As New Hashtable
+        Dim item = reqh("item")
+        Dim connstr As String = item("connstr") & ""
+
+        Dim dbtype = "SQL"
+        If connstr.Contains("OLE") Then dbtype = "OLE"
+
+        'Try
+        Dim db = New DB(fw)
+        Dim conn = db.create_connection(connstr, dbtype)
+
+        Dim entities = dbschema2entities(db)
+
+        'save db.json
+        saveJson(entities, fw.config("template") & "/db.json")
+
+        conn.Close()
+        'Catch ex As Exception
+        '    fw.FLASH("error", ex.Message)
+        '    fw.redirect(base_url)
+        'End Try
+
+        Return ps
+    End Function
+
+    Private Sub saveJson(data As Object, filename As String)
+        Dim json_str = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(filename, json_str)
+    End Sub
+
+    Private Function dbschema2entities(db As DB) As ArrayList
+        Dim result As New ArrayList
+        'Access System tables:
+        'MSysAccessStorage
+        'MSysAccessXML
+        'MSysACEs
+        'MSysComplexColumns
+        'MSysNameMap
+        'MSysNavPaneGroupCategories
+        'MSysNavPaneGroups
+        'MSysNavPaneGroupToObjects
+        'MSysNavPaneObjectIDs
+        'MSysObjects
+        'MSysQueries
+        'MSysRelationships
+        'MSysResources
+        Dim tables = db.tables()
+        For Each tblname In tables
+            If InStr(tblname, "MSys", CompareMethod.Binary) = 1 Then Continue For
+
+            'get table schema
+            Dim tblschema = db.load_table_schema_full(tblname)
+            'logger(tblschema)
+
+            Dim table_entity As New Hashtable
+            table_entity("table") = tblname
+            table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
+            table_entity("iname") = name2human(tblname) 'human table name
+            table_entity("fields") = tableschema2fields(tblschema)
+            table_entity("foreign_keys") = db.get_foreign_keys(tblname)
+            result.Add(table_entity)
+        Next
+
+        Return result
+    End Function
+
+    Private Function tableschema2fields(schema As ArrayList) As ArrayList
+        Dim result As New ArrayList(schema)
+
+        For Each fldschema As Hashtable In schema
+            'prepare system/human field names: State/Province -> state_province
+            If fldschema("is_identity") = 1 Then
+                fldschema("fw_name") = "id" 'identity fields always id
+                fldschema("iname") = "ID"
+            Else
+                fldschema("fw_name") = name2fw(fldschema("name"))
+                fldschema("iname") = name2human(fldschema("name"))
+            End If
+        Next
+        'result("xxxx") = "yyyy"
+        'attrs used to build UI
+        'name => fw_field or iname
+        'default
+        'maxlen
+        'is_nullable
+        'type
+        'internal_type
+        'is_identity
+
+        Return result
+    End Function
+
+    'convert/normalize external table/field name to fw standard name
+    '"SomeCrazy/Name" => "some_crazy_name"
+    Private Function name2fw(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl,dbo prefixes if any
+        result = Regex.Replace(result, "([A-Z]+)", "_$1") 'split CamelCase to underscore, but keep abbrs together ZIP/Code -> zip_code
+
+        result = Regex.Replace(result, "\W+", "_") 'replace all non-alphanum to underscore
+        result = Regex.Replace(result, "_+", "_") 'deduplicate underscore
+        result = Regex.Replace(result, "^_+|_+$", "") 'remove first and last _ if any
+        result = result.ToLower() 'and finally to lowercase
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert some system name to human-friendly name'
+    '"system_name_id" => "System Name ID"
+    Private Function name2human(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
+        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
+        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
+        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
+        result = Utils.capitalize(result) 'Title Case
+        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert c/snake style name to CamelCase
+    'system_name => SystemName
+    Private Function nameCamelCase(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
+        result = Utils.capitalize(result)
+        result = Regex.Replace(result, " +", "") 'remove spaces
+        Return str
+    End Function
+
+
+    Private Function _models() As IOrderedEnumerable(Of String)
+        Dim baseType = GetType(FwModel)
+        Dim assembly = baseType.Assembly
+        Return From t In assembly.GetTypes()
+               Where t.IsSubclassOf(baseType)
+               Select t.Name
+               Order By Name
+    End Function
+
+    Private Function _controllers() As IOrderedEnumerable(Of String)
+        Dim baseType = GetType(FwController)
+        Dim assembly = baseType.Assembly
+        Return From t In assembly.GetTypes()
+               Where t.IsSubclassOf(baseType)
+               Select t.Name
+               Order By Name
+    End Function
+
+    'replaces strings in all files under defined dir
+    'RECURSIVE!
+    Private Sub replaceInFiles(dir As String, strings As Hashtable)
+        For Each filename As String In Directory.GetFiles(dir)
+            replaceInFile(filename, strings)
+        Next
+
+        'dive into dirs
+        For Each foldername As String In Directory.GetDirectories(dir)
+            replaceInFiles(foldername, strings)
+        Next
+    End Sub
+
+    Private Sub replaceInFile(filepath As String, strings As Hashtable)
+        Dim content = FW.get_file_content(filepath)
+        If content.Length = 0 Then Return
+
+        For Each str As String In strings.Keys
+            content = content.Replace(str, strings(str))
+        Next
+
+        FW.set_file_content(filepath, content)
+    End Sub
+
+    'demo_dicts => DemoDicts
+    'TODO actually go thru models and find model with table_name
+    Private Function _tablename2model(table_name As String) As String
+        Dim result As String = ""
+        Dim pieces As String() = Split(table_name, "_")
+        For Each piece As String In pieces
+            result &= Utils.capitalize(piece)
+        Next
+        Return result
+    End Function
+
+    Private Sub _makeValueTags(fields As ArrayList)
+        For Each def As Hashtable In fields
+            Dim tag = "<~i[" & def("field") & "]"
+            Select Case def("type")
+                Case "date"
+                    def("value") = tag & " date>"
+                Case "date_long"
+                    def("value") = tag & " date=""long"">"
+                Case "float"
+                    def("value") = tag & " number_format=""2"">"
+                Case "markdown"
+                    def("value") = tag & " markdown>"
+                Case "noescape"
+                    def("value") = tag & " noescape>"
+                Case Else
+                    def("value") = tag & ">"
+            End Select
+        Next
+    End Sub
+
+    Private Sub createModel(table_name As String, Optional model_name As String = "")
+        If model_name = "" Then
+            model_name = nameCamelCase(table_name)
+        End If
         If table_name = "" OrElse model_name = "" OrElse _models.Contains(model_name) Then Throw New ApplicationException("No table name or no model name or model exists")
 
         'copy DemoDicts.vb to model_name.vb
@@ -83,20 +369,15 @@ Public Class DevManageController
         mdemo = mdemo.Replace("demo_dicts", table_name)
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
+    End Sub
 
-        fw.FLASH("success", model_name & ".vb model created")
-        fw.redirect(base_url)
-    End Function
-
-    Public Function CreateControllerAction() As Hashtable
-        Dim item = reqh("item")
-        Dim model_name = Trim(item("model_name"))
-        Dim controller_url = Trim(item("controller_url"))
+    Private Sub createController(model_name As String, ByRef Optional controller_url As String = "", ByRef Optional controller_title As String = "")
+        If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
-        Dim controller_title = Trim(item("controller_title"))
+        If controller_title = "" Then controller_title = name2human(model_name)
 
-        If model_name = "" OrElse controller_url = "" OrElse controller_title = "" Then Throw New ApplicationException("No model or no controller name or no title")
-        If _controllers.Contains(controller_name) Then Throw New ApplicationException("Such controller already exists")
+        If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
+        If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\controllers"
@@ -125,6 +406,10 @@ Public Class DevManageController
         replaceInFiles(tpl_to, replacements)
 
         'update config.json:
+        updateControllerConfigJson(model_name, tpl_to)
+    End Sub
+
+    Public Sub updateControllerConfigJson(model_name As String, tpl_to As String)
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
         ' list_view - model.table_name
@@ -139,6 +424,14 @@ Public Class DevManageController
         Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
         If config Is Nothing Then config = New Hashtable
 
+        updateControllerConfig(model_name, config)
+
+        'Utils.jsonEncode(config) - can't use as it produces unformatted json string
+        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(config_file, config_str)
+    End Sub
+
+    Public Sub updateControllerConfig(model_name As String, config As Hashtable)
         Dim model = fw.model(model_name)
         db.connect()
         Dim fields = db.load_table_schema_full(model.table_name)
@@ -349,263 +642,6 @@ Public Class DevManageController
             If Left(key, 1) = "#" Then config.Remove(key)
         Next
 
-        'Utils.jsonEncode(config) - can't use as it produces unformatted json string
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
-
-        fw.FLASH("controller_created", controller_name)
-        fw.FLASH("controller_url", controller_url)
-        fw.redirect(base_url)
-
-    End Function
-
-    Public Function ExtractControllerAction() As Hashtable
-        Dim item = reqh("item")
-        Dim controller_name = Trim(item("controller_name"))
-
-        If Not _controllers.Contains(controller_name) Then Throw New ApplicationException("No controller found")
-
-        Dim cInstance As FwDynamicController = Activator.CreateInstance(Type.GetType(controller_name, True))
-        cInstance.init(fw)
-
-        Dim tpl_to = LCase(cInstance.base_url)
-        Dim tpl_path = fw.config("template") & tpl_to
-        Dim config_file = tpl_path & "/config.json"
-        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
-        If config Is Nothing Then config = New Hashtable
-
-        'extract ShowAction
-        config("is_dynamic_show") = False
-        Dim fitem As New Hashtable
-        Dim fields = cInstance.prepareShowFields(fitem, New Hashtable)
-        _makeValueTags(fields)
-
-        Dim ps As New Hashtable
-        ps("fields") = fields
-        Dim parser As ParsePage = New ParsePage(fw)
-        Dim content As String = parser.parse_page(tpl_to & "/show", "/common/form/show/extract/form.html", ps)
-        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
-        FW.set_file_content(tpl_path & "/show/form.html", content)
-
-        'extract ShowAction
-        config("is_dynamic_showform") = False
-        fields = cInstance.prepareShowFormFields(fitem, New Hashtable)
-        _makeValueTags(fields)
-        ps = New Hashtable
-        ps("fields") = fields
-        parser = New ParsePage(fw)
-        content = parser.parse_page(tpl_to & "/show", "/common/form/showform/extract/form.html", ps)
-        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
-        content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
-        FW.set_file_content(tpl_path & "/showform/form.html", content)
-
-        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
-
-        'now we could remove dynamic field definitions - uncomment if necessary
-        'config.Remove("show_fields")
-        'config.Remove("showform_fields")
-
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
-
-        fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
-        fw.redirect(base_url)
-    End Function
-
-    'analyse database tables and create db.json describing entities, fields and relationships
-    Public Function AnalyseDBAction() As Hashtable
-        Dim ps As New Hashtable
-        Dim item = reqh("item")
-        Dim connstr As String = item("connstr") & ""
-
-        Dim dbtype = "SQL"
-        If connstr.Contains("OLE") Then dbtype = "OLE"
-
-        'Try
-        Dim db = New DB(fw)
-        Dim conn = db.create_connection(connstr, dbtype)
-
-        Dim entities = dbschema2entities(db)
-
-        'save db.json
-        saveJson(entities, fw.config("template") & "/db.json")
-
-        conn.Close()
-        'Catch ex As Exception
-        '    fw.FLASH("error", ex.Message)
-        '    fw.redirect(base_url)
-        'End Try
-
-        Return ps
-    End Function
-
-    Private Sub saveJson(data As Object, filename As String)
-        Dim json_str = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(filename, json_str)
-    End Sub
-
-    Private Function dbschema2entities(db As DB) As ArrayList
-        Dim result As New ArrayList
-        'Access System tables:
-        'MSysAccessStorage
-        'MSysAccessXML
-        'MSysACEs
-        'MSysComplexColumns
-        'MSysNameMap
-        'MSysNavPaneGroupCategories
-        'MSysNavPaneGroups
-        'MSysNavPaneGroupToObjects
-        'MSysNavPaneObjectIDs
-        'MSysObjects
-        'MSysQueries
-        'MSysRelationships
-        'MSysResources
-        Dim tables = db.tables()
-        For Each tblname In tables
-            If InStr(tblname, "MSys", CompareMethod.Binary) = 1 Then Continue For
-
-            'get table schema
-            Dim tblschema = db.load_table_schema_full(tblname)
-            'logger(tblschema)
-
-            Dim table_entity As New Hashtable
-            table_entity("table") = tblname
-            table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
-            table_entity("iname") = name2human(tblname) 'human table name
-            table_entity("fields") = tableschema2fields(tblschema)
-            table_entity("foreign_keys") = db.get_foreign_keys(tblname)
-            result.Add(table_entity)
-        Next
-
-        Return result
-    End Function
-
-    Private Function tableschema2fields(schema As ArrayList) As ArrayList
-        Dim result As New ArrayList(schema)
-
-        For Each fldschema As Hashtable In schema
-            'prepare system/human field names: State/Province -> state_province
-            If fldschema("is_identity") = 1 Then
-                fldschema("fw_name") = "id" 'identity fields always id
-                fldschema("iname") = "ID"
-            Else
-                fldschema("fw_name") = name2fw(fldschema("name"))
-                fldschema("iname") = name2human(fldschema("name"))
-            End If
-        Next
-        'result("xxxx") = "yyyy"
-        'attrs used to build UI
-        'name => fw_field or iname
-        'default
-        'maxlen
-        'is_nullable
-        'type
-        'internal_type
-        'is_identity
-
-        Return result
-    End Function
-
-    'convert/normalize external table/field name to fw standard name
-    '"SomeCrazy/Name" => "some_crazy_name"
-    Private Function name2fw(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl,dbo prefixes if any
-        result = Regex.Replace(result, "([A-Z]+)", "_$1") 'split CamelCase to underscore, but keep abbrs together ZIP/Code -> zip_code
-
-        result = Regex.Replace(result, "\W+", "_") 'replace all non-alphanum to underscore
-        result = Regex.Replace(result, "_+", "_") 'deduplicate underscore
-        result = Regex.Replace(result, "^_+|_+$", "") 'remove first and last _ if any
-        result = result.ToLower() 'and finally to lowercase
-        result = result.Trim()
-        Return result
-    End Function
-
-    'convert some system name to human-friendly name'
-    '"system_name_id" => "System Name ID"
-    Private Function name2human(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
-        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
-        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
-        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
-        result = Utils.capitalize(result) 'Title Case
-        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
-        result = result.Trim()
-        Return result
-    End Function
-
-
-    Private Function _models() As IOrderedEnumerable(Of String)
-        Dim baseType = GetType(FwModel)
-        Dim assembly = baseType.Assembly
-        Return From t In assembly.GetTypes()
-               Where t.IsSubclassOf(baseType)
-               Select t.Name
-               Order By Name
-    End Function
-
-    Private Function _controllers() As IOrderedEnumerable(Of String)
-        Dim baseType = GetType(FwController)
-        Dim assembly = baseType.Assembly
-        Return From t In assembly.GetTypes()
-               Where t.IsSubclassOf(baseType)
-               Select t.Name
-               Order By Name
-    End Function
-
-    'replaces strings in all files under defined dir
-    'RECURSIVE!
-    Private Sub replaceInFiles(dir As String, strings As Hashtable)
-        For Each filename As String In Directory.GetFiles(dir)
-            replaceInFile(filename, strings)
-        Next
-
-        'dive into dirs
-        For Each foldername As String In Directory.GetDirectories(dir)
-            replaceInFiles(foldername, strings)
-        Next
-    End Sub
-
-    Private Sub replaceInFile(filepath As String, strings As Hashtable)
-        Dim content = FW.get_file_content(filepath)
-        If content.Length = 0 Then Return
-
-        For Each str As String In strings.Keys
-            content = content.Replace(str, strings(str))
-        Next
-
-        FW.set_file_content(filepath, content)
-    End Sub
-
-    'demo_dicts => DemoDicts
-    Private Function _tablename2model(table_name As String) As String
-        Dim result As String = ""
-        Dim pieces As String() = Split(table_name, "_")
-        For Each piece As String In pieces
-            result &= Utils.capitalize(piece)
-        Next
-        Return result
-    End Function
-
-    Private Sub _makeValueTags(fields As ArrayList)
-        For Each def As Hashtable In fields
-            Dim tag = "<~i[" & def("field") & "]"
-            Select Case def("type")
-                Case "date"
-                    def("value") = tag & " date>"
-                Case "date_long"
-                    def("value") = tag & " date=""long"">"
-                Case "float"
-                    def("value") = tag & " number_format=""2"">"
-                Case "markdown"
-                    def("value") = tag & " markdown>"
-                Case "noescape"
-                    def("value") = tag & " noescape>"
-                Case Else
-                    def("value") = tag & ">"
-            End Select
-        Next
     End Sub
 
 End Class
