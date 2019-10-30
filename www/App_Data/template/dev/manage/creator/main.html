@@ -1,0 +1,82 @@
+<~/common/form/msg>
+
+<h4><~title></h4>
+
+<h5 class="mt-4">1. Select database and create db.json</h5>
+
+<form method="post" action="<~../url>/(CreatorAnalyseDB)" class="form-inline">
+    <input type="hidden" name="XSS" value="<~session[XSS]>">
+    DB from config:
+    <select name="item[db]" class="form-control ml-2">
+        <option>- select-</option>
+        <~dbsources select="i[db]">
+    </select>
+    <button class="btn btn-primary ml-2">Analyse and create db.json</button>
+</form>
+
+<h5 class="mt-4">2. Select entities to create</h5>
+<form method="post" action="<~../url>/(CreatorBuildApp)">
+    <input type="hidden" name="XSS" value="<~session[XSS]>">
+
+  <fieldset>
+    <div class="form-row">
+      <div class="col-2">Table</div>
+      <div class="col">
+        <div class="custom-control custom-checkbox custom-control-inline">
+          <input type="checkbox" class="custom-control-input on-all-cb" data-cb=".cb-model" id="all-cb-model" checked>
+          <label class="custom-control-label" for="all-cb-model" title="select all/none">&nbsp;</label>
+        </div>
+        Model Name (plural)
+      </div>
+      <div class="col">
+        <div class="custom-control custom-checkbox custom-control-inline">
+          <input type="checkbox" class="custom-control-input on-all-cb" data-cb=".cb-controller" id="all-cb-controller" checked>
+          <label class="custom-control-label" for="all-cb-controller" title="select all/none">&nbsp;</label>
+        </div>
+        Controller URL
+      </div>
+      <div class="col">Controller Title</div>
+    </div>
+
+    <~entities repeat inline>
+      <div class="form-row mb-1">
+        <label class="col-form-label col-2"><~table></label>
+        <div class="col">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input cb-model" id="<~fw_name>#cbmodel" name="item[<~fw_name>#is_model]" <~/common/checked unless="is_model_exists">>
+                <label class="custom-control-label" for="<~fw_name>#cbmodel">&nbsp;</label>
+              </div>
+            </div>
+            <input name="item[<~fw_name>#model_name]" maxlength="255" value="" type="text" class="form-control" placeholder="<~model_name>">
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input cb-controller" id="<~fw_name>#cbcontroller" name="item[<~fw_name>#is_controller]" <~/common/checked unless="is_controller_exists">>
+                <label class="custom-control-label" for="<~fw_name>#cbcontroller">&nbsp;</label>
+              </div>
+            </div>
+            <input name="item[<~fw_name>#controller_name]" maxlength="255" value="" type="text" class="form-control" placeholder="<~controller_url>">
+          </div>
+        </div>
+        <div class="col">
+          <input name="item[<~fw_name>#controller_title]" maxlength="255" value="" type="text" class="form-control" placeholder="<~controller_title>">
+        </div>
+      </div>
+    </~entities>
+
+  </fieldset>
+
+  <div class="row">
+    <div class="col-2"></div>
+    <div class="col">
+      <button class="btn btn-primary">Create Models and Controllers</button>
+    </div>
+  </div>
+</form>
+
+<p></p>

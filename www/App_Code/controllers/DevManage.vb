@@ -9,6 +9,8 @@ Public Class DevManageController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 100
 
+    Const DB_JSON_PATH = "/dev/db.json"
+
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
         base_url = "/Dev/Manage"
@@ -105,8 +107,7 @@ Public Class DevManageController
         Dim tpl_to = LCase(cInstance.base_url)
         Dim tpl_path = fw.config("template") & tpl_to
         Dim config_file = tpl_path & "/config.json"
-        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
-        If config Is Nothing Then config = New Hashtable
+        Dim config = loadJson(Of Hashtable)(config_file)
 
         'extract ShowAction
         config("is_dynamic_show") = False
@@ -139,8 +140,7 @@ Public Class DevManageController
         'config.Remove("show_fields")
         'config.Remove("showform_fields")
 
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
+        saveJson(config, config_file)
 
         fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
         fw.redirect(base_url)
@@ -162,15 +162,119 @@ Public Class DevManageController
         Dim entities = dbschema2entities(db)
 
         'save db.json
-        saveJson(entities, fw.config("template") & "/db.json")
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
 
         conn.Close()
+        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
         'Catch ex As Exception
         '    fw.FLASH("error", ex.Message)
         '    fw.redirect(base_url)
         'End Try
 
+        fw.redirect(base_url)
+
         Return ps
+    End Function
+
+    Public Function CreatorAction() As Hashtable
+        Dim ps As New Hashtable
+        Dim dbsources As New ArrayList
+
+        For Each dbname As String In fw.config("db").Keys
+            dbsources.Add(New Hashtable From {
+                            {"id", dbname},
+                            {"iname", dbname}
+                          })
+        Next
+
+        'tables
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        Dim models = _models()
+        Dim controllers = _controllers()
+
+        For Each entity As Hashtable In entities
+            entity("is_model_exists") = _models.Contains(entity("model_name"))
+            entity("controller_name") = Replace(entity("controller_url"), "/", "")
+            entity("is_controller_exists") = _controllers.Contains(entity("controller_name") & "Controller")
+        Next
+
+        ps("dbsources") = dbsources
+        ps("entities") = entities
+        Return ps
+    End Function
+
+    Public Sub CreatorAnalyseDBAction()
+        Dim item = reqh("item")
+        Dim dbname As String = item("db") & ""
+        Dim dbconfig = fw.config("db")(dbname)
+        If dbconfig Is Nothing Then Throw New ApplicationException("Wrong DB selection")
+
+        'Try
+        createDBJson(dbname)
+        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
+        'Catch ex As Exception
+        '    fw.FLASH("error", ex.Message)
+        '    fw.redirect(base_url)
+        'End Try
+
+        fw.redirect(base_url & "/(Creator)")
+    End Sub
+
+    Public Function CreatorBuildAppAction() As Hashtable
+        Dim item = reqh("item")
+
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        'go thru entities and:
+        'update checked rows for any user input (like model name changed)
+        Dim is_updated = False
+        For Each entity As Hashtable In entities
+            Dim key = entity("fw_name") & "#"
+            If item.ContainsKey(key & "is_model") Then
+                'create model
+                If item(key & "model_name") > "" Then
+                    is_updated = True
+                    entity("model_name") = item(key & "model_name")
+                End If
+                Me.createModel(entity("table"), entity("model_name"))
+            End If
+
+            If item.ContainsKey(key & "is_controller") Then
+                'create controller (model must exists)
+                If item(key & "controller_name") > "" Then
+                    is_updated = True
+                    entity("controller_name") = item(key & "controller_name")
+                End If
+                If item(key & "controller_title") > "" Then
+                    is_updated = True
+                    entity("controller_title") = item(key & "controller_title")
+                End If
+                Me.createController(entity("model_name"), entity("controller_url"), entity("controller_title"))
+            End If
+        Next
+
+        'save db.json if there are any changes
+        If is_updated Then saveJson(entities, config_file)
+
+        fw.FLASH("success", "App build successfull")
+        fw.redirect(base_url & "/(Creator)")
+
+    End Function
+
+
+    '****************************** PRIVATE HELPERS (move to Dev model?)
+
+    'load json
+    Private Function loadJson(Of T As {New})(filename As String) As T
+        Dim result As T
+        result = Utils.jsonDecode(FW.get_file_content(filename))
+        If result Is Nothing Then result = New T()
+        Return result
     End Function
 
     Private Sub saveJson(data As Object, filename As String)
@@ -203,11 +307,17 @@ Public Class DevManageController
             'logger(tblschema)
 
             Dim table_entity As New Hashtable
+            table_entity("db_config") = db.current_db
             table_entity("table") = tblname
             table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
             table_entity("iname") = name2human(tblname) 'human table name
             table_entity("fields") = tableschema2fields(tblschema)
             table_entity("foreign_keys") = db.get_foreign_keys(tblname)
+
+            table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
+            table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
+            table_entity("controller_title") = name2human(table_entity("model_name"))
+
             result.Add(table_entity)
         Next
 
@@ -353,6 +463,18 @@ Public Class DevManageController
         Next
     End Sub
 
+    Private Sub createDBJson(dbname As String)
+        Dim db = New DB(fw)
+        Dim conn = db.connect(dbname)
+
+        Dim entities = dbschema2entities(db)
+
+        'save db.json
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
+
+        conn.Close()
+    End Sub
+
     Private Sub createModel(table_name As String, Optional model_name As String = "")
         If model_name = "" Then
             model_name = nameCamelCase(table_name)
@@ -421,14 +543,12 @@ Public Class DevManageController
         '   field NOT NULL and no default - required
         '   field has foreign key - add that table as dropdown
         Dim config_file = tpl_to & "/config.json"
-        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
-        If config Is Nothing Then config = New Hashtable
+        Dim config = loadJson(Of Hashtable)(config_file)
 
         updateControllerConfig(model_name, config)
 
         'Utils.jsonEncode(config) - can't use as it produces unformatted json string
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
+        saveJson(config, config_file)
     End Sub
 
     Public Sub updateControllerConfig(model_name As String, config As Hashtable)

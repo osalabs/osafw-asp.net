@@ -80,7 +80,12 @@ Public Class DB
         Me.fw = fw
     End Sub
 
-    Public Function connect(Optional conf_db_name As String = "current_db") As DbConnection
+    ''' <summary>
+    ''' connect to DB server using connection string defined in web.config appSettings, key db|main|connection_string (by default)
+    ''' </summary>
+    ''' <param name="conf_db_name">"main" or other db config name, only used for the initial connection</param>
+    ''' <returns></returns>
+    Public Function connect(Optional conf_db_name As String = "main") As DbConnection
         Dim conn As DbConnection = Nothing
 
         If current_db IsNot Nothing Then
@@ -88,7 +93,7 @@ Public Class DB
         End If
         If conn Is Nothing OrElse conn.State <> ConnectionState.Open Then
             'connect/reconnect
-            current_db = fw.config(conf_db_name)
+            current_db = conf_db_name
             conf = fw.config("db")(current_db)
             dbtype = conf("type")
             'schema = conf("schema")
