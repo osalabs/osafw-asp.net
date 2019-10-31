@@ -782,7 +782,18 @@ Public Class DevManageController
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
-        config("list_sortdef") = If(hfields.ContainsKey("iname"), "iname asc", "id desc") 'either sort by iname or id
+
+        'either deault sort by iname or id
+        config("list_sortdef") = "id desc"
+        If hfields.ContainsKey("iname") Then
+            config("list_sortdef") = "iname asc"
+        ElseIf hfields.ContainsKey("ID") Then
+            config("list_sortdef") = "ID desc"
+        Else
+            'just get first field
+            config("list_sortdef") = fields(0)("name")
+        End If
+
         config.Remove("list_sortmap") 'N/A in dynamic controller
         config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
