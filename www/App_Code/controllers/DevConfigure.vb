@@ -36,9 +36,7 @@ Public Class DevConfigureController
         ps("is_db_tables") = False
         If ps("is_db_conn") Then
             Try
-#Disable Warning BC42104 ' Variable is used before it has been assigned a value
                 Dim value = db.value("select count(*) from user_lists_items") 'just a last table in database.sql script
-#Enable Warning BC42104 ' Variable is used before it has been assigned a value
                 ps("is_db_tables") = True
             Catch ex As Exception
                 ps("db_tables_err") = ex.Message
