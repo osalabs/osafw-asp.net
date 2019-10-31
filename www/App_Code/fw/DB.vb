@@ -10,14 +10,18 @@ Imports System.Data.Common
 Imports System.IO
 
 Public Enum DBOps As Integer
-    [EQ]
-    [NOT]
-    [ISNULL]
-    [ISNOTNULL]
-    [IN]
-    [NOTIN]
-    [LIKE]
-    [NOTLIKE]
+    [EQ]            '=
+    [NOT]           '<>
+    [LE]            '<=
+    [LT]            '<
+    [GE]            '>=
+    [GT]            '>
+    [ISNULL]        'IS NULL
+    [ISNOTNULL]     'IS NOT NULL
+    [IN]            'IN
+    [NOTIN]         'NOT IN
+    [LIKE]          'LIKE
+    [NOTLIKE]       'NOT LIKE
 End Enum
 
 'describes DB operation
@@ -44,6 +48,14 @@ Public Class DBOperation
                 opstr = "="
             Case DBOps.NOT
                 opstr = "<>"
+            Case DBOps.LE
+                opstr = "<="
+            Case DBOps.LT
+                opstr = "<"
+            Case DBOps.GE
+                opstr = ">="
+            Case DBOps.GT
+                opstr = ">"
             Case DBOps.IN
                 opstr = "IN"
             Case DBOps.NOTIN
@@ -502,15 +514,62 @@ Public Class DB
     End Function
 
     'operations support for non-raw sql methods
+
     ''' <summary>
-    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opNOT(127)}})
-    ''' select * from users where field<>127
+    ''' NOT EQUAL operation 
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"status", db.opNOT(127)}})
+    ''' <![CDATA[ select * from users where status<>127 ]]>
     ''' </summary>
     ''' <param name="value"></param>
     ''' <returns></returns>
     Public Function opNOT(value As Object) As DBOperation
         Return New DBOperation(DBOps.NOT, value)
     End Function
+
+    ''' <summary>
+    ''' LESS or EQUAL than operation
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"access_level", db.opLE(50)}})
+    ''' <![CDATA[ select * from users where access_level<=50 ]]>
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opLE(value As Object) As DBOperation
+        Return New DBOperation(DBOps.LE, value)
+    End Function
+
+    ''' <summary>
+    ''' LESS THAN operation
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"access_level", db.opLT(50)}})
+    ''' <![CDATA[ select * from users where access_level<50 ]]>
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opLT(value As Object) As DBOperation
+        Return New DBOperation(DBOps.LT, value)
+    End Function
+
+    ''' <summary>
+    ''' GREATER or EQUAL than operation
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"access_level", db.opGE(50)}})
+    ''' <![CDATA[ select * from users where access_level>=50 ]]>
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opGE(value As Object) As DBOperation
+        Return New DBOperation(DBOps.GE, value)
+    End Function
+
+    ''' <summary>
+    ''' GREATER THAN operation
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"access_level", db.opGT(50)}})
+    ''' <![CDATA[ select * from users where access_level>50 ]]>
+    ''' </summary>
+    ''' <param name="value"></param>
+    ''' <returns></returns>
+    Public Function opGT(value As Object) As DBOperation
+        Return New DBOperation(DBOps.GT, value)
+    End Function
+
     ''' <summary>
     ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opISNULL()}})
     ''' select * from users where field IS NULL
