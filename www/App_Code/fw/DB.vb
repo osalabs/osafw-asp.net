@@ -355,9 +355,10 @@ Public Class DB
         Return value(hash2sql_select(table, where, order_by, field_name))
     End Function
 
-    'string will be Left(Trim(str),length)
+    'string will be Left(RTrim(str),length)
     Public Function left(str As String, length As Integer) As String
-        Return Strings.Left(Trim(str), length)
+        If str = "" Then Return ""
+        Return RTrim(str).Substring(0, length)
     End Function
 
     'create "IN (1,2,3)" sql or IN (NULL) if empty params passed
