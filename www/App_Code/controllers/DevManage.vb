@@ -778,6 +778,7 @@ Public Class DevManageController
         'end special case for link table
 
         config("model") = model_name
+        config("is_dynamic_index") = True
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
@@ -789,7 +790,10 @@ Public Class DevManageController
         config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
+
+        config("is_dynamic_show") = True
         config("show_fields") = showFields
+        config("is_dynamic_showform") = True
         config("showform_fields") = showFormFields
 
         'remove all commented items - name start with "#"
