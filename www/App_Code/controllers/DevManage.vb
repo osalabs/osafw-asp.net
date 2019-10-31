@@ -570,11 +570,20 @@ Public Class DevManageController
         Dim table_name = entity("table")
         logger("updating config for controller=", entity("controller_url"))
 
+        Dim tables As New Hashtable 'hindex by table name to entities
         Dim fields As ArrayList = entity("fields")
         If fields Is Nothing Then
             'TODO deprecate reading from db, always use entity info
             Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
             fields = db.load_table_schema_full(table_name)
+            Dim atables = db.tables()
+            For Each tbl As String In atables
+                tables(tbl) = New Hashtable
+            Next
+        Else
+            For Each tentity As Hashtable In entities
+                tables(tentity("table")) = tentity
+            Next
         End If
 
         Dim hfields As New Hashtable
@@ -627,7 +636,7 @@ Public Class DevManageController
                     sff("lookup_model") = mname
                     sff("is_option0") = True
                     sff("class_contents") = "col-md-3"
-                ElseIf fld("type") = "tinyint" OrElse fld("type") = "unsignedtinyint" Then
+                ElseIf fld("type") = "tinyint" OrElse fld("type") = "unsignedtinyint" OrElse fld("type") = "boolean" Then 'not sure about tinyint
                     'make it as yes/no radio
                     sff("type") = "yesno"
                     sff("is_inline") = True
@@ -714,10 +723,9 @@ Public Class DevManageController
 
         'special case - "Lookup via Link Table" - could be multiple tables
         Dim rx_table_link = "^" & Regex.Escape(table_name) & "_(.+?)_link$"
-        Dim tables = db.tables()
         Dim table_name_linked = ""
         Dim table_name_link = ""
-        For Each table In tables
+        For Each table In tables.Keys
             Dim m = Regex.Match(table, rx_table_link)
             If m.Success Then
                 table_name_linked = m.Groups(1).Value
