@@ -77,12 +77,12 @@
         },
         {
             "field": "idesc2",
-            "label": "Wysisyg editor",
+            "label": "Wysiwyg editor",
             "type": "noescape"
         },
         {
             "field": "idesc3",
-            "label": "Wysisyg editor short",
+            "label": "Wysiwyg editor short",
             "type": "noescape"
         },
         {
@@ -266,14 +266,14 @@
         },
         {
             "field": "idesc2",
-            "label": "Wysisyg editor",
+            "label": "Wysiwyg editor",
             "type": "textarea",
             "rows": "10",
             "class_control": "fw-html-editor"
         },
         {
             "field": "idesc3",
-            "label": "Wysisyg editor short",
+            "label": "Wysiwyg editor short",
             "type": "textarea",
             "rows": "10",
             "class_control": "fw-html-editor-short"
