@@ -11,6 +11,8 @@ Public MustInherit Class FwModel
 
     Protected fw As FW
     Protected db As DB
+    Protected db_config As String = "" 'if empty(default) - fw.db used, otherwise - new db connection created based on this config name
+
     Public table_name As String = "" 'must be assigned in child class
     Public csv_export_fields As String = "" 'all or Utils.qw format
     Public csv_export_headers As String = "" 'comma-separated format
@@ -33,7 +35,11 @@ Public MustInherit Class FwModel
 
     Public Overridable Sub init(fw As FW)
         Me.fw = fw
-        Me.db = fw.db
+        If Me.db_config > "" Then
+            Me.db = New DB(fw, fw.config("db")(Me.db_config), Me.db_config)
+        Else
+            Me.db = fw.db
+        End If
     End Sub
 
     Public Overridable Function one(id As Integer) As Hashtable

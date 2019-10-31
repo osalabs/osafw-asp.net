@@ -8,6 +8,7 @@ Public Class DemoDicts
 
     Public Sub New()
         MyBase.New()
+        db_config = ""
         table_name = "demo_dicts"
     End Sub
 

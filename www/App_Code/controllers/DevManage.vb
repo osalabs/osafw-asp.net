@@ -487,7 +487,7 @@ Public Class DevManageController
         'replace: DemoDicts => ModelName, demo_dicts => table_name
         mdemo = mdemo.Replace("DemoDicts", model_name)
         mdemo = mdemo.Replace("demo_dicts", table_name)
-        'db_config
+        mdemo = mdemo.Replace("db_config = """"", "db_config = """ & db_config & """")
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub
