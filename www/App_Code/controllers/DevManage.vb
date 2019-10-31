@@ -86,11 +86,18 @@ Public Class DevManageController
         Dim controller_url = Trim(item("controller_url"))
         Dim controller_title = Trim(item("controller_title"))
 
-        createController(model_name, controller_url, controller_title)
-        Dim controller_name = Replace(controller_url, "/", "")
+        'emulate entity
+        Dim entity = New Hashtable From {
+                    {"model_name", model_name},
+                    {"controller_url", controller_url},
+                    {"controller_title", controller_title},
+                    {"table", name2fw(model_name)}
+                }
+        createController(entity, Nothing)
+        Dim controller_name = Replace(entity("controller_url"), "/", "")
 
         fw.FLASH("controller_created", controller_name)
-        fw.FLASH("controller_url", controller_url)
+        fw.FLASH("controller_url", entity("controller_url"))
         fw.redirect(base_url)
 
     End Function
@@ -253,7 +260,7 @@ Public Class DevManageController
                     is_updated = True
                     entity("controller_title") = item(key & "controller_title")
                 End If
-                Me.createController(entity("model_name"), entity("controller_url"), entity("controller_title"), entity)
+                Me.createController(entity, entities)
             End If
         Next
 
@@ -338,12 +345,12 @@ Public Class DevManageController
         Next
         'result("xxxx") = "yyyy"
         'attrs used to build UI
-        'name => fw_field or iname
+        'name => iname
         'default
         'maxlen
         'is_nullable
         'type
-        'internal_type
+        'fw_type
         'is_identity
 
         Return result
@@ -492,7 +499,11 @@ Public Class DevManageController
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub
 
-    Private Sub createController(model_name As String, ByRef Optional controller_url As String = "", ByRef Optional controller_title As String = "", Optional entity As Hashtable = Nothing)
+    Private Sub createController(entity As Hashtable, entities As ArrayList)
+        Dim model_name = entity("model_name")
+        Dim controller_url = entity("controller_url")
+        Dim controller_title = entity("controller_title")
+
         If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
         If controller_title = "" Then controller_title = name2human(model_name)
@@ -500,15 +511,9 @@ Public Class DevManageController
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
         If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
 
-        If entity Is Nothing Then
-            'emulate entity
-            entity = New Hashtable From {
-                    {"model_name", model_name},
-                    {"controller_url", controller_url},
-                    {"controller_title", controller_title},
-                    {"table", name2fw(model_name)}
-                }
-        End If
+        'save back to entity as ti can be used by caller
+        entity("controller_url") = controller_url
+        entity("controller_title") = controller_title
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\controllers"
@@ -537,10 +542,10 @@ Public Class DevManageController
         replaceInFiles(tpl_to, replacements)
 
         'update config.json:
-        updateControllerConfigJson(entity, tpl_to)
+        updateControllerConfigJson(entity, tpl_to, entities)
     End Sub
 
-    Public Sub updateControllerConfigJson(entity As Hashtable, tpl_to As String)
+    Public Sub updateControllerConfigJson(entity As Hashtable, tpl_to As String, entities As ArrayList)
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
         ' list_view - model.table_name
@@ -554,20 +559,23 @@ Public Class DevManageController
         Dim config_file = tpl_to & "/config.json"
         Dim config = loadJson(Of Hashtable)(config_file)
 
-        updateControllerConfig(entity, config)
+        updateControllerConfig(entity, config, entities)
 
         'Utils.jsonEncode(config) - can't use as it produces unformatted json string
         saveJson(config, config_file)
     End Sub
 
-    Public Sub updateControllerConfig(entity As Hashtable, config As Hashtable)
+    Public Sub updateControllerConfig(entity As Hashtable, config As Hashtable, entities As ArrayList)
         Dim model_name As String = entity("model_name")
         Dim table_name = entity("table")
-
-        Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+        logger("updating config for controller=", entity("controller_url"))
 
         Dim fields As ArrayList = entity("fields")
-        If fields Is Nothing Then fields = db.load_table_schema_full(table_name)
+        If fields Is Nothing Then
+            'TODO deprecate reading from db, always use entity info
+            Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            fields = db.load_table_schema_full(table_name)
+        End If
 
         Dim hfields As New Hashtable
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
@@ -579,6 +587,7 @@ Public Class DevManageController
 
         Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
+            logger("field name=", fld("name"), fld)
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("name")
 
@@ -595,7 +604,7 @@ Public Class DevManageController
             If fld("is_nullable") = "0" AndAlso fld("default") = "" Then sff("required") = True 'if not nullable and no default - required
 
             If Utils.f2int(fld("maxlen")) > 0 Then sff("maxlength") = Utils.f2int(fld("maxlen"))
-            If fld("internal_type") = "varchar" Then
+            If fld("fw_type") = "varchar" Then
                 If Utils.f2int(fld("maxlen")) = -1 Then 'large text
                     sf("type") = "markdown"
                     sff("type") = "textarea"
@@ -604,7 +613,7 @@ Public Class DevManageController
                 Else
                     sff("type") = "input"
                 End If
-            ElseIf fld("internal_type") = "int" Then
+            ElseIf fld("fw_type") = "int" Then
                 If Right(fld("name"), 3) = "_id" AndAlso fld("name") <> "dict_link_auto_id" Then 'TODO remove dict_link_auto_id
                     'TODO better detect if field has foreign key
                     'if link to other table - make type=select
@@ -618,7 +627,7 @@ Public Class DevManageController
                     sff("lookup_model") = mname
                     sff("is_option0") = True
                     sff("class_contents") = "col-md-3"
-                ElseIf fld("type") = "tinyint" Then
+                ElseIf fld("type") = "tinyint" OrElse fld("type") = "unsignedtinyint" Then
                     'make it as yes/no radio
                     sff("type") = "yesno"
                     sff("is_inline") = True
@@ -628,11 +637,11 @@ Public Class DevManageController
                     sff("max") = 999999
                     sff("class_contents") = "col-md-3"
                 End If
-            ElseIf fld("internal_type") = "float" Then
+            ElseIf fld("fw_type") = "float" Then
                 sff("type") = "number"
                 sff("step") = 0.1
                 sff("class_contents") = "col-md-3"
-            ElseIf fld("internal_type") = "datetime" Then
+            ElseIf fld("fw_type") = "datetime" Then
                 sf("type") = "date"
                 sff("type") = "date_popup"
                 sff("class_contents") = "col-md-3"

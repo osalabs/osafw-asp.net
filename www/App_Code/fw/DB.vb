@@ -866,7 +866,8 @@ Public Class DB
                     " order by c.ORDINAL_POSITION"
             result = array(sql)
             For Each row As Hashtable In result
-                row("fw_type") = map_mssqltype2internal(row("type"))
+                row("fw_type") = map_mssqltype2fwtype(row("type")) 'meta type
+                row("fw_subtype") = LCase(row("type"))
             Next
         Else
             'OLE DB (Access)
@@ -884,7 +885,8 @@ Public Class DB
                 Dim h = New Hashtable
                 h("name") = row("COLUMN_NAME").ToString()
                 h("type") = row("DATA_TYPE")
-                h("fw_type") = map_oletype2internal(row("DATA_TYPE"))
+                h("fw_type") = map_oletype2fwtype(row("DATA_TYPE")) 'meta type
+                h("fw_subtype") = LCase([Enum].GetName(GetType(OleDbType), row("DATA_TYPE"))) 'exact type as string
                 h("is_nullable") = IIf(row("IS_NULLABLE"), 1, 0)
                 h("default") = row("COLUMN_DEFAULT") '"=Now()" "0" "No"
                 h("maxlen") = row("CHARACTER_MAXIMUM_LENGTH")
@@ -972,10 +974,10 @@ Public Class DB
         If schema IsNot Nothing Then schema.Clear()
     End Sub
 
-    Private Function map_mssqltype2internal(mstype As String) As String
+    Private Function map_mssqltype2fwtype(mstype As String) As String
         Dim result As String = ""
         Select Case LCase(mstype)
-            'TODO - unsupported: bit, image, varbinary, timestamp
+            'TODO - unsupported: image, varbinary, timestamp
             Case "tinyint", "smallint", "int", "bigint", "bit"
                 result = "int"
             Case "real", "numeric", "decimal", "money", "smallmoney", "float"
@@ -989,18 +991,18 @@ Public Class DB
         Return result
     End Function
 
-    Private Function map_oletype2internal(mstype As Integer) As String
+    Private Function map_oletype2fwtype(mstype As Integer) As String
         Dim result As String = ""
         Select Case mstype
-            'TODO - unsupported: bit, image, varbinary, timestamp
+            'TODO - unsupported: image, varbinary, longvarbinary, dbtime, timestamp
             'NOTE: Boolean here is: True=-1 (vbTrue), False=0 (vbFalse)
             Case OleDbType.Boolean, OleDbType.TinyInt, OleDbType.UnsignedTinyInt, OleDbType.SmallInt, OleDbType.UnsignedSmallInt, OleDbType.Integer, OleDbType.UnsignedInt, OleDbType.BigInt, OleDbType.UnsignedBigInt
                 result = "int"
-            Case OleDbType.Double, OleDbType.Numeric, OleDbType.VarNumeric, OleDbType.Single, OleDbType.Decimal
+            Case OleDbType.Double, OleDbType.Numeric, OleDbType.VarNumeric, OleDbType.Single, OleDbType.Decimal, OleDbType.Currency
                 result = "float"
             Case OleDbType.Date, OleDbType.DBDate, OleDbType.DBTimeStamp
                 result = "datetime"
-            Case Else '"text", "ntext", "varchar", "nvarchar", "char", "nchar"
+            Case Else '"text", "ntext", "varchar", "longvarchar" "nvarchar", "char", "nchar", "wchar", "varwchar", "longvarwchar", "dbtime"
                 result = "varchar"
         End Select
 
