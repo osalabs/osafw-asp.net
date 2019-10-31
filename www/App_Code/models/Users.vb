@@ -12,6 +12,8 @@ Public Class Users
     Public Const ACL_MEMBER As Integer = 0
     Public Const ACL_ADMIN As Integer = 100
 
+    Private table_menu_items As String = "menu_items"
+
     Public Sub New()
         MyBase.New()
         table_name = "users"
@@ -136,14 +138,19 @@ Public Class Users
         If id = 0 Then id = meId()
         Dim hU As Hashtable = one(id)
 
+        Dim access_level = Utils.f2int(hU("access_level"))
         fw.SESSION("user_id", id)
         fw.SESSION("login", hU("email"))
-        fw.SESSION("access_level", Utils.f2int(hU("access_level")))
+        fw.SESSION("access_level", access_level)
         fw.SESSION("lang", hU("lang"))
         'fw.SESSION("user", hU)
         Dim fname = Trim(hU("fname"))
         Dim lname = Trim(hU("lname"))
         fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname) 'will be empty If no user name Set
+
+        'read main menu items for sidebar - only menu items user can see per ACL
+        Dim menu_items = db.array(table_menu_items, New Hashtable From {{"status", 0}, {"access_level", db.opLE(access_level)}}, "iname")
+        fw.SESSION("menu_items", menu_items)
 
         Return True
     End Function
