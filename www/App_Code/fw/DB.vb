@@ -866,7 +866,7 @@ Public Class DB
                     " order by c.ORDINAL_POSITION"
             result = array(sql)
             For Each row As Hashtable In result
-                row("internal_type") = map_mssqltype2internal(row("type"))
+                row("fw_type") = map_mssqltype2internal(row("type"))
             Next
         Else
             'OLE DB (Access)
@@ -884,7 +884,7 @@ Public Class DB
                 Dim h = New Hashtable
                 h("name") = row("COLUMN_NAME").ToString()
                 h("type") = row("DATA_TYPE")
-                h("internal_type") = map_oletype2internal(row("DATA_TYPE"))
+                h("fw_type") = map_oletype2internal(row("DATA_TYPE"))
                 h("is_nullable") = IIf(row("IS_NULLABLE"), 1, 0)
                 h("default") = row("COLUMN_DEFAULT") '"=Now()" "0" "No"
                 h("maxlen") = row("CHARACTER_MAXIMUM_LENGTH")
@@ -953,7 +953,7 @@ Public Class DB
 
             Dim fields As ArrayList = load_table_schema_full(table)
             For Each row As Hashtable In fields
-                h(row("name").ToString().ToLower()) = row("internal_type")
+                h(row("name").ToString().ToLower()) = row("fw_type")
             Next
 
             schema(table) = h
