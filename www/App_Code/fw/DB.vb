@@ -75,65 +75,88 @@ Public Class DB
     Private Shared schemafull_cache As Hashtable 'cache for the full schema, lifetime = app lifetime
     Private Shared schema_cache As Hashtable 'cache for the schema, lifetime = app lifetime
 
-    'Private Shared TimeFieldLabel As String = " <small>Format 24hr.time. Eg, 1330 for 1:30pm"
-    Private Shared globalUseDateforTime2SQL As String
-    Private Shared useTimeFormat As Integer = 0   '0- use 13:00, 1- use 1300   FOR 1:00pm
-    Private Shared useTimeFormatUS As Integer = 1 '0 - use military time, 1 - use AM/PM
+    Public Shared SQL_QUERY_CTR As Integer = 0 'counter for SQL queries during request
 
-    Private fw As FW
-    Private dbconn_cache As New Hashtable 'that's ok because we using connections just for the time or request (i.e. it's not Shared/Static cache)
+    Private fw As FW 'for now only used for: fw.logger and fw.cache (for request-level cacheing of multi-db connections)
 
-    Public current_db As String = ""
-    Public dbtype As String = "SQL"
-    Private conf As New Hashtable
+    Public db_name As String = ""
+    Private conf As New Hashtable  'config contains: connection_string, type
+    Private dbtype As String = "SQL"
+    Private connstr As String = ""
+
     Private schema As New Hashtable 'schema for currently connected db
+    Private conn As DbConnection 'actual db connection - SqlConnection or OleDbConnection
 
-    Public Sub New(fw As FW)
+    ''' <summary>
+    ''' construct new DB object with
+    ''' </summary>
+    ''' <param name="fw">framework reference</param>
+    ''' <param name="conf">config hashtable with "connection_string" and "type" keys. If none - fw.config("db")("main") used</param>
+    ''' <param name="db_name">database human name, only used for logger</param>
+    Public Sub New(fw As FW, Optional conf As Hashtable = Nothing, Optional db_name As String = "main")
         Me.fw = fw
+        If conf IsNot Nothing Then
+            Me.conf = conf
+        Else
+            Me.conf = fw.config("db")("main")
+        End If
+        Me.dbtype = Me.conf("type")
+        Me.connstr = Me.conf("connection_string")
+
+        Me.db_name = db_name
+    End Sub
+
+    Public Sub logger(level As LogLevel, ByVal ParamArray args() As Object)
+        If args.Length = 0 Then Return
+        fw.logger(level, args)
     End Sub
 
     ''' <summary>
     ''' connect to DB server using connection string defined in web.config appSettings, key db|main|connection_string (by default)
     ''' </summary>
-    ''' <param name="conf_db_name">"main" or other db config name, only used for the initial connection</param>
     ''' <returns></returns>
-    Public Function connect(Optional conf_db_name As String = "main") As DbConnection
-        Dim conn As DbConnection = Nothing
+    Public Function connect() As DbConnection
+        Dim cache_key = "DB#" & connstr
 
-        If current_db IsNot Nothing Then
-            conn = dbconn_cache(current_db)
+        'first, try to get connection from request cache (so we will use only one connection per db server - TBD make configurable?)
+        If conn Is Nothing Then
+            conn = fw.cache.getRequestValue(cache_key)
         End If
-        If conn Is Nothing OrElse conn.State <> ConnectionState.Open Then
-            'connect/reconnect
-            current_db = conf_db_name
-            conf = fw.config("db")(current_db)
-            dbtype = conf("type")
-            'schema = conf("schema")
-            schema = New Hashtable
 
-            Dim oConnStr As String = conf("connection_string")
-            conn = create_connection(oConnStr, dbtype)
+        'if still no connection - re-make it
+        If conn Is Nothing Then
+            schema = New Hashtable 'reset schema cache
+            conn = createConnection(connstr, conf("type"))
+            fw.cache.setRequestValue(cache_key, conn)
+        End If
+
+        'if it's disconnected - re-connect
+        If conn.State <> ConnectionState.Open Then
+            conn.Open()
         End If
 
         Return conn
     End Function
 
-    Public Function create_connection(conn_str As String, Optional dbtype As String = "SQL") As DbConnection
+    Public Sub disconnect()
+        Me.conn.Close()
+    End Sub
+
+    Public Function createConnection(connstr As String, Optional dbtype As String = "SQL") As DbConnection
         Dim result As DbConnection
-        Me.dbtype = dbtype
+        logger(LogLevel.DEBUG, "*************** CREATE CONNECTION ****************")
+
         If dbtype = "SQL" Then
-            result = New SqlConnection(conn_str)
+            result = New SqlConnection(connstr)
         ElseIf dbtype = "OLE" Then
-            result = New OleDbConnection(conn_str)
+            result = New OleDbConnection(connstr)
         Else
             Dim msg As String = "Unknown type [" & dbtype & "]"
-            fw.logger(LogLevel.FATAL, msg)
+            logger(LogLevel.FATAL, msg)
             Throw New ApplicationException(msg)
         End If
 
         result.Open()
-        dbconn_cache(current_db) = result
-
         Return result
     End Function
 
@@ -146,24 +169,18 @@ Public Class DB
         cat.Create(connstr)
     End Sub
 
-    'close all connections in cache
-    Public Sub disconnect()
-        For Each conn_name As String In dbconn_cache.Keys
-            dbconn_cache(conn_name).Close()
-        Next
-        dbconn_cache.Clear()
-    End Sub
-
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Function query(ByVal sql As String) As DbDataReader
         connect()
-        fw.logger(LogLevel.INFO, "DB:", current_db, ", SQL QUERY: ", sql)
+        logger(LogLevel.INFO, "DB:", db_name, " ", sql)
+
+        SQL_QUERY_CTR += 1
 
         Dim dbcomm As DbCommand = Nothing
         If dbtype = "SQL" Then
-            dbcomm = New SqlCommand(sql, dbconn_cache(current_db))
+            dbcomm = New SqlCommand(sql, conn)
         ElseIf dbtype = "OLE" Then
-            dbcomm = New OleDbCommand(sql, dbconn_cache(current_db))
+            dbcomm = New OleDbCommand(sql, conn)
         End If
 
         Dim dbread As DbDataReader = dbcomm.ExecuteReader()
@@ -174,13 +191,15 @@ Public Class DB
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
     Public Function exec(ByVal sql As String) As Integer
         connect()
-        fw.logger(LogLevel.INFO, "DB:", current_db, ", SQL QUERY: ", sql)
+        logger(LogLevel.INFO, "DB:", db_name, ", SQL QUERY: ", sql)
+
+        SQL_QUERY_CTR += 1
 
         Dim dbcomm As DbCommand = Nothing
         If dbtype = "SQL" Then
-            dbcomm = New SqlCommand(sql, dbconn_cache(current_db))
+            dbcomm = New SqlCommand(sql, conn)
         ElseIf dbtype = "OLE" Then
-            dbcomm = New OleDbCommand(sql, dbconn_cache(current_db))
+            dbcomm = New OleDbCommand(sql, conn)
         End If
 
         Return dbcomm.ExecuteNonQuery()
@@ -654,9 +673,9 @@ Public Class DB
         Dim insert_id As Object
 
         If dbtype = "SQL" Then
-            insert_id = value("select SCOPE_IDENTITY() AS [SCOPE_IDENTITY] ")
+            insert_id = value("SELECT SCOPE_IDENTITY() AS [SCOPE_IDENTITY] ")
         ElseIf dbtype = "OLE" Then
-            insert_id = value("select @@identity")
+            insert_id = value("SELECT @@identity")
         Else
             Throw New ApplicationException("Get last insert ID for DB type [" & dbtype & "] not implemented")
         End If
@@ -751,11 +770,11 @@ Public Class DB
     Private Function hash2sql_select(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "", Optional select_fields As String = "*") As String
         where = quote(table, where)
         'FW.logger(where)
-        Dim where_string As String = _join_hash(where, "", " and ")
-        If where_string.Length > 0 Then where_string = " where " & where_string
+        Dim where_string As String = _join_hash(where, "", " AND ")
+        If where_string.Length > 0 Then where_string = " WHERE " & where_string
 
-        Dim sql As String = "select " & select_fields & " from " & q_ident(table) & " " & where_string
-        If order_by.Length > 0 Then sql = sql & " order by " & order_by
+        Dim sql As String = "SELECT " & select_fields & " FROM " & q_ident(table) & " " & where_string
+        If order_by.Length > 0 Then sql = sql & " ORDER BY " & order_by
         Return sql
     End Function
 
@@ -764,11 +783,11 @@ Public Class DB
         where = quote(table, where)
 
         Dim update_string As String = _join_hash(fields, "=", ", ")
-        Dim where_string As String = _join_hash(where, "", " and ")
+        Dim where_string As String = _join_hash(where, "", " AND ")
 
-        If where_string.Length > 0 Then where_string = " where " & where_string
+        If where_string.Length > 0 Then where_string = " WHERE " & where_string
 
-        Dim sql As String = "update " & q_ident(table) & " " & " set " & update_string & where_string
+        Dim sql As String = "UPDATE " & q_ident(table) & " " & " SET " & update_string & where_string
 
         Return sql
     End Function
@@ -783,16 +802,16 @@ Public Class DB
 
         fields.Values.CopyTo(ar, 0)
         Dim values_string As String = String.Join(", ", ar)
-        Dim sql As String = "insert into " & q_ident(table) & " " & "(" & names_string & " ) values(" & values_string & ")"
+        Dim sql As String = "INSERT INTO " & q_ident(table) & " (" & names_string & ") VALUES (" & values_string & ")"
         Return sql
     End Function
 
     Private Function hash2sql_d(ByVal table As String, ByVal where As Hashtable) As String
         where = quote(table, where)
-        Dim where_string As String = _join_hash(where, "", " and ")
-        If where_string.Length > 0 Then where_string = " where " & where_string
+        Dim where_string As String = _join_hash(where, "", " AND ")
+        If where_string.Length > 0 Then where_string = " WHERE " & where_string
 
-        Dim sql As String = "delete from " & q_ident(table) & " " & where_string
+        Dim sql As String = "DELETE FROM " & q_ident(table) & " " & where_string
         Return sql
     End Function
 
@@ -820,9 +839,9 @@ Public Class DB
     Public Function load_table_schema_full(table As String) As ArrayList
         'check if full schema already there
         If IsNothing(schemafull_cache) Then schemafull_cache = New Hashtable
-        If Not schemafull_cache.ContainsKey(current_db) Then schemafull_cache(current_db) = New Hashtable
-        If schemafull_cache(current_db).ContainsKey(table) Then
-            Return schemafull_cache(current_db)(table)
+        If Not schemafull_cache.ContainsKey(connstr) Then schemafull_cache(connstr) = New Hashtable
+        If schemafull_cache(connstr).ContainsKey(table) Then
+            Return schemafull_cache(connstr)(table)
         End If
 
         'cache miss
@@ -853,7 +872,7 @@ Public Class DB
         Else
             'OLE DB (Access)
             Dim schemaTable As DataTable =
-                dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, New Object() {Nothing, Nothing, table, Nothing})
+                DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, New Object() {Nothing, Nothing, table, Nothing})
 
             Dim fieldslist = New List(Of Hashtable)
             For Each row As DataRow In schemaTable.Rows
@@ -884,7 +903,7 @@ Public Class DB
         End If
 
         'save to cache
-        schemafull_cache(current_db)(table) = result
+        schemafull_cache(connstr)(table) = result
 
         Return result
     End Function
@@ -895,7 +914,7 @@ Public Class DB
         If dbtype = "SQL" Then
             'TODO implement for SQL Server
         Else
-            Dim dt = dbconn_cache(current_db).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Foreign_Keys, New Object() {Nothing})
+            Dim dt = DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Foreign_Keys, New Object() {Nothing})
             For Each row As DataRow In dt.Rows
                 If table > "" AndAlso row("FK_TABLE_NAME") <> table Then Continue For
 
@@ -912,7 +931,7 @@ Public Class DB
             Next
         End If
 
-        Return Result
+        Return result
     End Function
 
     'load table schema from db
@@ -929,8 +948,8 @@ Public Class DB
         If schema.ContainsKey(table) Then Return schema(table)
 
         If IsNothing(schema_cache) Then schema_cache = New Hashtable
-        If Not schema_cache.ContainsKey(current_db) Then schema_cache(current_db) = New Hashtable
-        If Not schema_cache(current_db).ContainsKey(table) Then
+        If Not schema_cache.ContainsKey(connstr) Then schema_cache(connstr) = New Hashtable
+        If Not schema_cache(connstr).ContainsKey(table) Then
             Dim h As New Hashtable
 
             Dim fields As ArrayList = load_table_schema_full(table)
@@ -939,10 +958,10 @@ Public Class DB
             Next
 
             schema(table) = h
-            schema_cache(current_db)(table) = h
+            schema_cache(connstr)(table) = h
         Else
             'fw.logger("schema_cache HIT " & current_db & "." & table)
-            schema(table) = schema_cache(current_db)(table)
+            schema(table) = schema_cache(connstr)(table)
         End If
 
         Return schema(table)

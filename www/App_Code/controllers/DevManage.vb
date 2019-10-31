@@ -156,15 +156,14 @@ Public Class DevManageController
         If connstr.Contains("OLE") Then dbtype = "OLE"
 
         'Try
-        Dim db = New DB(fw)
-        Dim conn = db.create_connection(connstr, dbtype)
+        Dim db = New DB(fw, New Hashtable From {{"connection_string", connstr}, {"type", dbtype}})
 
         Dim entities = dbschema2entities(db)
 
         'save db.json
         saveJson(entities, fw.config("template") & DB_JSON_PATH)
 
-        conn.Close()
+        db.disconnect()
         fw.FLASH("success", "template" & DB_JSON_PATH & " created")
 
         'Catch ex As Exception
@@ -241,7 +240,7 @@ Public Class DevManageController
                     is_updated = True
                     entity("model_name") = item(key & "model_name")
                 End If
-                Me.createModel(entity("table"), entity("model_name"))
+                Me.createModel(entity("table"), entity("model_name"), entity("db_config"))
             End If
 
             If item.ContainsKey(key & "is_controller") Then
@@ -307,7 +306,7 @@ Public Class DevManageController
             'logger(tblschema)
 
             Dim table_entity As New Hashtable
-            table_entity("db_config") = db.current_db
+            table_entity("db_config") = db.db_name
             table_entity("table") = tblname
             table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
             table_entity("iname") = name2human(tblname) 'human table name
@@ -464,18 +463,17 @@ Public Class DevManageController
     End Sub
 
     Private Sub createDBJson(dbname As String)
-        Dim db = New DB(fw)
-        Dim conn = db.connect(dbname)
+        Dim db = New DB(fw, fw.config("db")(dbname))
 
         Dim entities = dbschema2entities(db)
 
         'save db.json
         saveJson(entities, fw.config("template") & DB_JSON_PATH)
 
-        conn.Close()
+        db.disconnect()
     End Sub
 
-    Private Sub createModel(table_name As String, Optional model_name As String = "")
+    Private Sub createModel(table_name As String, Optional model_name As String = "", Optional db_config As String = "")
         If model_name = "" Then
             model_name = nameCamelCase(table_name)
         End If
@@ -489,6 +487,7 @@ Public Class DevManageController
         'replace: DemoDicts => ModelName, demo_dicts => table_name
         mdemo = mdemo.Replace("DemoDicts", model_name)
         mdemo = mdemo.Replace("demo_dicts", table_name)
+        'db_config
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub
