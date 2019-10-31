@@ -464,7 +464,9 @@ Public Class DB
 
         Dim field_type As String = schema(table)(field_name)
         Dim quoted As String
+#Disable Warning BC42104 ' Variable is used before it has been assigned a value
         If dbop IsNot Nothing Then
+#Enable Warning BC42104 ' Variable is used before it has been assigned a value
             If dbop.op = DBOps.IN OrElse dbop.op = DBOps.NOTIN Then
                 If dbop.value IsNot Nothing AndAlso TypeOf (dbop.value) Is IList Then
                     Dim result As New ArrayList
