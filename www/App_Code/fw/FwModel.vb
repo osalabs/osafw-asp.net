@@ -316,7 +316,7 @@ Public MustInherit Class FwModel
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
-        Dim aselect_fields As String()
+        Dim aselect_fields As String() = {}
         If csv_export_fields > "" Then
             aselect_fields = Utils.qw(csv_export_fields)
         End If

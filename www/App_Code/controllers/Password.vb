@@ -82,7 +82,7 @@ Public Class PasswordController
     End Function
 
 
-    Public Function SaveResetAction() As Hashtable
+    Public Sub SaveResetAction()
         Dim item = reqh("item")
         Dim login = reqs("login")
         Dim token = reqs("token")
@@ -114,7 +114,7 @@ Public Class PasswordController
             setFormError(ex)
             fw.routeRedirect("Reset")
         End Try
-    End Function
+    End Sub
 
     Public Function ValidateReset(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True

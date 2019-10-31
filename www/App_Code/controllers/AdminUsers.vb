@@ -228,7 +228,7 @@ Public Class AdminUsersController
     End Function
 
     'for migration to hashed passwords
-    Public Function HashPasswordsAction() As Hashtable
+    Public Sub HashPasswordsAction()
         rw("hashing passwords")
         Dim rows = db.array("select id, pwd from " & db.q_ident(model.table_name) & " order by id")
         For Each row As Hashtable In rows
@@ -237,6 +237,6 @@ Public Class AdminUsersController
             db.update(model.table_name, New Hashtable From {{"pwd", hashed}}, New Hashtable From {{"id", row("id")}})
         Next
         rw("done")
-    End Function
+    End Sub
 
 End Class

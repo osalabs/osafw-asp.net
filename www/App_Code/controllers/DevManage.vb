@@ -42,7 +42,7 @@ Public Class DevManageController
         Return ps
     End Function
 
-    Public Function DumpLogAction() As Hashtable
+    Public Sub DumpLogAction()
         Dim seek = reqi("seek")
         Dim logpath = fw.config("log")
         rw("Dump of last " & seek & " bytes of the site log")
@@ -56,9 +56,9 @@ Public Class DevManageController
 
         rw("end of dump")
         sr.Close()
-    End Function
+    End Sub
 
-    Public Function ResetCacheAction() As Hashtable
+    Public Sub ResetCacheAction()
         fw.FLASH("success", "Application Caches cleared")
 
         FwCache.clear()
@@ -67,9 +67,9 @@ Public Class DevManageController
         pp.clear_cache()
 
         fw.redirect(base_url)
-    End Function
+    End Sub
 
-    Public Function CreateModelAction() As Hashtable
+    Public Sub CreateModelAction()
         Dim item = reqh("item")
         Dim table_name = Trim(item("table_name"))
         Dim model_name = Trim(item("model_name"))
@@ -78,9 +78,9 @@ Public Class DevManageController
 
         fw.FLASH("success", model_name & ".vb model created")
         fw.redirect(base_url)
-    End Function
+    End Sub
 
-    Public Function CreateControllerAction() As Hashtable
+    Public Sub CreateControllerAction()
         Dim item = reqh("item")
         Dim model_name = Trim(item("model_name"))
         Dim controller_url = Trim(item("controller_url"))
@@ -99,10 +99,9 @@ Public Class DevManageController
         fw.FLASH("controller_created", controller_name)
         fw.FLASH("controller_url", entity("controller_url"))
         fw.redirect(base_url)
+    End Sub
 
-    End Function
-
-    Public Function ExtractControllerAction() As Hashtable
+    Public Sub ExtractControllerAction()
         Dim item = reqh("item")
         Dim controller_name = Trim(item("controller_name"))
 
@@ -151,7 +150,7 @@ Public Class DevManageController
 
         fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
         fw.redirect(base_url)
-    End Function
+    End Sub
 
     'analyse database tables and create db.json describing entities, fields and relationships
     Public Function AnalyseDBAction() As Hashtable
@@ -233,7 +232,7 @@ Public Class DevManageController
         fw.redirect(base_url & "/(Creator)")
     End Sub
 
-    Public Function CreatorBuildAppAction() As Hashtable
+    Public Sub CreatorBuildAppAction()
         Dim item = reqh("item")
 
         Dim config_file = fw.config("template") & DB_JSON_PATH
@@ -273,7 +272,7 @@ Public Class DevManageController
         fw.FLASH("success", "App build successfull")
         fw.redirect(base_url & "/(Creator)?reload=1")
 
-    End Function
+    End Sub
 
 
     '****************************** PRIVATE HELPERS (move to Dev model?)
