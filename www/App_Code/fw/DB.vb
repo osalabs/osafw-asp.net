@@ -144,7 +144,6 @@ Public Class DB
 
     Public Function createConnection(connstr As String, Optional dbtype As String = "SQL") As DbConnection
         Dim result As DbConnection
-        logger(LogLevel.DEBUG, "*************** CREATE CONNECTION ****************")
 
         If dbtype = "SQL" Then
             result = New SqlConnection(connstr)

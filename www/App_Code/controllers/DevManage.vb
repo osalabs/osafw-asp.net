@@ -253,7 +253,7 @@ Public Class DevManageController
                     is_updated = True
                     entity("controller_title") = item(key & "controller_title")
                 End If
-                Me.createController(entity("model_name"), entity("controller_url"), entity("controller_title"))
+                Me.createController(entity("model_name"), entity("controller_url"), entity("controller_title"), entity)
             End If
         Next
 
@@ -492,13 +492,23 @@ Public Class DevManageController
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub
 
-    Private Sub createController(model_name As String, ByRef Optional controller_url As String = "", ByRef Optional controller_title As String = "")
+    Private Sub createController(model_name As String, ByRef Optional controller_url As String = "", ByRef Optional controller_title As String = "", Optional entity As Hashtable = Nothing)
         If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
         If controller_title = "" Then controller_title = name2human(model_name)
 
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
         If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
+
+        If entity Is Nothing Then
+            'emulate entity
+            entity = New Hashtable From {
+                    {"model_name", model_name},
+                    {"controller_url", controller_url},
+                    {"controller_title", controller_title},
+                    {"table", name2fw(model_name)}
+                }
+        End If
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\controllers"
@@ -527,10 +537,10 @@ Public Class DevManageController
         replaceInFiles(tpl_to, replacements)
 
         'update config.json:
-        updateControllerConfigJson(model_name, tpl_to)
+        updateControllerConfigJson(entity, tpl_to)
     End Sub
 
-    Public Sub updateControllerConfigJson(model_name As String, tpl_to As String)
+    Public Sub updateControllerConfigJson(entity As Hashtable, tpl_to As String)
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
         ' list_view - model.table_name
@@ -544,16 +554,21 @@ Public Class DevManageController
         Dim config_file = tpl_to & "/config.json"
         Dim config = loadJson(Of Hashtable)(config_file)
 
-        updateControllerConfig(model_name, config)
+        updateControllerConfig(entity, config)
 
         'Utils.jsonEncode(config) - can't use as it produces unformatted json string
         saveJson(config, config_file)
     End Sub
 
-    Public Sub updateControllerConfig(model_name As String, config As Hashtable)
-        Dim model = fw.model(model_name)
-        db.connect()
-        Dim fields = db.load_table_schema_full(model.table_name)
+    Public Sub updateControllerConfig(entity As Hashtable, config As Hashtable)
+        Dim model_name As String = entity("model_name")
+        Dim table_name = entity("table")
+
+        Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+
+        Dim fields As ArrayList = entity("fields")
+        If fields Is Nothing Then fields = db.load_table_schema_full(table_name)
+
         Dim hfields As New Hashtable
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
@@ -689,7 +704,7 @@ Public Class DevManageController
         Next
 
         'special case - "Lookup via Link Table" - could be multiple tables
-        Dim rx_table_link = "^" & Regex.Escape(model.table_name) & "_(.+?)_link$"
+        Dim rx_table_link = "^" & Regex.Escape(table_name) & "_(.+?)_link$"
         Dim tables = db.tables()
         Dim table_name_linked = ""
         Dim table_name_link = ""
@@ -707,7 +722,7 @@ Public Class DevManageController
                         {"type", "multi"},
                         {"lookup_model", _tablename2model(table_name_linked)},
                         {"table_link", table_name_link},
-                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_id_name", table_name & "_id"},
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
                     Dim sfflink As New Hashtable From {
@@ -716,7 +731,7 @@ Public Class DevManageController
                         {"type", "multicb"},
                         {"lookup_model", _tablename2model(table_name_linked)},
                         {"table_link", table_name_link},
-                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_id_name", table_name & "_id"},
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
 
@@ -740,7 +755,6 @@ Public Class DevManageController
         Next
         'end special case for link table
 
-
         config("model") = model_name
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
@@ -749,7 +763,7 @@ Public Class DevManageController
         config.Remove("list_sortmap") 'N/A in dynamic controller
         config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
-        config("list_view") = model.table_name
+        config("list_view") = table_name
         config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
