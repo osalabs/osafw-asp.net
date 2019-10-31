@@ -99,8 +99,8 @@ Public Class AdminUsersController
             'here make additional changes if necessary
         End If
 
-        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        hf("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -220,7 +220,7 @@ Public Class AdminUsersController
         Dim ps As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        model.send_pwd_reset(id)
+        model.sendPwdReset(id)
 
         ps("success") = True
         ps("_json") = True

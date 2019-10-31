@@ -318,8 +318,8 @@ Public Class AdminLookupManagerController
 
         hf("is_fwtable") = is_fwtable
         If is_fwtable Then
-            hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-            hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+            hf("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+            hf("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
         End If
 
         hf("id") = id

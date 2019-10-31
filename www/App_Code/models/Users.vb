@@ -32,13 +32,17 @@ Public Class Users
         Return hU
     End Function
 
-    Public Function getFullName(id As Object) As String
+    ''' <summary>
+    ''' return full user name - First Name Last Name
+    ''' </summary>
+    ''' <param name="id"></param>
+    ''' <returns></returns>
+    Public Overrides Function iname(id As Integer) As String
         Dim result As String = ""
-        id = Utils.f2int(id)
 
         If id > 0 Then
-            Dim hU As Hashtable = one(id)
-            result = hU("fname") & "  " & hU("lname")
+            Dim item = one(id)
+            result = item("fname") & "  " & item("lname")
         End If
 
         Return result
@@ -103,7 +107,7 @@ Public Class Users
     ''' </summary>
     ''' <param name="id"></param>
     ''' <returns></returns>
-    Public Function send_pwd_reset(id As Integer) As Boolean
+    Public Function sendPwdReset(id As Integer) As Boolean
         Dim pwd_reset_token = Utils.getRandStr(50)
 
         Dim item As New Hashtable From {

@@ -43,7 +43,7 @@ Public Class PasswordController
             Dim hU As Hashtable = model.oneByEmail(login)
             If Not hU.ContainsKey("id") OrElse hU("status") <> "0" Then Throw New ApplicationException("Not a valid Email")
 
-            model.send_pwd_reset(hU("id"))
+            model.sendPwdReset(hU("id"))
 
             fw.redirect(base_url & "/(Sent)")
         Catch ex As Exception

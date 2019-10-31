@@ -66,8 +66,8 @@ Public Class FwDynamicController
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
         'added/updated should be filled before dynamic fields
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         'dynamic fields
         If is_dynamic_show Then ps("fields") = prepareShowFields(item, ps)
@@ -114,8 +114,8 @@ Public Class FwDynamicController
             'here make additional changes if necessary
         End If
 
-        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         If is_dynamic_showform Then ps("fields") = prepareShowFormFields(item, ps)
         'TODO
