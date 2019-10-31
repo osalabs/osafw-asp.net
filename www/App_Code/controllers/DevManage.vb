@@ -472,7 +472,7 @@ Public Class DevManageController
     End Sub
 
     Private Sub createDBJson(dbname As String)
-        Dim db = New DB(fw, fw.config("db")(dbname))
+        Dim db = New DB(fw, fw.config("db")(dbname), dbname)
 
         Dim entities = dbschema2entities(db)
 
