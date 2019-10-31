@@ -300,7 +300,7 @@ CREATE TABLE menu_items (
   iname                 NVARCHAR(64) NOT NULL default '',
   url                   NVARCHAR(255) NOT NULL default '',  -- menu url
   icon                  NVARCHAR(64) NOT NULL default '',   -- menu icon
-  controller            NVARCHAR(255) NOT NULL default '',  -- controller name for highlighting
+  controller            NVARCHAR(255) NOT NULL default '',  -- controller class name for UI highlighting
   access_level          TINYINT NOT NULL DEFAULT 0,         -- min access level
 
   status                TINYINT DEFAULT 0,        /*0-ok, 10-hidden, 127-deleted*/

@@ -184,6 +184,9 @@ Public Class DevManageController
     End Function
 
     Public Function CreatorAction() As Hashtable
+        'reload session, so sidebar menu will be updated
+        If reqs("reload") > "" Then fw.model(Of Users).reloadSession()
+
         Dim ps As New Hashtable
         Dim dbsources As New ArrayList
 
@@ -268,7 +271,7 @@ Public Class DevManageController
         If is_updated Then saveJson(entities, config_file)
 
         fw.FLASH("success", "App build successfull")
-        fw.redirect(base_url & "/(Creator)")
+        fw.redirect(base_url & "/(Creator)?reload=1")
 
     End Function
 
@@ -543,6 +546,9 @@ Public Class DevManageController
 
         'update config.json:
         updateControllerConfigJson(entity, tpl_to, entities)
+
+        'add controller to sidebar menu
+        updateMenuItem(controller_url, controller_title)
     End Sub
 
     Public Sub updateControllerConfigJson(entity As Hashtable, tpl_to As String, entities As ArrayList)
@@ -636,7 +642,7 @@ Public Class DevManageController
                     sff("lookup_model") = mname
                     sff("is_option0") = True
                     sff("class_contents") = "col-md-3"
-                ElseIf fld("type") = "tinyint" OrElse fld("type") = "unsignedtinyint" OrElse fld("type") = "boolean" Then 'not sure about tinyint
+                ElseIf fld("fw_subtype") = "tinyint" OrElse fld("fw_subtype") = "unsignedtinyint" OrElse fld("fw_subtype") = "boolean" Then 'not sure about tinyint
                     'make it as yes/no radio
                     sff("type") = "yesno"
                     sff("is_inline") = True
@@ -792,6 +798,23 @@ Public Class DevManageController
             If Left(key, 1) = "#" Then config.Remove(key)
         Next
 
+    End Sub
+
+    'update by url
+    Sub updateMenuItem(controller_url As String, controller_title As String)
+        Dim fields = New Hashtable From {
+                {"url", controller_url},
+                {"iname", controller_title},
+                {"controller", Replace(controller_url, "/", "")}
+            }
+
+        Dim mitem = db.row("menu_items", New Hashtable From {{"url", controller_url}})
+        If mitem.Count > 0 Then
+            db.update("menu_items", fields, New Hashtable From {{"id", mitem("id")}})
+        Else
+            'add to menu_items
+            db.insert("menu_items", fields)
+        End If
     End Sub
 
 End Class

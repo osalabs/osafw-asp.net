@@ -139,7 +139,7 @@ Public Class DB
     End Function
 
     Public Sub disconnect()
-        Me.conn.Close()
+        If Me.conn IsNot Nothing Then Me.conn.Close()
     End Sub
 
     Public Function createConnection(connstr As String, Optional dbtype As String = "SQL") As DbConnection
