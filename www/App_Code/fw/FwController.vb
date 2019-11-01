@@ -106,7 +106,13 @@ Public MustInherit Class FwController
 
         search_fields = Utils.f2str(Me.config("search_fields"))
         list_sortdef = Utils.f2str(Me.config("list_sortdef"))
-        list_sortmap = Utils.qh(Utils.f2str(Me.config("list_sortmap")))
+
+        Dim list_sortmap_raw = Me.config("list_sortmap")
+        If TypeOf list_sortmap_raw Is IDictionary Then
+            list_sortmap = list_sortmap_raw
+        Else
+            list_sortmap = Utils.qh(Utils.f2str(Me.config("list_sortmap")))
+        End If
 
         related_field_name = Utils.f2str(Me.config("related_field_name"))
 
@@ -283,10 +289,11 @@ Public MustInherit Class FwController
                 Else
                     order = "desc"
                 End If
-                aorderby(i) = field & " " & order
+                aorderby(i) = db.q_ident(field) & " " & order
             Next
             orderby = Join(aorderby, ", ")
-
+        Else
+            orderby = db.q_ident(orderby)
         End If
         Me.list_orderby = orderby
     End Sub

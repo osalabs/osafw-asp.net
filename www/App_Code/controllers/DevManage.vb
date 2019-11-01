@@ -226,8 +226,12 @@ Public Class DevManageController
         If dbconfig Is Nothing Then Throw New ApplicationException("Wrong DB selection")
 
         'Try
+        'also cleanup menu_items
+        db.del("menu_items", New Hashtable)
+
         createDBJson(dbname)
         fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
 
         'Catch ex As Exception
         '    fw.FLASH("error", ex.Message)
@@ -646,6 +650,7 @@ Public Class DevManageController
 
         Dim saveFields As New ArrayList
         Dim hFieldsMap As New Hashtable
+        Dim hFieldsMapFW As New Hashtable 'fw_name => name
         Dim showFields As New ArrayList
         Dim showFormFields As New ArrayList
 
@@ -654,7 +659,10 @@ Public Class DevManageController
             logger("field name=", fld("name"), fld)
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("name")
-            If Not is_fw Then hFieldsMap(fld("fw_name")) = fld("name")
+            If Not is_fw Then
+                hFieldsMap(fld("fw_name")) = fld("name")
+                hFieldsMapFW(fld("fw_name")) = fld("name")
+            End If
 
             Dim sf As New Hashtable
             Dim sff As New Hashtable
@@ -838,11 +846,9 @@ Public Class DevManageController
         config("list_sortdef") = "id desc"
         If hfields.ContainsKey("iname") Then
             config("list_sortdef") = "iname asc"
-        ElseIf hfields.ContainsKey("ID") Then
-            config("list_sortdef") = "ID desc"
         Else
             'just get first field
-            config("list_sortdef") = fields(0)("name")
+            config("list_sortdef") = fields(0)("fw_name")
         End If
 
         config.Remove("list_sortmap") 'N/A in dynamic controller
@@ -859,6 +865,7 @@ Public Class DevManageController
             For i = 0 To Math.Min(2, fields.Count - 1)
                 config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
             Next
+            config("list_sortmap") = hFieldsMapFW 'for non-fw - list_sortmap separately
         End If
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"

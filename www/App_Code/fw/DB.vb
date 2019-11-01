@@ -246,10 +246,11 @@ Public Class DB
             Dim i As Integer
             For i = 0 To last_col_num
                 Try
-                    Dim value As String = dbread(i).ToString()
                     Dim name As String = dbread.GetName(i).ToString()
+                    Dim value As String = dbread(i).ToString()
                     h.Add(name, value)
                 Catch Ex As Exception
+                    logger(LogLevel.ERROR, Ex.Message)
                     last_col_num = i - 1
                     Exit For
                 End Try
