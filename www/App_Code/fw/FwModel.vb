@@ -25,6 +25,7 @@ Public MustInherit Class FwModel
     Public field_add_users_id As String = "add_users_id"
     Public field_upd_users_id As String = "upd_users_id"
     Public field_upd_time As String = "upd_time"
+    Public is_normalize_names As Boolean = False 'if true - Utils.name2fw() will be called for all fetched rows to normalize names (no spaces or special chars)
 
     Public Sub New(Optional fw As FW = Nothing)
         If fw IsNot Nothing Then
@@ -52,10 +53,26 @@ Public MustInherit Class FwModel
             Dim where As Hashtable = New Hashtable
             where(Me.field_id) = id
             item = db.row(table_name, where)
+            normalizeNames(item)
             fw.cache.setRequestValue("fwmodel_one_" & table_name & "#" & id, item)
         End If
         Return item
     End Function
+
+    'add renamed fields For template engine - spaces and special chars replaced With "_" and other normalizations
+    Public Overloads Sub normalizeNames(row As Hashtable)
+        If Not is_normalize_names Then Return
+        For Each key In New ArrayList(row.Keys) 'static copy of row keys to avoid loop issues
+            row(Utils.name2fw(key)) = row(key)
+        Next
+    End Sub
+
+    Public Overloads Sub normalizeNames(rows As ArrayList)
+        If Not is_normalize_names Then Return
+        For Each row As Hashtable In rows
+            normalizeNames(row)
+        Next
+    End Sub
 
     Public Overridable Function iname(id As Integer) As String
         Dim row As Hashtable = one(id)

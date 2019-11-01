@@ -96,7 +96,7 @@ Public Class DevManageController
                     {"model_name", model_name},
                     {"controller_url", controller_url},
                     {"controller_title", controller_title},
-                    {"table", name2fw(model_name)}
+                    {"table", Utils.name2fw(model_name)}
                 }
         createController(entity, Nothing)
         Dim controller_name = Replace(entity("controller_url"), "/", "")
@@ -322,7 +322,7 @@ Public Class DevManageController
             Dim table_entity As New Hashtable
             table_entity("db_config") = db.db_name
             table_entity("table") = tblname
-            table_entity("fw_name") = name2fw(tblname) 'new table name using fw standards
+            table_entity("fw_name") = Utils.name2fw(tblname) 'new table name using fw standards
             table_entity("iname") = name2human(tblname) 'human table name
             table_entity("fields") = tableschema2fields(tblschema)
             table_entity("foreign_keys") = db.get_foreign_keys(tblname)
@@ -331,6 +331,9 @@ Public Class DevManageController
             table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
             table_entity("controller_title") = name2human(table_entity("model_name"))
 
+            'set is_fw flag - if it's fw compatible (contains id,iname,status,add_time,add_users_id)
+            Dim fields = array2hashtable(table_entity("fields"), "name")
+            table_entity("is_fw") = fields.Contains("id") AndAlso fields.Contains("iname") AndAlso fields.Contains("status") AndAlso fields.Contains("add_time") AndAlso fields.Contains("add_users_id")
             result.Add(table_entity)
         Next
 
@@ -346,7 +349,7 @@ Public Class DevManageController
                 fldschema("fw_name") = "id" 'identity fields always id
                 fldschema("iname") = "ID"
             Else
-                fldschema("fw_name") = name2fw(fldschema("name"))
+                fldschema("fw_name") = Utils.name2fw(fldschema("name"))
                 fldschema("iname") = name2human(fldschema("name"))
             End If
         Next
@@ -360,21 +363,6 @@ Public Class DevManageController
         'fw_type
         'is_identity
 
-        Return result
-    End Function
-
-    'convert/normalize external table/field name to fw standard name
-    '"SomeCrazy/Name" => "some_crazy_name"
-    Private Function name2fw(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl,dbo prefixes if any
-        result = Regex.Replace(result, "([A-Z]+)", "_$1") 'split CamelCase to underscore, but keep abbrs together ZIP/Code -> zip_code
-
-        result = Regex.Replace(result, "\W+", "_") 'replace all non-alphanum to underscore
-        result = Regex.Replace(result, "_+", "_") 'deduplicate underscore
-        result = Regex.Replace(result, "^_+|_+$", "") 'remove first and last _ if any
-        result = result.ToLower() 'and finally to lowercase
-        result = result.Trim()
         Return result
     End Function
 
@@ -552,6 +540,10 @@ Public Class DevManageController
             If Not fields.ContainsKey("upd_time") Then
                 codegen &= "        field_upd_time = """"" & vbCrLf
             End If
+
+            If Not Utils.f2bool(entity("is_fw")) Then
+                codegen &= "        is_normalize_names = True" & vbCrLf
+            End If
         End If
         mdemo = mdemo.Replace("'###CODEGEN", codegen)
 
@@ -648,6 +640,7 @@ Public Class DevManageController
             Next
         End If
 
+        Dim is_fw = Utils.f2bool(entity("is_fw"))
         Dim hfields As New Hashtable
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
@@ -661,6 +654,7 @@ Public Class DevManageController
             logger("field name=", fld("name"), fld)
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("name")
+            If Not is_fw Then hFieldsMap(fld("fw_name")) = fld("name")
 
             Dim sf As New Hashtable
             Dim sff As New Hashtable
@@ -855,7 +849,17 @@ Public Class DevManageController
         config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
         config("list_view") = table_name
-        config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+
+        'default fields for list view
+        If is_fw Then
+            config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+        Else
+            'nor non-fw tables - just show first 3 fields
+            config("view_list_defaults") = ""
+            For i = 0 To 2
+                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            Next
+        End If
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
 

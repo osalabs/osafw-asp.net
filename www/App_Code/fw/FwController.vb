@@ -415,6 +415,7 @@ Public MustInherit Class FwController
             Else
                 Throw New ApplicationException("Unsupported db type")
             End If
+            model0.normalizeNames(Me.list_rows)
 
             'for 2005<= SQL Server versions <2012
             'offset+1 because _RowNumber starts from 1
