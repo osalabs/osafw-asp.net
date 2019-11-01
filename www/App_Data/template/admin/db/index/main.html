@@ -2,7 +2,13 @@
   <input type="hidden" name="XSS" value="<~SESSION[XSS]>">
 
   <fieldset>
-    <legend><~title>: <~GLOBAL[db_name]></legend>
+    <h4><~title>:
+      <select name="db" class="form-control d-inline w-25">
+        <option>- select-</option>
+        <~dbsources select="selected_db">
+      </select>
+    </h4>
+
     <~/common/form/msg>
     <div class="form-group">
       <label class="col-form-label" for="sql">SQL query</label>
