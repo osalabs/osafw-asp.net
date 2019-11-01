@@ -153,7 +153,11 @@ Public Class Users
         fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname) 'will be empty If no user name Set
 
         'read main menu items for sidebar - only menu items user can see per ACL
-        Dim menu_items = db.array(table_menu_items, New Hashtable From {{"status", 0}, {"access_level", db.opLE(access_level)}}, "iname")
+        Dim menu_items As New ArrayList
+        Dim rows = db.array(table_menu_items, New Hashtable From {{"status", 0}, {"access_level", db.opLE(access_level)}}, "iname")
+        For Each row As Hashtable In rows
+            menu_items.Add(FormUtils.filter(row, "iname icon access_level url controller")) 'keep in session only necessary fields
+        Next
         fw.SESSION("menu_items", menu_items)
 
         Return True
