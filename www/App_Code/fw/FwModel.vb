@@ -42,6 +42,10 @@ Public MustInherit Class FwModel
         End If
     End Sub
 
+    Public Overridable Function getDB() As DB
+        Return db
+    End Function
+
     Public Overridable Function one(id As Integer) As Hashtable
         Dim item As Hashtable = fw.cache.getRequestValue("fwmodel_one_" & table_name & "#" & id)
         If IsNothing(item) Then

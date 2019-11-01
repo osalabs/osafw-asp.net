@@ -18,6 +18,7 @@ Public Class AdminDemosDynamicController
         base_url = "/Admin/DemosDynamic"
         Me.loadControllerConfig()
         model = model0
+        db = model.getDB() 'model-based controller works with model's db
 
         model_related = fw.model(Of DemoDicts)()
     End Sub
