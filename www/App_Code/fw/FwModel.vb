@@ -65,6 +65,7 @@ Public MustInherit Class FwModel
         For Each key In New ArrayList(row.Keys) 'static copy of row keys to avoid loop issues
             row(Utils.name2fw(key)) = row(key)
         Next
+        If field_id > "" AndAlso Not row.ContainsKey("id") Then row("id") = row(field_id)
     End Sub
 
     Public Overloads Sub normalizeNames(rows As ArrayList)
