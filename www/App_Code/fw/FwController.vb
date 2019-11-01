@@ -395,12 +395,26 @@ Public MustInherit Class FwController
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
 
-            'for SQL Server 2012+
-            Dim sql As String = "SELECT * FROM " & list_view &
-                                " WHERE " & Me.list_where &
-                                " ORDER BY " & Me.list_orderby &
-                                " OFFSET " & offset & " ROWS " &
-                                " FETCH NEXT " & limit & " ROWS ONLY"
+            Dim sql As String
+
+            If db.dbtype = "SQL" Then
+                'for SQL Server 2012+
+                sql = "SELECT * FROM " & list_view &
+                      " WHERE " & Me.list_where &
+                      " ORDER BY " & Me.list_orderby &
+                      " OFFSET " & offset & " ROWS " &
+                      " FETCH NEXT " & limit & " ROWS ONLY"
+                Me.list_rows = db.array(sql)
+            ElseIf db.dbtype = "OLE" Then
+                'OLE - for Access - emulate using TOP and return just a limit portion (bad perfomance, but no way)
+                sql = "SELECT TOP " & (offset + limit) & " * FROM " & list_view &
+                      " WHERE " & Me.list_where &
+                      " ORDER BY " & Me.list_orderby
+                Dim rows = db.array(sql)
+                Me.list_rows = rows.GetRange(offset, limit)
+            Else
+                Throw New ApplicationException("Unsupported db type")
+            End If
 
             'for 2005<= SQL Server versions <2012
             'offset+1 because _RowNumber starts from 1
@@ -413,7 +427,7 @@ Public MustInherit Class FwController
             'for MySQL this would be much simplier
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 
-            Me.list_rows = db.array(sql)
+
             Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
         Else
             Me.list_rows = New ArrayList

@@ -74,7 +74,12 @@ Public Class DevManageController
         Dim table_name = Trim(item("table_name"))
         Dim model_name = Trim(item("model_name"))
 
-        createModel(table_name, model_name)
+        Dim entity As New Hashtable From {
+                {"table", table_name},
+                {"model_name", model_name},
+                {"db_config", ""}
+            }
+        createModel(entity)
 
         fw.FLASH("success", model_name & ".vb model created")
         fw.redirect(base_url)
@@ -249,7 +254,7 @@ Public Class DevManageController
                     is_updated = True
                     entity("model_name") = item(key & "model_name")
                 End If
-                Me.createModel(entity("table"), entity("model_name"), entity("db_config"))
+                Me.createModel(entity)
             End If
 
             If item.ContainsKey(key & "is_controller") Then
@@ -397,6 +402,14 @@ Public Class DevManageController
         Return str
     End Function
 
+    'convert array of hashtables to hashtable of hashtables using key
+    Private Function array2hashtable(arr As ArrayList, key As String) As Hashtable
+        Dim result As New Hashtable
+        For Each item As Hashtable In arr
+            result(item(key)) = item
+        Next
+        Return result
+    End Function
 
     Private Function _models() As IOrderedEnumerable(Of String)
         Dim baseType = GetType(FwModel)
@@ -482,7 +495,10 @@ Public Class DevManageController
         db.disconnect()
     End Sub
 
-    Private Sub createModel(table_name As String, Optional model_name As String = "", Optional db_config As String = "")
+    Private Sub createModel(entity As Hashtable)
+        Dim table_name As String = entity("table")
+        Dim model_name = entity("model_name")
+
         If model_name = "" Then
             model_name = nameCamelCase(table_name)
         End If
@@ -496,7 +512,48 @@ Public Class DevManageController
         'replace: DemoDicts => ModelName, demo_dicts => table_name
         mdemo = mdemo.Replace("DemoDicts", model_name)
         mdemo = mdemo.Replace("demo_dicts", table_name)
-        mdemo = mdemo.Replace("db_config = """"", "db_config = """ & db_config & """")
+        mdemo = mdemo.Replace("db_config = """"", "db_config = """ & entity("db_config") & """")
+
+        'generate code for the model's constructor:
+        'set field_*
+        Dim codegen = ""
+        If entity.ContainsKey("fields") Then
+            Dim fields = array2hashtable(entity("fields"), "name")
+
+            Dim i = 1
+            Dim is_identity = False
+            Dim is_iname = False
+            For Each fld As Hashtable In entity("fields")
+                'find identity
+                If Not is_identity AndAlso fld("is_identity") = "1" Then
+                    is_identity = True
+                    codegen &= "        field_id = """ & fld("name") & """" & vbCrLf
+                End If
+
+                'for iname - just use 2nd or further field which not end with ID
+                If Not is_iname AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
+                    is_iname = True
+                    codegen &= "        field_iname = """ & fld("name") & """" & vbCrLf
+                End If
+
+                i += 1
+            Next
+
+            'also reset fw fields if such not exists
+            If Not fields.ContainsKey("status") Then
+                codegen &= "        field_status = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("add_users_id") Then
+                codegen &= "        field_add_users_id = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("upd_users_id") Then
+                codegen &= "        field_upd_users_id = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("upd_time") Then
+                codegen &= "        field_upd_time = """"" & vbCrLf
+            End If
+        End If
+        mdemo = mdemo.Replace("'###CODEGEN", codegen)
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub

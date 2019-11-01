@@ -80,8 +80,8 @@ Public Class DB
     Private fw As FW 'for now only used for: fw.logger and fw.cache (for request-level cacheing of multi-db connections)
 
     Public db_name As String = ""
+    Public dbtype As String = "SQL"
     Private conf As New Hashtable  'config contains: connection_string, type
-    Private dbtype As String = "SQL"
     Private connstr As String = ""
 
     Private schema As New Hashtable 'schema for currently connected db

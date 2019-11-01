@@ -311,12 +311,6 @@ Public MustInherit Class FwModel
     End Function
 
     Public Overridable Function getCSVExport() As StringBuilder
-        'Dim where = ""
-        'If field_status > "" Then where = " where status=0 "
-
-        'Dim rows As ArrayList = db.array("select " & csv_export_fields & " from " & table_name & where)
-        'Return Utils.getCSVExport(csv_export_headers, csv_export_fields, rows)
-
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
