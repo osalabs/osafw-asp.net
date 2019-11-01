@@ -856,7 +856,7 @@ Public Class DevManageController
         Else
             'nor non-fw tables - just show first 3 fields
             config("view_list_defaults") = ""
-            For i = 0 To 2
+            For i = 0 To Math.Max(2, fields.Count - 1)
                 config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
             Next
         End If
