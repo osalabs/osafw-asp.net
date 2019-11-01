@@ -876,6 +876,7 @@ Public Class DB
                 DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, New Object() {Nothing, Nothing, table, Nothing})
 
             Dim fieldslist = New List(Of Hashtable)
+            Dim is_identity = False
             For Each row As DataRow In schemaTable.Rows
                 'unused:
                 'COLUMN_HASDEFAULT True False
@@ -897,7 +898,13 @@ Public Class DB
                 h("collation") = row("COLLATION_NAME")
                 h("pos") = row("ORDINAL_POSITION")
                 h("desc") = row("DESCRIPTION")
-                h("is_identity") = IIf(row("DATA_TYPE") = OleDbType.Integer AndAlso row("COLUMN_FLAGS") = 90, 1, 0) 'TODO actually this also triggers for Long Integers, need to change somehow
+                'TODO actually this also triggers for Long Integers, need to change somehow. For now - only first field that match conditions will be an identity
+                If Not is_identity AndAlso row("DATA_TYPE") = OleDbType.Integer AndAlso row("COLUMN_FLAGS") = 90 Then
+                    h("is_identity") = 1
+                    is_identity = True
+                Else
+                    h("is_identity") = 0
+                End If
                 fieldslist.Add(h)
             Next
             'order by ORDINAL_POSITION

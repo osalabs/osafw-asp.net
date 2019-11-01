@@ -345,13 +345,13 @@ Public Class DevManageController
 
         For Each fldschema As Hashtable In schema
             'prepare system/human field names: State/Province -> state_province
-            If fldschema("is_identity") = 1 Then
-                fldschema("fw_name") = "id" 'identity fields always id
-                fldschema("iname") = "ID"
-            Else
-                fldschema("fw_name") = Utils.name2fw(fldschema("name"))
-                fldschema("iname") = name2human(fldschema("name"))
-            End If
+            'If fldschema("is_identity") = 1 Then
+            '    fldschema("fw_name") = "id" 'identity fields always id
+            '    fldschema("iname") = "ID"
+            'Else
+            fldschema("fw_name") = Utils.name2fw(fldschema("name"))
+            fldschema("iname") = name2human(fldschema("name"))
+            'End If
         Next
         'result("xxxx") = "yyyy"
         'attrs used to build UI
