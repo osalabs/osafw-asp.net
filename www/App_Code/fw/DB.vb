@@ -87,6 +87,9 @@ Public Class DB
     Private schema As New Hashtable 'schema for currently connected db
     Private conn As DbConnection 'actual db connection - SqlConnection or OleDbConnection
 
+    Private is_check_ole_types As Boolean = False 'if true - checks for unsupported OLE types during readRow
+    Private UNSUPPORTED_OLE_TYPES As New Hashtable
+
     ''' <summary>
     ''' construct new DB object with
     ''' </summary>
@@ -104,6 +107,8 @@ Public Class DB
         Me.connstr = Me.conf("connection_string")
 
         Me.db_name = db_name
+
+        Me.UNSUPPORTED_OLE_TYPES = Utils.qh("DBTYPE_IDISPATCH DBTYPE_IUNKNOWN") 'also? DBTYPE_ARRAY DBTYPE_VECTOR DBTYPE_BYTES
     End Sub
 
     Public Sub logger(level As LogLevel, ByVal ParamArray args() As Object)
@@ -133,6 +138,12 @@ Public Class DB
         'if it's disconnected - re-connect
         If conn.State <> ConnectionState.Open Then
             conn.Open()
+        End If
+
+        If Me.dbtype = "OLE" Then
+            is_check_ole_types = True
+        Else
+            is_check_ole_types = False
         End If
 
         Return conn
@@ -204,23 +215,31 @@ Public Class DB
         Return dbcomm.ExecuteNonQuery()
     End Function
 
+    Private Function readRow(dbread As DbDataReader) As Hashtable
+        Dim result As New Hashtable
+
+        For i As Integer = 0 To dbread.FieldCount - 1
+            Try
+                If is_check_ole_types AndAlso UNSUPPORTED_OLE_TYPES.ContainsKey(dbread.GetDataTypeName(i)) Then Continue For
+
+                Dim value As String = dbread(i).ToString()
+                Dim name As String = dbread.GetName(i).ToString()
+                result.Add(name, value)
+            Catch Ex As Exception
+                Exit For
+            End Try
+        Next i
+
+        Return result
+    End Function
 
     Public Overloads Function row(ByVal sql As String) As Hashtable
         Dim dbread As DbDataReader = query(sql)
         dbread.Read()
 
         Dim h As New Hashtable
-
         If dbread.HasRows Then
-            For i As Integer = 0 To dbread.FieldCount - 1
-                Try
-                    Dim value As String = dbread(i).ToString()
-                    Dim name As String = dbread.GetName(i).ToString()
-                    h.Add(name, value)
-                Catch Ex As Exception
-                    Exit For
-                End Try
-            Next i
+            h = readRow(dbread)
         End If
 
         dbread.Close()
@@ -231,31 +250,12 @@ Public Class DB
         Return row(hash2sql_select(table, where, order_by))
     End Function
 
-    Public Overloads Function obj(ByVal table As String, ByVal id As Integer) As Hashtable
-        Dim where As New Hashtable
-        where("id") = id
-        Return row(hash2sql_select(table, where))
-    End Function
-
     Public Overloads Function array(ByVal sql As String) As ArrayList
         Dim dbread As DbDataReader = query(sql)
         Dim a As New ArrayList
-        Dim last_col_num As Integer = dbread.FieldCount - 1
+
         While dbread.Read()
-            Dim h As New Hashtable
-            Dim i As Integer
-            For i = 0 To last_col_num
-                Try
-                    Dim name As String = dbread.GetName(i).ToString()
-                    Dim value As String = dbread(i).ToString()
-                    h.Add(name, value)
-                Catch Ex As Exception
-                    logger(LogLevel.ERROR, Ex.Message)
-                    last_col_num = i - 1
-                    Exit For
-                End Try
-            Next i
-            a.Add(h)
+            a.Add(readRow(dbread))
         End While
 
         dbread.Close()
