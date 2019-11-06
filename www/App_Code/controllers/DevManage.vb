@@ -254,7 +254,7 @@ Public Class DevManageController
             Dim key = entity("fw_name") & "#"
             If item.ContainsKey(key & "is_model") Then
                 'create model
-                If item(key & "model_name") > "" Then
+                If item(key & "model_name") > "" AndAlso entity("model_name") <> item(key & "model_name") Then
                     is_updated = True
                     entity("model_name") = item(key & "model_name")
                 End If
@@ -263,13 +263,25 @@ Public Class DevManageController
 
             If item.ContainsKey(key & "is_controller") Then
                 'create controller (model must exists)
-                If item(key & "controller_name") > "" Then
+                If item(key & "controller_name") > "" AndAlso entity("controller_name") <> item(key & "controller_name") Then
                     is_updated = True
                     entity("controller_name") = item(key & "controller_name")
                 End If
-                If item(key & "controller_title") > "" Then
+                If item(key & "controller_title") > "" AndAlso entity("controller_title") <> item(key & "controller_title") Then
                     is_updated = True
                     entity("controller_title") = item(key & "controller_title")
+                End If
+                If Not entity.ContainsKey("controller_is_dynamic_show") OrElse Utils.f2bool(entity("controller_is_dynamic_show")) <> (item(key & "coview") > "") Then
+                    is_updated = True
+                    entity("controller_is_dynamic_show") = item(key & "coview") > ""
+                End If
+                If Not entity.ContainsKey("controller_is_dynamic_showform") OrElse Utils.f2bool(entity("controller_is_dynamic_showform")) <> (item(key & "coedit") > "") Then
+                    is_updated = True
+                    entity("controller_is_dynamic_showform") = item(key & "coedit") > ""
+                End If
+                If Not entity.ContainsKey("controller_is_lookup") OrElse Utils.f2bool(entity("controller_is_lookup")) <> (item(key & "colookup") > "") Then
+                    is_updated = True
+                    entity("controller_is_lookup") = item(key & "colookup") > ""
                 End If
                 Me.createController(entity, entities)
             End If
@@ -577,6 +589,20 @@ Public Class DevManageController
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
     End Sub
 
+    Private Sub createLookup(entity As Hashtable)
+        Dim ltable = fw.model(Of LookupManagerTables).oneByTname(entity("table"))
+        Dim fields As New Hashtable From {
+                {"tname", entity("table")},
+                {"iname", entity("iname")}
+            }
+        If ltable.Count > 0 Then
+            'replace
+            fw.model(Of LookupManagerTables).update(ltable("id"), fields)
+        Else
+            fw.model(Of LookupManagerTables).add(fields)
+        End If
+    End Sub
+
     Private Sub createController(entity As Hashtable, entities As ArrayList)
         Dim model_name = entity("model_name")
         Dim controller_url = entity("controller_url")
@@ -589,9 +615,15 @@ Public Class DevManageController
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
         'If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
 
-        'save back to entity as ti can be used by caller
+        'save back to entity as it can be used by caller
         entity("controller_url") = controller_url
         entity("controller_title") = controller_title
+
+        If Utils.f2bool(entity("controller_is_lookup")) Then
+            'if requested controller as a lookup table - just add/update lookup tables, no actual controller creation
+            Me.createLookup(entity)
+            Return
+        End If
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\controllers"
@@ -943,10 +975,13 @@ Public Class DevManageController
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
 
-        config("is_dynamic_show") = True
-        config("show_fields") = showFields
-        config("is_dynamic_showform") = True
-        config("showform_fields") = showFormFields
+        logger("*********")
+        logger(entity("controller_is_dynamic_show"))
+        logger(entity("controller_is_dynamic_showform"))
+        config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
+        If config("is_dynamic_show") Then config("show_fields") = showFields
+        config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
+        If config("is_dynamic_showform") Then config("showform_fields") = showFormFields
 
         'remove all commented items - name start with "#"
         For Each key In config.Keys.Cast(Of String).ToArray()
