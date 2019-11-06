@@ -93,9 +93,9 @@ Public MustInherit Class FwModel
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
-        Dim select_fields As New Hashtable From {
-                {field_id, "id"},
-                {field_iname, "iname"}
+        Dim select_fields As New ArrayList From {
+                New Hashtable From {{"field", field_id}, {"alias", "id"}},
+                New Hashtable From {{"field", field_iname}, {"alias", "iname"}}
             }
         Return db.array(table_name, where, db.q_ident(field_iname), select_fields)
     End Function

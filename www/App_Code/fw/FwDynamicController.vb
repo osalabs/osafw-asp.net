@@ -391,10 +391,11 @@ Public Class FwDynamicController
                     def("value") = def("lookup_row")(lookup_field)
 
                 ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
-                    def("lookup_row") = fw.model(def("lookup_model")).one(Utils.f2int(item(field)))
+                    Dim lookup_model = fw.model(def("lookup_model"))
+                    def("lookup_row") = lookup_model.one(Utils.f2int(item(field)))
 
                     Dim lookup_field = def("lookup_field")
-                    If lookup_field = "" Then lookup_field = "iname"
+                    If lookup_field = "" Then lookup_field = lookup_model.field_iname
 
                     def("value") = def("lookup_row")(lookup_field)
 

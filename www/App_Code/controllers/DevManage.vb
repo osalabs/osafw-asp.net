@@ -494,7 +494,8 @@ Public Class DevManageController
         If model_name = "" Then
             model_name = nameCamelCase(table_name)
         End If
-        If table_name = "" OrElse model_name = "" OrElse _models.Contains(model_name) Then Throw New ApplicationException("No table name or no model name or model exists")
+        If table_name = "" OrElse model_name = "" Then Throw New ApplicationException("No table name or no model name")
+        'If _models.Contains(model_name) Then Throw New ApplicationException("Such model already exists")
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\models"
@@ -512,24 +513,46 @@ Public Class DevManageController
         If entity.ContainsKey("fields") Then
             Dim fields = array2hashtable(entity("fields"), "name")
 
+            'detect id and iname fields
             Dim i = 1
-            Dim is_identity = False
-            Dim is_iname = False
+            Dim fld_int As Hashtable
+            Dim fld_identity As Hashtable
+            Dim fld_iname As Hashtable
             For Each fld As Hashtable In entity("fields")
                 'find identity
-                If Not is_identity AndAlso fld("is_identity") = "1" Then
-                    is_identity = True
-                    codegen &= "        field_id = """ & fld("name") & """" & vbCrLf
+                If fld_identity Is Nothing AndAlso fld("is_identity") = "1" Then
+                    fld_identity = fld
                 End If
 
-                'for iname - just use 2nd or further field which not end with ID
-                If Not is_iname AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
-                    is_iname = True
-                    codegen &= "        field_iname = """ & fld("name") & """" & vbCrLf
+                'first int field
+                If fld_int Is Nothing AndAlso fld("fw_type") = "int" Then
+                    fld_int = fld
+                End If
+
+                'for iname - just use 2nd to 4th field which not end with ID, varchar type and has some maxlen
+                If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("maxlen") > 0 AndAlso fld("fw_type") = "varchar" AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
+                    fld_iname = fld
                 End If
 
                 i += 1
             Next
+
+            If fld_identity Is Nothing AndAlso fld_int IsNot Nothing AndAlso fields.Count = 2 Then
+                'this is looks like lookup table (id/name fields only) without identity - just set id field as first int field
+                fld_identity = fld_int
+            End If
+
+            If fld_iname Is Nothing AndAlso fld_identity IsNot Nothing Then
+                'if no iname field found - just use ID field
+                fld_iname = fld_identity
+            End If
+
+            If fld_identity IsNot Nothing Then
+                codegen &= "        field_id = """ & fld_identity("name") & """" & vbCrLf
+            End If
+            If fld_iname IsNot Nothing Then
+                codegen &= "        field_iname = """ & fld_iname("name") & """" & vbCrLf
+            End If
 
             'also reset fw fields if such not exists
             If Not fields.ContainsKey("status") Then
@@ -564,7 +587,7 @@ Public Class DevManageController
         If controller_title = "" Then controller_title = name2human(model_name)
 
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
-        If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
+        'If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
 
         'save back to entity as ti can be used by caller
         entity("controller_url") = controller_url
@@ -674,42 +697,80 @@ Public Class DevManageController
             sff("field") = fld("name")
             sff("label") = fld("name")
 
-            If fld("is_nullable") = "0" AndAlso fld("default") = "" Then sff("required") = True 'if not nullable and no default - required
+            If fld("is_nullable") = "0" Then sff("required") = True 'if not nullable - required
 
-            If Utils.f2int(fld("maxlen")) > 0 Then sff("maxlength") = Utils.f2int(fld("maxlen"))
+            Dim maxlen = Utils.f2int(fld("maxlen"))
+            If maxlen > 0 Then sff("maxlength") = maxlen
             If fld("fw_type") = "varchar" Then
-                If Utils.f2int(fld("maxlen")) = -1 Then 'large text
+                If maxlen <= 0 Then 'large text
                     sf("type") = "markdown"
                     sff("type") = "textarea"
                     sff("rows") = 5
                     sff("class_control") = "markdown autoresize" 'or fw-html-editor or fw-html-editor-short
                 Else
+                    'normal text input
                     sff("type") = "input"
+                    If maxlen < 255 Then
+                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 2)
+                        If col < 1 Then col = 1
+                        If col > 9 Then col = 9
+                        sff("class_contents") = "col-md-" & col
+                    End If
+
                 End If
             ElseIf fld("fw_type") = "int" Then
-                If Right(fld("name"), 3) = "_id" AndAlso fld("name") <> "dict_link_auto_id" Then 'TODO remove dict_link_auto_id
-                    'TODO better detect if field has foreign key
-                    'if link to other table - make type=select
-                    Dim mname = _tablename2model(Left(fld("name"), Len(fld("name")) - 3))
-                    If mname = "Parent" Then mname = model_name
+                'int fields could be: foreign keys, yes/no, just a number input
 
-                    sf("lookup_model") = mname
-                    'sf("lookup_field") = "iname"
+                'check foreign keys - and make type=select
+                Dim is_fk = False
+                If entity.ContainsKey("foreign_keys") Then
+                    For Each fkinfo As Hashtable In entity("foreign_keys")
+                        If fkinfo("column") = fld("name") Then
+                            is_fk = True
+                            Dim mname = _tablename2model(Utils.name2fw(fkinfo("pk_table")))
 
-                    sff("type") = "select"
-                    sff("lookup_model") = mname
-                    sff("is_option0") = True
-                    sff("class_contents") = "col-md-3"
-                ElseIf fld("fw_subtype") = "tinyint" OrElse fld("fw_subtype") = "unsignedtinyint" OrElse fld("fw_subtype") = "boolean" Then 'not sure about tinyint
-                    'make it as yes/no radio
-                    sff("type") = "yesno"
-                    sff("is_inline") = True
-                Else
-                    sff("type") = "number"
-                    sff("min") = 0
-                    sff("max") = 999999
-                    sff("class_contents") = "col-md-3"
+                            sf("lookup_model") = mname
+                            'sf("lookup_field") = "iname"
+
+                            sff("type") = "select"
+                            sff("lookup_model") = mname
+                            If Regex.Replace(fld("default") & "", "\D+", "") = "0" Then 'remove all non-digits
+                                'if default is 0 - allow 0 option
+                                sff("is_option0") = True
+                            Else
+                                sff("is_option_empty") = True
+                            End If
+
+                            sff("class_contents") = "col-md-3"
+                            Exit For
+                        End If
+                    Next
                 End If
+
+                If Not is_fk Then
+                    If fld("name") = "parent_id" Then
+                        'special case - parent_id
+                        Dim mname = model_name
+
+                        sf("lookup_model") = mname
+                        'sf("lookup_field") = "iname"
+
+                        sff("type") = "select"
+                        sff("lookup_model") = mname
+                        sff("is_option0") = True
+                        sff("class_contents") = "col-md-3"
+                    ElseIf fld("fw_subtype") = "boolean" Then 'not sure about tinyint and unsignedtinyint
+                        'make it as yes/no radio
+                        sff("type") = "yesno"
+                        sff("is_inline") = True
+                    Else
+                        sff("type") = "number"
+                        sff("min") = 0
+                        sff("max") = 999999
+                        sff("class_contents") = "col-md-3"
+                    End If
+                End If
+
             ElseIf fld("fw_type") = "float" Then
                 sff("type") = "number"
                 sff("step") = 0.1
@@ -856,16 +917,28 @@ Public Class DevManageController
         config("related_field_name") = "" 'TODO?
         config("list_view") = table_name
 
+
         'default fields for list view
-        If is_fw Then
-            config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
-        Else
+        'alternatively - just show couple fields
+        'If is_fw Then config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+
+        'just show all fields, except identity and large text
+        config("view_list_defaults") = ""
+        For i = 0 To fields.Count - 1
+            If fields(i)("is_identity") = "1" Then Continue For
+            If fields(i)("fw_type") = "varchar" AndAlso fields(i)("maxlen") <= 0 Then Continue For
+            config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+        Next
+
+        If Not is_fw Then
             'nor non-fw tables - just show first 3 fields
-            config("view_list_defaults") = ""
-            For i = 0 To Math.Min(2, fields.Count - 1)
-                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
-            Next
-            config("list_sortmap") = hFieldsMapFW 'for non-fw - list_sortmap separately
+            'config("view_list_defaults") = ""
+            'For i = 0 To Math.Min(2, fields.Count - 1)
+            '    config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            'Next
+
+            'for non-fw - list_sortmap separately
+            config("list_sortmap") = hFieldsMapFW
         End If
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"

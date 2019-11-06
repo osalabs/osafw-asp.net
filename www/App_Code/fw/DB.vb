@@ -269,13 +269,19 @@ Public Class DB
     ''' <param name="table">table name</param>
     ''' <param name="where">where conditions</param>
     ''' <param name="order_by">optional order by, MUST BE QUOTED</param>
-    ''' <param name="aselect_fields">optional select fields array or hashtable(for aliases), if not set * returned</param>
+    ''' <param name="aselect_fields">optional select fields array or hashtable(for aliases) or arraylist of hashtable("field"=>,"alias"=> for cases if there could be several same fields with diff aliases), if not set * returned</param>
     ''' <returns></returns>
     Public Overloads Function array(ByVal table As String, ByVal where As Hashtable, Optional ByRef order_by As String = "", Optional aselect_fields As ICollection = Nothing) As ArrayList
         Dim select_fields = "*"
         If aselect_fields IsNot Nothing Then
             Dim quoted As New ArrayList
-            If TypeOf aselect_fields Is IDictionary Then
+            If TypeOf aselect_fields Is ArrayList Then
+                'arraylist of hashtables with "field","alias" keys - usable for the case when we need same field to be selected more than once with different aliases
+                For Each asf As Hashtable In aselect_fields
+                    quoted.Add(Me.q_ident(asf("field")) & " as " & Me.q_ident(asf("alias")))
+                Next
+
+            ElseIf TypeOf aselect_fields Is IDictionary Then
                 For Each field In DirectCast(aselect_fields, IDictionary).Keys
                     quoted.Add(Me.q_ident(field) & " as " & Me.q_ident(DirectCast(aselect_fields, IDictionary).Item(field))) 'field as alias
                 Next
@@ -850,6 +856,8 @@ Public Class DB
         If dbtype = "SQL" Then
             'fw.logger("cache MISS " & current_db & "." & table)
             'get information about all columns in the table
+            'default = ((0)) ('') (getdate())
+            'maxlen = -1 for nvarchar(MAX)
             Dim sql As String = "SELECT c.column_name as 'name'," &
                     " c.data_type as 'type'," &
                     " CASE c.is_nullable WHEN 'YES' THEN 1 ELSE 0 END AS 'is_nullable'," &
@@ -877,11 +885,10 @@ Public Class DB
                 DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Columns, New Object() {Nothing, Nothing, table, Nothing})
 
             Dim fieldslist = New List(Of Hashtable)
-            Dim is_identity = False
             For Each row As DataRow In schemaTable.Rows
                 'unused:
                 'COLUMN_HASDEFAULT True False
-                'COLUMN_FLAGS   74 86 90(auto) 102 106 114 122(date) 226 230 234
+                'COLUMN_FLAGS   74 86 90(auto) 102 106 114 122(date) 130 226 230 234
                 'CHARACTER_OCTET_LENGTH
                 'DATETIME_PRECISION=0
                 'DESCRIPTION
@@ -898,18 +905,22 @@ Public Class DB
                 h("charset") = row("CHARACTER_SET_NAME")
                 h("collation") = row("COLLATION_NAME")
                 h("pos") = row("ORDINAL_POSITION")
+                h("is_identity") = 0
                 h("desc") = row("DESCRIPTION")
-                'TODO actually this also triggers for Long Integers, need to change somehow. For now - only first field that match conditions will be an identity
-                If Not is_identity AndAlso row("DATA_TYPE") = OleDbType.Integer AndAlso row("COLUMN_FLAGS") = 90 Then
-                    h("is_identity") = 1
-                    is_identity = True
-                Else
-                    h("is_identity") = 0
-                End If
+                h("column_flags") = row("COLUMN_FLAGS")
                 fieldslist.Add(h)
             Next
             'order by ORDINAL_POSITION
             result.AddRange(fieldslist.OrderBy(Function(h) h("pos")).ToList())
+
+            'now detect identity (because order is important)
+            For Each h As Hashtable In result
+                'actually this also triggers for Long Integers, so for now - only first field that match conditions will be an identity
+                If h("type") = OleDbType.Integer AndAlso h("column_flags") = 90 Then
+                    h("is_identity") = 1
+                    Exit For
+                End If
+            Next
         End If
 
         'save to cache
