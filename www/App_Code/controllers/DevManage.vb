@@ -390,7 +390,7 @@ Public Class DevManageController
         If is_updated Then saveJson(entities, config_file)
 
         fw.FLASH("success", "App build successfull")
-        fw.redirect(base_url & "/(Creator)?reload=1")
+        fw.redirect(base_url & "/(AppCreator)?reload=1")
 
     End Sub
 
@@ -633,6 +633,7 @@ Public Class DevManageController
                 Dim parts = Regex.Split(line, "\s+")
                 Dim field_name = parts(0) 'name is first 
 
+                'special - *Address -> set of address fields
                 If Regex.IsMatch(field_name, "Address$", RegexOptions.IgnoreCase) Then
                     table_entity("fields").AddRange(addressFields(field_name))
                     Continue For
@@ -1433,15 +1434,15 @@ Public Class DevManageController
     Private Function addressFields(field_name As String) As ArrayList
         Dim m = Regex.Match(field_name, "(.*?)(Address)$", RegexOptions.IgnoreCase)
         Dim prefix As String = m.Groups(1).Value
-        Dim city_name = "city"
-        Dim state_name = "state"
-        Dim zip_name = "zip"
-        Dim country_name = "country"
+        Dim city_name = prefix & "city"
+        Dim state_name = prefix & "state"
+        Dim zip_name = prefix & "zip"
+        Dim country_name = prefix & "country"
         If m.Groups(2).Value = "Address" Then
-            city_name = "City"
-            state_name = "State"
-            zip_name = "Zip"
-            country_name = "Country"
+            city_name = prefix & "City"
+            state_name = prefix & "State"
+            zip_name = prefix & "Zip"
+            country_name = prefix & "Country"
         End If
 
         Return New ArrayList From {
