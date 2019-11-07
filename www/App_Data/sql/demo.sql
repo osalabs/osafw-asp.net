@@ -1,3 +1,5 @@
+-- demo tables, use for reference/development, remove when not required
+
 /*Demo Dictionary table*/
 DROP TABLE demo_dicts;
 CREATE TABLE demo_dicts (

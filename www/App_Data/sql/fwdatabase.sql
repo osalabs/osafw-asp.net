@@ -1,3 +1,5 @@
+-- core framework tables only, create app-specific tables in database.sql
+
 /* upload categories */
 DROP TABLE att_categories;
 CREATE TABLE att_categories (

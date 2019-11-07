@@ -9,7 +9,9 @@ Public Class DevManageController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 100
 
+    Const DB_SQL_PATH = "/App_Data/sql/database.sql" 'relative to site_root
     Const DB_JSON_PATH = "/dev/db.json"
+    Const ENTITIES_PATH = "/dev/entities.txt"
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -68,6 +70,23 @@ Public Class DevManageController
 
         fw.redirect(base_url)
     End Sub
+
+    Public Sub DeleteMenuItemsAction()
+        fw.FLASH("success", "Menu Items cleared")
+
+        db.del("menu_items", New Hashtable)
+
+        fw.redirect(base_url)
+    End Sub
+
+    Public Sub ReloadSessionAction()
+        fw.FLASH("success", "Session Reloaded")
+
+        fw.model(Of Users).reloadSession()
+
+        fw.redirect(base_url)
+    End Sub
+
 
     Public Sub CreateModelAction()
         Dim item = reqh("item")
@@ -187,10 +206,10 @@ Public Class DevManageController
         Return ps
     End Function
 
-    Public Function CreatorAction() As Hashtable
-        'reload session, so sidebar menu will be updated
-        If reqs("reload") > "" Then fw.model(Of Users).reloadSession()
 
+    '************************* APP CREATION Actions
+    '************************* DB Analyzer
+    Public Function DBAnalyzerAction() As Hashtable
         Dim ps As New Hashtable
         Dim dbsources As New ArrayList
 
@@ -200,6 +219,108 @@ Public Class DevManageController
                             {"iname", dbname}
                           })
         Next
+
+        ps("dbsources") = dbsources
+        Return ps
+    End Function
+
+    Public Sub DBAnalyzerSaveAction()
+        Dim item = reqh("item")
+        Dim dbname As String = item("db") & ""
+        Dim dbconfig = fw.config("db")(dbname)
+        If dbconfig Is Nothing Then Throw New ApplicationException("Wrong DB selection")
+
+        createDBJsonFromExistingDB(dbname)
+        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
+        fw.redirect(base_url & "/(AppCreator)")
+    End Sub
+
+    Public Function EntityBuilderAction() As Hashtable
+        Dim ps As New Hashtable
+
+        Dim entities_file = fw.config("template") & ENTITIES_PATH
+        Dim item As New Hashtable
+        item("entities") = FW.get_file_content(entities_file)
+        ps("i") = item
+
+        Return ps
+    End Function
+
+    Public Sub EntityBuilderSaveAction()
+        Dim item = reqh("item")
+        Dim is_create_all = reqi("DoMagic") = 1
+
+        Dim entities_file = fw.config("template") & ENTITIES_PATH
+        FW.set_file_content(entities_file, item("entities"))
+
+        Try
+            If is_create_all Then
+                'TODO create db.json, db, models/controllers
+            Else
+                'create db.json only
+                createDBJsonFromEntities(item("entities"))
+                fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+                fw.redirect(base_url & "/(DBInitializer)")
+            End If
+        Catch ex As ApplicationException
+            fw.FLASH("error", ex.Message)
+        End Try
+
+        fw.redirect(base_url & "/(EntityBuilder)")
+    End Sub
+
+    Public Function DBInitializerAction() As Hashtable
+        Dim ps As New Hashtable
+
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        ps("tables") = entities
+
+        Return ps
+    End Function
+
+    Public Sub DBInitializerSaveAction()
+        Dim is_sql_only = reqi("DoSQL") = 1
+
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        Dim database_sql = ""
+        For Each entity In entities
+            Dim sql = entity2SQL(entity)
+            If is_sql_only Then
+                'only create App_Data/database.sql
+                'add drop
+                database_sql &= "DROP TABLE " & db.q_ident(entity("table")) & ";" & vbCrLf
+                database_sql &= sql & ";" & vbCrLf & vbCrLf
+            Else
+                'create db tables directly in db
+                'TODO re-create - first drop with all FK dependencies
+                db.exec(sql)
+            End If
+        Next
+
+        If is_sql_only Then
+            Dim sql_file = fw.config("site_root") & DB_SQL_PATH
+            FW.set_file_content(sql_file, database_sql)
+            fw.FLASH("success", DB_SQL_PATH & " created")
+
+            fw.redirect(base_url & "/(DBInitializer)")
+        Else
+            fw.FLASH("success", "DB tables created")
+
+            fw.redirect(base_url & "/(AppCreator)")
+        End If
+    End Sub
+
+
+    Public Function AppCreatorAction() As Hashtable
+        'reload session, so sidebar menu will be updated
+        If reqs("reload") > "" Then fw.model(Of Users).reloadSession()
+
+        Dim ps As New Hashtable
 
         'tables
         Dim config_file = fw.config("template") & DB_JSON_PATH
@@ -214,34 +335,11 @@ Public Class DevManageController
             entity("is_controller_exists") = _controllers.Contains(entity("controller_name") & "Controller")
         Next
 
-        ps("dbsources") = dbsources
         ps("entities") = entities
         Return ps
     End Function
 
-    Public Sub CreatorAnalyseDBAction()
-        Dim item = reqh("item")
-        Dim dbname As String = item("db") & ""
-        Dim dbconfig = fw.config("db")(dbname)
-        If dbconfig Is Nothing Then Throw New ApplicationException("Wrong DB selection")
-
-        'Try
-        'also cleanup menu_items
-        db.del("menu_items", New Hashtable)
-
-        createDBJson(dbname)
-        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
-
-
-        'Catch ex As Exception
-        '    fw.FLASH("error", ex.Message)
-        '    fw.redirect(base_url)
-        'End Try
-
-        fw.redirect(base_url & "/(Creator)")
-    End Sub
-
-    Public Sub CreatorBuildAppAction()
+    Public Sub AppCreatorSaveAction()
         Dim item = reqh("item")
 
         Dim config_file = fw.config("template") & DB_JSON_PATH
@@ -488,7 +586,14 @@ Public Class DevManageController
         Next
     End Sub
 
-    Private Sub createDBJson(dbname As String)
+    Private Sub createDBJsonFromEntities(entities_text As String)
+        Dim entities = New ArrayList
+
+        'save db.json
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
+    End Sub
+
+    Private Sub createDBJsonFromExistingDB(dbname As String)
         Dim db = New DB(fw, fw.config("db")(dbname), dbname)
 
         Dim entities = dbschema2entities(db)
@@ -975,9 +1080,6 @@ Public Class DevManageController
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
 
-        logger("*********")
-        logger(entity("controller_is_dynamic_show"))
-        logger(entity("controller_is_dynamic_showform"))
         config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
         If config("is_dynamic_show") Then config("show_fields") = showFields
         config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
@@ -989,6 +1091,93 @@ Public Class DevManageController
         Next
 
     End Sub
+
+    'convert db.json entity to SQL CREATE TABLE
+    Function entity2SQL(entity As Hashtable) As String
+        Dim result = "CREATE TABLE " & db.q_ident(entity("table")) & " (" & vbCrLf
+
+        Dim i = 1
+        For Each field As Hashtable In entity("fields")
+            Dim fsql = "  " & db.q_ident(field("name")).PadRight(21, " ") & " " & entityfield2dbtype(field)
+            If field("is_identity") = 1 Then
+                fsql &= " IDENTITY(1, 1) PRIMARY KEY CLUSTERED"
+            End If
+            fsql &= IIf(field("is_nullable") = 0, " NOT NULL", "")
+            fsql &= entityfield2dbdefault(field)
+            'FOREIGN KEY REFERENCES att_categories(id)
+
+            result &= fsql & IIf(i < entity("fields").Count, ",", "") & vbCrLf
+            i += 1
+        Next
+
+        result &= ")"
+
+        Return result
+    End Function
+
+    Function entityfield2dbtype(entity As Hashtable) As String
+        Dim result = ""
+        logger(entity("fw_type"))
+        Select Case entity("fw_type")
+            Case "int"
+                If entity("fw_subtype") = "boolean" OrElse entity("fw_subtype") = "bit" Then
+                    result = "BIT"
+                ElseIf entity("numeric_precision") = 3 Then
+                    result = "TINYINT"
+                Else
+                    result = "INT"
+                End If
+            Case "float"
+                result = "FLOAT"
+            Case "datetime"
+                If entity("fw_subtype") = "date" Then
+                    result = "DATE"
+                Else
+                    result = "DATETIME2"
+                End If
+            Case Else '"varchar"
+                result = "NVARCHAR"
+                If entity("maxlen") > 0 And entity("maxlen") < 256 Then
+                    result &= "(" & entity("maxlen") & ")"
+                Else
+                    result &= "(MAX)"
+                End If
+        End Select
+        logger(result)
+        Return result
+    End Function
+
+    Function entityfield2dbdefault(entity As Hashtable) As String
+        Dim result = ""
+        Dim def As String = entity("default")
+        If def > "" Then
+            result &= " DEFAULT "
+            'remove outer parentness if any
+            def = Regex.Replace(def, "^\((.+)\)$", "$1")
+            def = Regex.Replace(def, "^\((.+)\)$", "$1") 'and again because of ((0)) but don't touch (getdate())
+
+            If Regex.IsMatch(def, "^\d+$") Then
+                'only digits
+                result &= "(" & def & ")"
+
+            ElseIf def = "getdate()" OrElse Regex.IsMatch(def, "^\=?now\(\)$", RegexOptions.IgnoreCase) Then
+                'access now() => getdate()
+                result &= "(getdate())"
+            Else
+                'any other text - quote
+                def = Regex.Replace(def, "^'(.*)'$", "$1") 'remove outer quotes if any
+
+                If entity("fw_type") = "int" Then
+                    'if field type int - convert to int
+                    result &= "(" & db.qi(def) & ")"
+                Else
+                    result &= "(" & db.q(def) & ")"
+                End If
+            End If
+        End If
+
+        Return result
+    End Function
 
     'update by url
     Sub updateMenuItem(controller_url As String, controller_title As String)

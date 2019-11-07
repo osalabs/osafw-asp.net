@@ -1,21 +1,9 @@
 <~/common/form/msg>
 
-<h4><~title></h4>
+<h4><a href="<~/dev/manage/url>" class="btn btn-light btn-sm px-3"><i class="glyphicon glyphicon-menu-left"></i></a> <~title></h4>
 
-<h5 class="mt-4">1. Select database and create db.json</h5>
-
-<form method="post" action="<~../url>/(CreatorAnalyseDB)" class="form-inline">
-    <input type="hidden" name="XSS" value="<~session[XSS]>">
-    DB from config:
-    <select name="item[db]" class="form-control ml-2">
-        <option>- select-</option>
-        <~dbsources select="i[db]">
-    </select>
-    <button class="btn btn-primary ml-2">Analyse and create db.json</button>
-</form>
-
-<h5 class="mt-4">2. Select entities to create</h5>
-<form method="post" action="<~../url>/(CreatorBuildApp)">
+<h5 class="mt-4">Select tables from db.json to create models/controllers for</h5>
+<form method="post" action="<~../url>/(AppCreatorSave)">
     <input type="hidden" name="XSS" value="<~session[XSS]>">
 
   <fieldset>
