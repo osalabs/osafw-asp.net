@@ -17,29 +17,43 @@
 
 <div class="text-muted mt-5">
     Notes:<br>
-    - every entity will already contain standard fields: <em>id, icode, iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id</em>
-
+    - use 2 spaces indent and "-" for fields<br>
+    - every entity will already contain standard fields: <em>id, icode, iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id</em><br>
+    - *Address = creates several fields address, address2, city, state, zip, country<br>
+    - *Date = date type applied<br>
+    - NULL means no default applied and field can be null<br>
+    - everything after "#" is a comment<br>
     <br>
-    <br>
-    Sample:<br>
+    Sample for CRM:<br>
 <pre class="text-muted">
-#everything after "#" is a comment
-- companies lookup   #lookup means - don't create controller, add to Lookup Manager
-- contacts
-  - companies.id required  #dot-name means foreign key, required means required, otherwise - NOT NULL default ''
+- customers
   - Address
   - Phone
-  - notes NULL #NULL means no default applied and field can be null
+  - Fax
+  - ContactName
+  - Email
+  - BillAddress
+  - FollowUpDate
+- customers_notes
+  - customers.id required
+- vendors
+  - Address
+  - Phone
+  - Fax
+  - ContactName
+  - Email
 - products
-  - companies.id #supplier/vendor
+  - vendors.id required #dot-name means foreign key, required means required, otherwise - NOT NULL default ''
   - price float
-- orders_stages lookup
-- orders #Quote is one of order's stage
+- orders_stages lookup #lookup means - don't create controller, add to Lookup Manager
+- orders #"quote" is just one of order's stage
   - customers.id
   - orders_stages.id
+  - OrderDate
 - order_items
   - orders.id
   - products.id
+  - uom varchar(3)
   - quantity int
   - price float
 </pre>

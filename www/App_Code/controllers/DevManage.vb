@@ -12,6 +12,7 @@ Public Class DevManageController
     Const DB_SQL_PATH = "/App_Data/sql/database.sql" 'relative to site_root
     Const DB_JSON_PATH = "/dev/db.json"
     Const ENTITIES_PATH = "/dev/entities.txt"
+    Const FW_TABLES = "att_categories att att_table_link users settings spages events event_log lookup_manager_tables user_views user_lists user_lists_items menu_items"
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -259,7 +260,7 @@ Public Class DevManageController
                 'TODO create db.json, db, models/controllers
             Else
                 'create db.json only
-                createDBJsonFromEntities(item("entities"))
+                createDBJsonFromText(item("entities"))
                 fw.FLASH("success", "template" & DB_JSON_PATH & " created")
                 fw.redirect(base_url & "/(DBInitializer)")
             End If
@@ -586,8 +587,143 @@ Public Class DevManageController
         Next
     End Sub
 
-    Private Sub createDBJsonFromEntities(entities_text As String)
+    Private Sub createDBJsonFromText(entities_text As String)
         Dim entities = New ArrayList
+
+        Dim lines = Regex.Split(entities_text, "[\n\r]+")
+        Dim table_entity As Hashtable
+        For Each line As String In lines
+            line = Regex.Replace(line, "#.+$", "") 'remove any human comments
+            If Trim(line) = "" Then Continue For
+            fw.logger(line)
+
+            If line.Substring(0, 1) = "-" Then
+                'new entity
+                table_entity = New Hashtable
+                entities.Add(table_entity)
+
+                line = Regex.Replace(line, "^-\s*", "") 'remove prefix 'human table name
+                Dim parts = Regex.Split(line, "\s+")
+                Dim table_name = parts(0) 'name is first 
+
+                table_entity("db_config") = "" 'main
+                table_entity("iname") = table_name
+                table_entity("table") = Utils.name2fw(table_name)
+                If isFwTableName(table_entity("table")) Then Throw New ApplicationException("Cannot have table name " & table_entity("table"))
+
+                table_entity("fw_name") = Utils.name2fw(table_name) 'new table name using fw standards
+
+                table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
+                table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
+                table_entity("controller_title") = name2human(table_entity("model_name"))
+                If Regex.IsMatch(line, "\blookup\b") Then
+                    table_entity("controller_is_lookup") = True
+                End If
+                table_entity("is_fw") = True
+                'add default system fields
+                table_entity("fields") = New ArrayList(defaultFields())
+                table_entity("foreign_keys") = New ArrayList
+
+            Else
+                'entity field
+                If table_entity Is Nothing Then Continue For 'skip if table_entity is not initialized yet
+                If line.Substring(0, 3) <> "  -" Then Continue For 'skip strange things
+
+                line = Regex.Replace(line, "^  -\s*", "") 'remove prefix 
+                Dim parts = Regex.Split(line, "\s+")
+                Dim field_name = parts(0) 'name is first 
+
+                If Regex.IsMatch(field_name, "Address$", RegexOptions.IgnoreCase) Then
+                    table_entity("fields").AddRange(addressFields(field_name))
+                    Continue For
+                End If
+
+                Dim field As New Hashtable
+                table_entity("fields").Add(field)
+
+                'check if field is foreign key
+                If Right(field_name, 3) = ".id" Then
+                    'this is foreign key field
+                    Dim fk As New Hashtable
+                    table_entity("foreign_keys").Add(fk)
+
+                    fk("pk_table") = Utils.name2fw(Regex.Replace(field_name, "\.id$", ""))  'Customers.id => customers
+                    fk("pk_column") = "id"
+                    field_name = fk("pk_table") & "_id"
+                    fk("column") = field_name
+
+                    field("fw_type") = "int"
+                    field("fw_type") = "int"
+                End If
+
+                field("name") = field_name
+                field("iname") = name2human(field_name)
+                field("fw_name") = Utils.name2fw(field_name)
+                field("is_identity") = 0
+
+                field("is_nullable") = IIf(Regex.IsMatch(line, "\bNULL\b"), 1, 0)
+                field("numeric_precision") = Nothing
+                field("maxlen") = Nothing
+                'detect type if not yet set by foreigh key
+                If field("fw_type") = "" Then
+                    field("fw_type") = "varchar"
+                    field("fw_subtype") = "nvarchar"
+                    Dim m = Regex.Match(line, "varchar\((.+?)\)") 'detect varchar(LEN|MAX)
+                    If m.Success Then
+                        If m.Groups(1).Value = "MAX" OrElse Utils.f2int(m.Groups(1).Value) > 255 Then
+                            field("maxlen") = -1
+                        Else
+                            field("maxlen") = Utils.f2int(m.Groups(1).Value)
+                        End If
+                    ElseIf Regex.IsMatch(line, "\bint\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 10
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "int"
+                    ElseIf Regex.IsMatch(line, "\btinyint\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 3
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "tinyint"
+                    ElseIf Regex.IsMatch(line, "\bbit\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 1
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "bit"
+                    ElseIf Regex.IsMatch(line, "\bfloat\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 53
+                        field("fw_type") = "float"
+                        field("fw_subtype") = "float"
+                    ElseIf Regex.IsMatch(line, "\bdate\b", RegexOptions.IgnoreCase) Then
+                        field("fw_type") = "date"
+                        field("fw_subtype") = "date"
+                    ElseIf Regex.IsMatch(line, "\bdatetime\b", RegexOptions.IgnoreCase) Then
+                        field("fw_type") = "date"
+                        field("fw_subtype") = "datetime2"
+                    Else
+                        'not type specified
+                        'additionally detect date field from name
+                        If Regex.IsMatch(field("name"), "Date$", RegexOptions.IgnoreCase) Then
+                            field("fw_type") = "date"
+                            field("fw_subtype") = "date"
+                        Else
+                            'just a default varchar(255)
+                            field("maxlen") = 255
+                        End If
+                    End If
+
+                    'default
+                    field("default") = Nothing
+                    m = Regex.Match(line, "\bdefault\s+\((.+)\)") 'default (VALUE_HERE)
+                    If m.Success Then
+                        field("default") = m.Groups(1).Value
+                    Else
+                        'no default set - then for nvarchar set empty strin gdefault
+                        If field("fw_type") = "varchar" Then
+                            field("default") = ""
+                        End If
+                    End If
+                End If
+
+            End If
+        Next
 
         'save db.json
         saveJson(entities, fw.config("template") & DB_JSON_PATH)
@@ -1093,7 +1229,7 @@ Public Class DevManageController
     End Sub
 
     'convert db.json entity to SQL CREATE TABLE
-    Function entity2SQL(entity As Hashtable) As String
+    Private Function entity2SQL(entity As Hashtable) As String
         Dim result = "CREATE TABLE " & db.q_ident(entity("table")) & " (" & vbCrLf
 
         Dim i = 1
@@ -1104,7 +1240,7 @@ Public Class DevManageController
             End If
             fsql &= IIf(field("is_nullable") = 0, " NOT NULL", "")
             fsql &= entityfield2dbdefault(field)
-            'FOREIGN KEY REFERENCES att_categories(id)
+            'TODO FOREIGN KEY REFERENCES att_categories(id)
 
             result &= fsql & IIf(i < entity("fields").Count, ",", "") & vbCrLf
             i += 1
@@ -1115,7 +1251,7 @@ Public Class DevManageController
         Return result
     End Function
 
-    Function entityfield2dbtype(entity As Hashtable) As String
+    Private Function entityfield2dbtype(entity As Hashtable) As String
         Dim result = ""
         logger(entity("fw_type"))
         Select Case entity("fw_type")
@@ -1147,7 +1283,7 @@ Public Class DevManageController
         Return result
     End Function
 
-    Function entityfield2dbdefault(entity As Hashtable) As String
+    Private Function entityfield2dbdefault(entity As Hashtable) As String
         Dim result = ""
         Dim def As String = entity("default")
         If def > "" Then
@@ -1179,8 +1315,201 @@ Public Class DevManageController
         Return result
     End Function
 
+    'return default fields for the entity
+    'id, icode, iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id
+    Private Function defaultFields() As ArrayList
+        Return New ArrayList From {
+            New Hashtable From {
+                {"name", "id"},
+                {"fw_name", "id"},
+                {"iname", "ID"},
+                {"is_identity", 1},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 0},
+                {"fw_type", "int"},
+                {"fw_subtype", "integer"}
+            },
+            New Hashtable From {
+                {"name", "icode"},
+                {"fw_name", "icode"},
+                {"iname", "Code"},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 64},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 1},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", "iname"},
+                {"fw_name", "iname"},
+                {"iname", "Name"},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", "idesc"},
+                {"fw_name", "idesc"},
+                {"iname", "Notes"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", -1},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 1},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", "status"},
+                {"fw_name", "status"},
+                {"iname", "Status"},
+                {"is_identity", 0},
+                {"default", 0},
+                {"maxlen", Nothing},
+                {"numeric_precision", 3},
+                {"is_nullable", 0},
+                {"fw_type", "int"},
+                {"fw_subtype", "tinyint"}
+            },
+            New Hashtable From {
+                {"name", "add_time"},
+                {"fw_name", "add_time"},
+                {"iname", "Added on"},
+                {"is_identity", 0},
+                {"default", "getdate()"},
+                {"maxlen", Nothing},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "datetime"},
+                {"fw_subtype", "datetime2"}
+            },
+            New Hashtable From {
+                {"name", "add_users_id"},
+                {"fw_name", "add_users_id"},
+                {"iname", "Added by"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 1},
+                {"fw_type", "int"},
+                {"fw_subtype", "int"}
+            },
+            New Hashtable From {
+                {"name", "upd_time"},
+                {"fw_name", "upd_time"},
+                {"iname", "Updated on"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 1},
+                {"fw_type", "datetime"},
+                {"fw_subtype", "datetime2"}
+            },
+            New Hashtable From {
+                {"name", "upd_users_id"},
+                {"fw_name", "upd_users_id"},
+                {"iname", "Updated by"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 1},
+                {"fw_type", "int"},
+                {"fw_subtype", "int"}
+            }
+        }
+    End Function
+
+    Private Function addressFields(field_name As String) As ArrayList
+        Dim m = Regex.Match(field_name, "(.*?)(Address)$", RegexOptions.IgnoreCase)
+        Dim prefix As String = m.Groups(1).Value
+        Dim city_name = "city"
+        Dim state_name = "state"
+        Dim zip_name = "zip"
+        Dim country_name = "country"
+        If m.Groups(2).Value = "Address" Then
+            city_name = "City"
+            state_name = "State"
+            zip_name = "Zip"
+            country_name = "Country"
+        End If
+
+        Return New ArrayList From {
+            New Hashtable From {
+                {"name", field_name},
+                {"fw_name", Utils.name2fw(field_name)},
+                {"iname", name2human(field_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", field_name & "2"},
+                {"fw_name", Utils.name2fw(field_name & "2")},
+                {"iname", name2human(field_name & "2")},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", city_name},
+                {"fw_name", Utils.name2fw(city_name)},
+                {"iname", name2human(city_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 64},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", state_name},
+                {"fw_name", Utils.name2fw(state_name)},
+                {"iname", name2human(state_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 2},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", zip_name},
+                {"fw_name", Utils.name2fw(zip_name)},
+                {"iname", name2human(zip_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 11},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            }
+        }
+    End Function
+
     'update by url
-    Sub updateMenuItem(controller_url As String, controller_title As String)
+    Private Sub updateMenuItem(controller_url As String, controller_title As String)
         Dim fields = New Hashtable From {
                 {"url", controller_url},
                 {"iname", controller_title},
@@ -1195,5 +1524,11 @@ Public Class DevManageController
             db.insert("menu_items", fields)
         End If
     End Sub
+
+    Private Function isFwTableName(table_name As String) As Boolean
+        Dim tables = Utils.qh(FW_TABLES)
+        Return tables.ContainsKey(table_name.ToLower())
+    End Function
+
 
 End Class
