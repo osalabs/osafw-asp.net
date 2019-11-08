@@ -20,6 +20,7 @@ Public Class FwHooks
 
         'also force set XSS
         If Not fw.SESSION("XSS") > "" Then fw.SESSION("XSS", Utils.getRandStr(16))
+        If fw.model(Of Users).meId() > 0 Then fw.model(Of Users).loadMenuItems()
     End Sub
 
 End Class

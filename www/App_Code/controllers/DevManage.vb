@@ -75,7 +75,7 @@ Public Class DevManageController
     Public Sub DeleteMenuItemsAction()
         fw.FLASH("success", "Menu Items cleared")
 
-        db.del("menu_items", New Hashtable)
+        FwCache.remove("menu_items")
 
         fw.redirect(base_url)
     End Sub
@@ -980,7 +980,7 @@ Public Class DevManageController
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
         Dim saveFields As New ArrayList
-        Dim hFieldsMap As New Hashtable
+        Dim hFieldsMap As New Hashtable   'name => iname
         Dim hFieldsMapFW As New Hashtable 'fw_name => name
         Dim showFields As New ArrayList
         Dim showFormFields As New ArrayList
@@ -989,9 +989,9 @@ Public Class DevManageController
         For Each fld In fields
             logger("field name=", fld("name"), fld)
             hfields(fld("name")) = fld
-            hFieldsMap(fld("name")) = fld("name")
+            hFieldsMap(fld("name")) = fld("iname")
             If Not is_fw Then
-                hFieldsMap(fld("fw_name")) = fld("name")
+                hFieldsMap(fld("fw_name")) = fld("iname")
                 hFieldsMapFW(fld("fw_name")) = fld("name")
             End If
 
@@ -1239,12 +1239,17 @@ Public Class DevManageController
         'alternatively - just show couple fields
         'If is_fw Then config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
 
-        'just show all fields, except identity and large text
+        'just show all fields, except identity, large text and system fields
         config("view_list_defaults") = ""
         For i = 0 To fields.Count - 1
             If fields(i)("is_identity") = "1" Then Continue For
             If fields(i)("fw_type") = "varchar" AndAlso fields(i)("maxlen") <= 0 Then Continue For
-            config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            If is_fw Then
+                If fields(i)("name") = "add_time" OrElse fields(i)("name") = "add_users_id" OrElse fields(i)("name") = "upd_time" OrElse fields(i)("name") = "upd_users_id" Then Continue For
+                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("name")
+            Else
+                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            End If
         Next
 
         If Not is_fw Then

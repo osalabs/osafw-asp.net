@@ -445,6 +445,9 @@ Public Class ParsePage
                             Exit For
                         End If
 
+                    ElseIf TypeOf (ptr) Is IList Then
+                        ptr = DirectCast(ptr, IList).Item(k)
+
                     ElseIf TypeOf (ptr) Is HttpSessionState Then
                         If DirectCast(ptr, HttpSessionState).Item(k) IsNot Nothing Then
                             ptr = DirectCast(ptr, HttpSessionState).Item(k)
