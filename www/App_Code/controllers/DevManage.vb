@@ -258,6 +258,12 @@ Public Class DevManageController
         Try
             If is_create_all Then
                 'TODO create db.json, db, models/controllers
+                createDBJsonFromText(item("entities"))
+                createDBFromDBJson()
+                createDBSQLFromDBJson()
+                createModelsAndControllersFromDBJson()
+
+                fw.FLASH("success", "Application created")
             Else
                 'create db.json only
                 createDBJsonFromText(item("entities"))
@@ -285,51 +291,18 @@ Public Class DevManageController
     Public Sub DBInitializerSaveAction()
         Dim is_sql_only = reqi("DoSQL") = 1
 
-        Dim config_file = fw.config("template") & DB_JSON_PATH
-        Dim entities = loadJson(Of ArrayList)(config_file)
-
-        If Not is_sql_only Then
-            'drop all FKs we created before, so we'll be able to drop tables later
-            Dim fks = db.array("SELECT fk.name, o.name as table_name FROM sys.foreign_keys fk, sys.objects o where fk.is_system_named=0 and o.object_id=fk.parent_object_id")
-            For Each fk As Hashtable In fks
-                db.exec("ALTER TABLE " & db.q_ident(fk("table_name")) & " DROP CONSTRAINT " & db.q_ident(fk("name")))
-            Next
-        End If
-
-        Dim database_sql = ""
-        For Each entity In entities
-            Dim sql = entity2SQL(entity)
-            If is_sql_only Then
-                'only create App_Data/database.sql
-                'add drop
-                database_sql &= "DROP TABLE " & db.q_ident(entity("table")) & ";" & vbCrLf
-                database_sql &= sql & ";" & vbCrLf & vbCrLf
-            Else
-                'create db tables directly in db
-                're-create - first drop with all FK dependencies
-                Try
-                    db.exec("DROP TABLE " & db.q_ident(entity("table")))
-                Catch ex As Exception
-                    logger(ex.Message)
-                    'just ignore drop exceptions
-                End Try
-                db.exec(sql)
-            End If
-        Next
-
         If is_sql_only Then
-            Dim sql_file = fw.config("site_root") & DB_SQL_PATH
-            FW.set_file_content(sql_file, database_sql)
+            createDBSQLFromDBJson()
             fw.FLASH("success", DB_SQL_PATH & " created")
 
             fw.redirect(base_url & "/(DBInitializer)")
         Else
+            createDBFromDBJson()
             fw.FLASH("success", "DB tables created")
 
             fw.redirect(base_url & "/(AppCreator)")
         End If
     End Sub
-
 
     Public Function AppCreatorAction() As Hashtable
         'reload session, so sidebar menu will be updated
@@ -759,6 +732,59 @@ Public Class DevManageController
 
         db.disconnect()
     End Sub
+
+    Private Sub createDBFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        'drop all FKs we created before, so we'll be able to drop tables later
+        Dim fks = db.array("SELECT fk.name, o.name as table_name FROM sys.foreign_keys fk, sys.objects o where fk.is_system_named=0 and o.object_id=fk.parent_object_id")
+        For Each fk As Hashtable In fks
+            db.exec("ALTER TABLE " & db.q_ident(fk("table_name")) & " DROP CONSTRAINT " & db.q_ident(fk("name")))
+        Next
+
+        For Each entity In entities
+            Dim sql = entity2SQL(entity)
+            'create db tables directly in db
+
+            Try
+                db.exec("DROP TABLE " & db.q_ident(entity("table")))
+            Catch ex As Exception
+                logger(ex.Message)
+                'just ignore drop exceptions
+            End Try
+
+            db.exec(sql)
+        Next
+    End Sub
+
+    Private Sub createDBSQLFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        Dim database_sql = ""
+        For Each entity In entities
+            Dim sql = entity2SQL(entity)
+            'only create App_Data/database.sql
+            'add drop
+            database_sql &= "DROP TABLE " & db.q_ident(entity("table")) & ";" & vbCrLf
+            database_sql &= sql & ";" & vbCrLf & vbCrLf
+        Next
+
+        Dim sql_file = fw.config("site_root") & DB_SQL_PATH
+        FW.set_file_content(sql_file, database_sql)
+    End Sub
+
+    Private Sub createModelsAndControllersFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        For Each entity In entities
+            Me.createModel(entity)
+            Me.createController(entity, entities)
+        Next
+    End Sub
+
 
     Private Sub createModel(entity As Hashtable)
         Dim table_name As String = entity("table")
