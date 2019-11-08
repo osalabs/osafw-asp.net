@@ -43,7 +43,7 @@ Public Class PasswordController
             Dim hU As Hashtable = model.oneByEmail(login)
             If Not hU.ContainsKey("id") OrElse hU("status") <> "0" Then Throw New ApplicationException("Not a valid Email")
 
-            model.send_pwd_reset(hU("id"))
+            model.sendPwdReset(hU("id"))
 
             fw.redirect(base_url & "/(Sent)")
         Catch ex As Exception
@@ -82,7 +82,7 @@ Public Class PasswordController
     End Function
 
 
-    Public Function SaveResetAction() As Hashtable
+    Public Sub SaveResetAction()
         Dim item = reqh("item")
         Dim login = reqs("login")
         Dim token = reqs("token")
@@ -114,7 +114,7 @@ Public Class PasswordController
             setFormError(ex)
             fw.routeRedirect("Reset")
         End Try
-    End Function
+    End Sub
 
     Public Function ValidateReset(id As String, item As Hashtable) As Boolean
         Dim result As Boolean = True

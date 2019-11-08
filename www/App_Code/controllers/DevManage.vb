@@ -9,6 +9,11 @@ Public Class DevManageController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 100
 
+    Const DB_SQL_PATH = "/App_Data/sql/database.sql" 'relative to site_root
+    Const DB_JSON_PATH = "/dev/db.json"
+    Const ENTITIES_PATH = "/dev/entities.txt"
+    Const FW_TABLES = "att_categories att att_table_link users settings spages events event_log lookup_manager_tables user_views user_lists user_lists_items menu_items"
+
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
         base_url = "/Dev/Manage"
@@ -40,7 +45,7 @@ Public Class DevManageController
         Return ps
     End Function
 
-    Public Function DumpLogAction() As Hashtable
+    Public Sub DumpLogAction()
         Dim seek = reqi("seek")
         Dim logpath = fw.config("log")
         rw("Dump of last " & seek & " bytes of the site log")
@@ -54,9 +59,9 @@ Public Class DevManageController
 
         rw("end of dump")
         sr.Close()
-    End Function
+    End Sub
 
-    Public Function ResetCacheAction() As Hashtable
+    Public Sub ResetCacheAction()
         fw.FLASH("success", "Application Caches cleared")
 
         FwCache.clear()
@@ -65,13 +70,731 @@ Public Class DevManageController
         pp.clear_cache()
 
         fw.redirect(base_url)
-    End Function
+    End Sub
 
-    Public Function CreateModelAction() As Hashtable
+    Public Sub DeleteMenuItemsAction()
+        fw.FLASH("success", "Menu Items cleared")
+
+        FwCache.remove("menu_items")
+
+        fw.redirect(base_url)
+    End Sub
+
+    Public Sub ReloadSessionAction()
+        fw.FLASH("success", "Session Reloaded")
+
+        fw.model(Of Users).reloadSession()
+
+        fw.redirect(base_url)
+    End Sub
+
+
+    Public Sub CreateModelAction()
         Dim item = reqh("item")
         Dim table_name = Trim(item("table_name"))
         Dim model_name = Trim(item("model_name"))
-        If table_name = "" OrElse model_name = "" OrElse _models.Contains(model_name) Then Throw New ApplicationException("No table name or no model name or model exists")
+
+        Dim entity As New Hashtable From {
+                {"table", table_name},
+                {"model_name", model_name},
+                {"db_config", ""}
+            }
+        createModel(entity)
+
+        fw.FLASH("success", model_name & ".vb model created")
+        fw.redirect(base_url)
+    End Sub
+
+    Public Sub CreateControllerAction()
+        Dim item = reqh("item")
+        Dim model_name = Trim(item("model_name"))
+        Dim controller_url = Trim(item("controller_url"))
+        Dim controller_title = Trim(item("controller_title"))
+
+        'emulate entity
+        Dim entity = New Hashtable From {
+                    {"model_name", model_name},
+                    {"controller_url", controller_url},
+                    {"controller_title", controller_title},
+                    {"table", Utils.name2fw(model_name)}
+                }
+        createController(entity, Nothing)
+        Dim controller_name = Replace(entity("controller_url"), "/", "")
+
+        fw.FLASH("controller_created", controller_name)
+        fw.FLASH("controller_url", entity("controller_url"))
+        fw.redirect(base_url)
+    End Sub
+
+    Public Sub ExtractControllerAction()
+        Dim item = reqh("item")
+        Dim controller_name = Trim(item("controller_name"))
+
+        If Not _controllers.Contains(controller_name) Then Throw New ApplicationException("No controller found")
+
+        Dim cInstance As FwDynamicController = Activator.CreateInstance(Type.GetType(controller_name, True))
+        cInstance.init(fw)
+
+        Dim tpl_to = LCase(cInstance.base_url)
+        Dim tpl_path = fw.config("template") & tpl_to
+        Dim config_file = tpl_path & "/config.json"
+        Dim config = loadJson(Of Hashtable)(config_file)
+
+        'extract ShowAction
+        config("is_dynamic_show") = False
+        Dim fitem As New Hashtable
+        Dim fields = cInstance.prepareShowFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+
+        Dim ps As New Hashtable
+        ps("fields") = fields
+        Dim parser As ParsePage = New ParsePage(fw)
+        Dim content As String = parser.parse_page(tpl_to & "/show", "/common/form/show/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        FW.set_file_content(tpl_path & "/show/form.html", content)
+
+        'extract ShowAction
+        config("is_dynamic_showform") = False
+        fields = cInstance.prepareShowFormFields(fitem, New Hashtable)
+        _makeValueTags(fields)
+        ps = New Hashtable
+        ps("fields") = fields
+        parser = New ParsePage(fw)
+        content = parser.parse_page(tpl_to & "/show", "/common/form/showform/extract/form.html", ps)
+        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
+        content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
+        FW.set_file_content(tpl_path & "/showform/form.html", content)
+
+        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
+
+        'now we could remove dynamic field definitions - uncomment if necessary
+        'config.Remove("show_fields")
+        'config.Remove("showform_fields")
+
+        saveJson(config, config_file)
+
+        fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
+        fw.redirect(base_url)
+    End Sub
+
+    'analyse database tables and create db.json describing entities, fields and relationships
+    Public Function AnalyseDBAction() As Hashtable
+        Dim ps As New Hashtable
+        Dim item = reqh("item")
+        Dim connstr As String = item("connstr") & ""
+
+        Dim dbtype = "SQL"
+        If connstr.Contains("OLE") Then dbtype = "OLE"
+
+        'Try
+        Dim db = New DB(fw, New Hashtable From {{"connection_string", connstr}, {"type", dbtype}})
+
+        Dim entities = dbschema2entities(db)
+
+        'save db.json
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
+
+        db.disconnect()
+        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
+        'Catch ex As Exception
+        '    fw.FLASH("error", ex.Message)
+        '    fw.redirect(base_url)
+        'End Try
+
+        fw.redirect(base_url)
+
+        Return ps
+    End Function
+
+
+    '************************* APP CREATION Actions
+    '************************* DB Analyzer
+    Public Function DBAnalyzerAction() As Hashtable
+        Dim ps As New Hashtable
+        Dim dbsources As New ArrayList
+
+        For Each dbname As String In fw.config("db").Keys
+            dbsources.Add(New Hashtable From {
+                            {"id", dbname},
+                            {"iname", dbname}
+                          })
+        Next
+
+        ps("dbsources") = dbsources
+        Return ps
+    End Function
+
+    Public Sub DBAnalyzerSaveAction()
+        Dim item = reqh("item")
+        Dim dbname As String = item("db") & ""
+        Dim dbconfig = fw.config("db")(dbname)
+        If dbconfig Is Nothing Then Throw New ApplicationException("Wrong DB selection")
+
+        createDBJsonFromExistingDB(dbname)
+        fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+
+        fw.redirect(base_url & "/(AppCreator)")
+    End Sub
+
+    Public Function EntityBuilderAction() As Hashtable
+        Dim ps As New Hashtable
+
+        Dim entities_file = fw.config("template") & ENTITIES_PATH
+        Dim item As New Hashtable
+        item("entities") = FW.get_file_content(entities_file)
+        ps("i") = item
+
+        Return ps
+    End Function
+
+    Public Sub EntityBuilderSaveAction()
+        Dim item = reqh("item")
+        Dim is_create_all = reqi("DoMagic") = 1
+
+        Dim entities_file = fw.config("template") & ENTITIES_PATH
+        FW.set_file_content(entities_file, item("entities"))
+
+        Try
+            If is_create_all Then
+                'TODO create db.json, db, models/controllers
+                createDBJsonFromText(item("entities"))
+                createDBFromDBJson()
+                createDBSQLFromDBJson()
+                createModelsAndControllersFromDBJson()
+
+                fw.FLASH("success", "Application created")
+            Else
+                'create db.json only
+                createDBJsonFromText(item("entities"))
+                fw.FLASH("success", "template" & DB_JSON_PATH & " created")
+                fw.redirect(base_url & "/(DBInitializer)")
+            End If
+        Catch ex As ApplicationException
+            fw.FLASH("error", ex.Message)
+        End Try
+
+        fw.redirect(base_url & "/(EntityBuilder)")
+    End Sub
+
+    Public Function DBInitializerAction() As Hashtable
+        Dim ps As New Hashtable
+
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        ps("tables") = entities
+
+        Return ps
+    End Function
+
+    Public Sub DBInitializerSaveAction()
+        Dim is_sql_only = reqi("DoSQL") = 1
+
+        If is_sql_only Then
+            createDBSQLFromDBJson()
+            fw.FLASH("success", DB_SQL_PATH & " created")
+
+            fw.redirect(base_url & "/(DBInitializer)")
+        Else
+            createDBFromDBJson()
+            fw.FLASH("success", "DB tables created")
+
+            fw.redirect(base_url & "/(AppCreator)")
+        End If
+    End Sub
+
+    Public Function AppCreatorAction() As Hashtable
+        'reload session, so sidebar menu will be updated
+        If reqs("reload") > "" Then fw.model(Of Users).reloadSession()
+
+        Dim ps As New Hashtable
+
+        'tables
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        Dim models = _models()
+        Dim controllers = _controllers()
+
+        For Each entity As Hashtable In entities
+            entity("is_model_exists") = _models.Contains(entity("model_name"))
+            entity("controller_name") = Replace(entity("controller_url"), "/", "")
+            entity("is_controller_exists") = _controllers.Contains(entity("controller_name") & "Controller")
+        Next
+
+        ps("entities") = entities
+        Return ps
+    End Function
+
+    Public Sub AppCreatorSaveAction()
+        Dim item = reqh("item")
+
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        'go thru entities and:
+        'update checked rows for any user input (like model name changed)
+        Dim is_updated = False
+        For Each entity As Hashtable In entities
+            Dim key = entity("fw_name") & "#"
+            If item.ContainsKey(key & "is_model") Then
+                'create model
+                If item(key & "model_name") > "" AndAlso entity("model_name") <> item(key & "model_name") Then
+                    is_updated = True
+                    entity("model_name") = item(key & "model_name")
+                End If
+                Me.createModel(entity)
+            End If
+
+            If item.ContainsKey(key & "is_controller") Then
+                'create controller (model must exists)
+                If item(key & "controller_name") > "" AndAlso entity("controller_name") <> item(key & "controller_name") Then
+                    is_updated = True
+                    entity("controller_name") = item(key & "controller_name")
+                End If
+                If item(key & "controller_title") > "" AndAlso entity("controller_title") <> item(key & "controller_title") Then
+                    is_updated = True
+                    entity("controller_title") = item(key & "controller_title")
+                End If
+                If Not entity.ContainsKey("controller_is_dynamic_show") OrElse Utils.f2bool(entity("controller_is_dynamic_show")) <> (item(key & "coview") > "") Then
+                    is_updated = True
+                    entity("controller_is_dynamic_show") = item(key & "coview") > ""
+                End If
+                If Not entity.ContainsKey("controller_is_dynamic_showform") OrElse Utils.f2bool(entity("controller_is_dynamic_showform")) <> (item(key & "coedit") > "") Then
+                    is_updated = True
+                    entity("controller_is_dynamic_showform") = item(key & "coedit") > ""
+                End If
+                If Not entity.ContainsKey("controller_is_lookup") OrElse Utils.f2bool(entity("controller_is_lookup")) <> (item(key & "colookup") > "") Then
+                    is_updated = True
+                    entity("controller_is_lookup") = item(key & "colookup") > ""
+                End If
+                Me.createController(entity, entities)
+            End If
+        Next
+
+        'save db.json if there are any changes
+        If is_updated Then saveJson(entities, config_file)
+
+        fw.FLASH("success", "App build successfull")
+        fw.redirect(base_url & "/(AppCreator)?reload=1")
+
+    End Sub
+
+
+    '****************************** PRIVATE HELPERS (move to Dev model?)
+
+    'load json
+    Private Function loadJson(Of T As {New})(filename As String) As T
+        Dim result As T
+        result = Utils.jsonDecode(FW.get_file_content(filename))
+        If result Is Nothing Then result = New T()
+        Return result
+    End Function
+
+    Private Sub saveJson(data As Object, filename As String)
+        Dim json_str = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented)
+        FW.set_file_content(filename, json_str)
+    End Sub
+
+    Private Function dbschema2entities(db As DB) As ArrayList
+        Dim result As New ArrayList
+        'Access System tables:
+        'MSysAccessStorage
+        'MSysAccessXML
+        'MSysACEs
+        'MSysComplexColumns
+        'MSysNameMap
+        'MSysNavPaneGroupCategories
+        'MSysNavPaneGroups
+        'MSysNavPaneGroupToObjects
+        'MSysNavPaneObjectIDs
+        'MSysObjects
+        'MSysQueries
+        'MSysRelationships
+        'MSysResources
+        Dim tables = db.tables()
+        For Each tblname In tables
+            If InStr(tblname, "MSys", CompareMethod.Binary) = 1 Then Continue For
+
+            'get table schema
+            Dim tblschema = db.load_table_schema_full(tblname)
+            'logger(tblschema)
+
+            Dim table_entity As New Hashtable
+            table_entity("db_config") = db.db_name
+            table_entity("table") = tblname
+            table_entity("fw_name") = Utils.name2fw(tblname) 'new table name using fw standards
+            table_entity("iname") = name2human(tblname) 'human table name
+            table_entity("fields") = tableschema2fields(tblschema)
+            table_entity("foreign_keys") = db.get_foreign_keys(tblname)
+
+            table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
+            table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
+            table_entity("controller_title") = name2human(table_entity("model_name"))
+
+            'set is_fw flag - if it's fw compatible (contains id,iname,status,add_time,add_users_id)
+            Dim fields = array2hashtable(table_entity("fields"), "name")
+            table_entity("is_fw") = fields.Contains("id") AndAlso fields.Contains("iname") AndAlso fields.Contains("status") AndAlso fields.Contains("add_time") AndAlso fields.Contains("add_users_id")
+            result.Add(table_entity)
+        Next
+
+        Return result
+    End Function
+
+    Private Function tableschema2fields(schema As ArrayList) As ArrayList
+        Dim result As New ArrayList(schema)
+
+        For Each fldschema As Hashtable In schema
+            'prepare system/human field names: State/Province -> state_province
+            'If fldschema("is_identity") = 1 Then
+            '    fldschema("fw_name") = "id" 'identity fields always id
+            '    fldschema("iname") = "ID"
+            'Else
+            fldschema("fw_name") = Utils.name2fw(fldschema("name"))
+            fldschema("iname") = name2human(fldschema("name"))
+            'End If
+        Next
+        'result("xxxx") = "yyyy"
+        'attrs used to build UI
+        'name => iname
+        'default
+        'maxlen
+        'is_nullable
+        'type
+        'fw_type
+        'is_identity
+
+        Return result
+    End Function
+
+    'convert some system name to human-friendly name'
+    '"system_name_id" => "System Name ID"
+    Private Function name2human(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
+        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
+        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
+        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
+        result = Utils.capitalize(result, "all") 'Title Case
+        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert c/snake style name to CamelCase
+    'system_name => SystemName
+    Private Function nameCamelCase(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
+        result = Utils.capitalize(result)
+        result = Regex.Replace(result, " +", "") 'remove spaces
+        Return str
+    End Function
+
+    'convert array of hashtables to hashtable of hashtables using key
+    Private Function array2hashtable(arr As ArrayList, key As String) As Hashtable
+        Dim result As New Hashtable
+        For Each item As Hashtable In arr
+            result(item(key)) = item
+        Next
+        Return result
+    End Function
+
+    Private Function _models() As IOrderedEnumerable(Of String)
+        Dim baseType = GetType(FwModel)
+        Dim assembly = baseType.Assembly
+        Return From t In assembly.GetTypes()
+               Where t.IsSubclassOf(baseType)
+               Select t.Name
+               Order By Name
+    End Function
+
+    Private Function _controllers() As IOrderedEnumerable(Of String)
+        Dim baseType = GetType(FwController)
+        Dim assembly = baseType.Assembly
+        Return From t In assembly.GetTypes()
+               Where t.IsSubclassOf(baseType)
+               Select t.Name
+               Order By Name
+    End Function
+
+    'replaces strings in all files under defined dir
+    'RECURSIVE!
+    Private Sub replaceInFiles(dir As String, strings As Hashtable)
+        For Each filename As String In Directory.GetFiles(dir)
+            replaceInFile(filename, strings)
+        Next
+
+        'dive into dirs
+        For Each foldername As String In Directory.GetDirectories(dir)
+            replaceInFiles(foldername, strings)
+        Next
+    End Sub
+
+    Private Sub replaceInFile(filepath As String, strings As Hashtable)
+        Dim content = FW.get_file_content(filepath)
+        If content.Length = 0 Then Return
+
+        For Each str As String In strings.Keys
+            content = content.Replace(str, strings(str))
+        Next
+
+        FW.set_file_content(filepath, content)
+    End Sub
+
+    'demo_dicts => DemoDicts
+    'TODO actually go thru models and find model with table_name
+    Private Function _tablename2model(table_name As String) As String
+        Dim result As String = ""
+        Dim pieces As String() = Split(table_name, "_")
+        For Each piece As String In pieces
+            result &= Utils.capitalize(piece)
+        Next
+        Return result
+    End Function
+
+    Private Sub _makeValueTags(fields As ArrayList)
+        For Each def As Hashtable In fields
+            Dim tag = "<~i[" & def("field") & "]"
+            Select Case def("type")
+                Case "date"
+                    def("value") = tag & " date>"
+                Case "date_long"
+                    def("value") = tag & " date=""long"">"
+                Case "float"
+                    def("value") = tag & " number_format=""2"">"
+                Case "markdown"
+                    def("value") = tag & " markdown>"
+                Case "noescape"
+                    def("value") = tag & " noescape>"
+                Case Else
+                    def("value") = tag & ">"
+            End Select
+        Next
+    End Sub
+
+    Private Sub createDBJsonFromText(entities_text As String)
+        Dim entities = New ArrayList
+
+        Dim lines = Regex.Split(entities_text, "[\n\r]+")
+        Dim table_entity As Hashtable
+        For Each line As String In lines
+            line = Regex.Replace(line, "#.+$", "") 'remove any human comments
+            If Trim(line) = "" Then Continue For
+            fw.logger(line)
+
+            If line.Substring(0, 1) = "-" Then
+                'if new entity - add system fields to previous entity
+                If table_entity IsNot Nothing Then table_entity("fields").AddRange(defaultFieldsAfter())
+
+                'new entity
+                table_entity = New Hashtable
+                entities.Add(table_entity)
+
+                line = Regex.Replace(line, "^-\s*", "") 'remove prefix 'human table name
+                Dim parts = Regex.Split(line, "\s+")
+                Dim table_name = parts(0) 'name is first 
+
+                table_entity("db_config") = "" 'main
+                table_entity("iname") = Me.name2human(table_name)
+                table_entity("table") = Utils.name2fw(table_name)
+                If isFwTableName(table_entity("table")) Then Throw New ApplicationException("Cannot have table name " & table_entity("table"))
+
+                table_entity("fw_name") = Utils.name2fw(table_name) 'new table name using fw standards
+
+                table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
+                table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
+                table_entity("controller_title") = name2human(table_entity("model_name"))
+                If Regex.IsMatch(line, "\blookup\b") Then
+                    table_entity("controller_is_lookup") = True
+                End If
+                table_entity("is_fw") = True
+                'add default system fields
+                table_entity("fields") = New ArrayList(defaultFields())
+                table_entity("foreign_keys") = New ArrayList
+
+            Else
+                'entity field
+                If table_entity Is Nothing Then Continue For 'skip if table_entity is not initialized yet
+                If line.Substring(0, 3) <> "  -" Then Continue For 'skip strange things
+
+                line = Regex.Replace(line, "^  -\s*", "") 'remove prefix 
+                Dim parts = Regex.Split(line, "\s+")
+                Dim field_name = parts(0) 'name is first 
+
+                'special - *Address -> set of address fields
+                If Regex.IsMatch(field_name, "Address$", RegexOptions.IgnoreCase) Then
+                    table_entity("fields").AddRange(addressFields(field_name))
+                    Continue For
+                End If
+
+                Dim field As New Hashtable
+                table_entity("fields").Add(field)
+
+                'check if field is foreign key
+                If Right(field_name, 3) = ".id" Then
+                    'this is foreign key field
+                    Dim fk As New Hashtable
+                    table_entity("foreign_keys").Add(fk)
+
+                    fk("pk_table") = Utils.name2fw(Regex.Replace(field_name, "\.id$", ""))  'Customers.id => customers
+                    fk("pk_column") = "id"
+                    field_name = fk("pk_table") & "_id"
+                    fk("column") = field_name
+
+                    field("fw_type") = "int"
+                    field("fw_type") = "int"
+                End If
+
+                field("name") = field_name
+                field("iname") = name2human(field_name)
+                field("fw_name") = Utils.name2fw(field_name)
+                field("is_identity") = 0
+
+                field("is_nullable") = IIf(Regex.IsMatch(line, "\bNULL\b"), 1, 0)
+                field("numeric_precision") = Nothing
+                field("maxlen") = Nothing
+                'detect type if not yet set by foreigh key
+                If field("fw_type") = "" Then
+                    field("fw_type") = "varchar"
+                    field("fw_subtype") = "nvarchar"
+                    Dim m = Regex.Match(line, "varchar\((.+?)\)") 'detect varchar(LEN|MAX)
+                    If m.Success Then
+                        If m.Groups(1).Value = "MAX" OrElse Utils.f2int(m.Groups(1).Value) > 255 Then
+                            field("maxlen") = -1
+                        Else
+                            field("maxlen") = Utils.f2int(m.Groups(1).Value)
+                        End If
+                    ElseIf Regex.IsMatch(line, "\bint\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 10
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "int"
+                    ElseIf Regex.IsMatch(line, "\btinyint\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 3
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "tinyint"
+                    ElseIf Regex.IsMatch(line, "\bbit\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 1
+                        field("fw_type") = "int"
+                        field("fw_subtype") = "bit"
+                    ElseIf Regex.IsMatch(line, "\bfloat\b", RegexOptions.IgnoreCase) Then
+                        field("numeric_precision") = 53
+                        field("fw_type") = "float"
+                        field("fw_subtype") = "float"
+                    ElseIf Regex.IsMatch(line, "\bdate\b", RegexOptions.IgnoreCase) Then
+                        field("fw_type") = "datetime"
+                        field("fw_subtype") = "date"
+                    ElseIf Regex.IsMatch(line, "\bdatetime\b", RegexOptions.IgnoreCase) Then
+                        field("fw_type") = "datetime"
+                        field("fw_subtype") = "datetime2"
+                    Else
+                        'not type specified
+                        'additionally detect date field from name
+                        If Regex.IsMatch(field("name"), "Date$", RegexOptions.IgnoreCase) Then
+                            field("fw_type") = "datetime"
+                            field("fw_subtype") = "date"
+                        Else
+                            'just a default varchar(255)
+                            field("maxlen") = 255
+                        End If
+                    End If
+
+                    'default
+                    field("default") = Nothing
+                    m = Regex.Match(line, "\bdefault\s+\((.+)\)") 'default (VALUE_HERE)
+                    If m.Success Then
+                        field("default") = m.Groups(1).Value
+                    Else
+                        'no default set - then for nvarchar set empty strin gdefault
+                        If field("fw_type") = "varchar" Then
+                            field("default") = ""
+                        End If
+                    End If
+                End If
+
+            End If
+        Next
+        'add system fields to last entity
+        If table_entity IsNot Nothing Then table_entity("fields").AddRange(defaultFieldsAfter())
+
+        'save db.json
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
+    End Sub
+
+    Private Sub createDBJsonFromExistingDB(dbname As String)
+        Dim db = New DB(fw, fw.config("db")(dbname), dbname)
+
+        Dim entities = dbschema2entities(db)
+
+        'save db.json
+        saveJson(entities, fw.config("template") & DB_JSON_PATH)
+
+        db.disconnect()
+    End Sub
+
+    Private Sub createDBFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        'drop all FKs we created before, so we'll be able to drop tables later
+        Dim fks = db.array("SELECT fk.name, o.name as table_name FROM sys.foreign_keys fk, sys.objects o where fk.is_system_named=0 and o.object_id=fk.parent_object_id")
+        For Each fk As Hashtable In fks
+            db.exec("ALTER TABLE " & db.q_ident(fk("table_name")) & " DROP CONSTRAINT " & db.q_ident(fk("name")))
+        Next
+
+        For Each entity In entities
+            Dim sql = entity2SQL(entity)
+            'create db tables directly in db
+
+            Try
+                db.exec("DROP TABLE " & db.q_ident(entity("table")))
+            Catch ex As Exception
+                logger(ex.Message)
+                'just ignore drop exceptions
+            End Try
+
+            db.exec(sql)
+        Next
+    End Sub
+
+    Private Sub createDBSQLFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        Dim database_sql = ""
+        For Each entity In entities
+            Dim sql = entity2SQL(entity)
+            'only create App_Data/database.sql
+            'add drop
+            database_sql &= "DROP TABLE " & db.q_ident(entity("table")) & ";" & vbCrLf
+            database_sql &= sql & ";" & vbCrLf & vbCrLf
+        Next
+
+        Dim sql_file = fw.config("site_root") & DB_SQL_PATH
+        FW.set_file_content(sql_file, database_sql)
+    End Sub
+
+    Private Sub createModelsAndControllersFromDBJson()
+        Dim config_file = fw.config("template") & DB_JSON_PATH
+        Dim entities = loadJson(Of ArrayList)(config_file)
+
+        For Each entity In entities
+            Me.createModel(entity)
+            Me.createController(entity, entities)
+        Next
+    End Sub
+
+
+    Private Sub createModel(entity As Hashtable)
+        Dim table_name As String = entity("table")
+        Dim model_name = entity("model_name")
+
+        If model_name = "" Then
+            model_name = nameCamelCase(table_name)
+        End If
+        If table_name = "" OrElse model_name = "" Then Throw New ApplicationException("No table name or no model name")
+        'If _models.Contains(model_name) Then Throw New ApplicationException("Such model already exists")
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\models"
@@ -81,22 +804,128 @@ Public Class DevManageController
         'replace: DemoDicts => ModelName, demo_dicts => table_name
         mdemo = mdemo.Replace("DemoDicts", model_name)
         mdemo = mdemo.Replace("demo_dicts", table_name)
+        mdemo = mdemo.Replace("db_config = """"", "db_config = """ & entity("db_config") & """")
+
+        'generate code for the model's constructor:
+        'set field_*
+        Dim codegen = ""
+        If entity.ContainsKey("fields") Then
+            Dim fields = array2hashtable(entity("fields"), "name")
+
+            'detect id and iname fields
+            Dim i = 1
+            Dim fld_int As Hashtable
+            Dim fld_identity As Hashtable
+            Dim fld_iname As Hashtable
+            For Each fld As Hashtable In entity("fields")
+                'find identity
+                If fld_identity Is Nothing AndAlso fld("is_identity") = "1" Then
+                    fld_identity = fld
+                End If
+
+                'first int field
+                If fld_int Is Nothing AndAlso fld("fw_type") = "int" Then
+                    fld_int = fld
+                End If
+
+                'for iname - just use 2nd to 4th field which not end with ID, varchar type and has some maxlen
+                If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("maxlen") > 0 AndAlso fld("fw_type") = "varchar" AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
+                    fld_iname = fld
+                End If
+
+                i += 1
+            Next
+
+            If fld_identity Is Nothing AndAlso fld_int IsNot Nothing AndAlso fields.Count = 2 Then
+                'this is looks like lookup table (id/name fields only) without identity - just set id field as first int field
+                fld_identity = fld_int
+            End If
+
+            If fld_iname Is Nothing AndAlso fld_identity IsNot Nothing Then
+                'if no iname field found - just use ID field
+                fld_iname = fld_identity
+            End If
+
+            If fld_identity IsNot Nothing AndAlso fld_identity("name") <> "id" Then
+                codegen &= "        field_id = """ & fld_identity("name") & """" & vbCrLf
+            End If
+            If fld_iname IsNot Nothing AndAlso fld_identity("name") <> "iname" Then
+                codegen &= "        field_iname = """ & fld_iname("name") & """" & vbCrLf
+            End If
+
+            'also reset fw fields if such not exists
+            If Not fields.ContainsKey("status") Then
+                codegen &= "        field_status = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("add_users_id") Then
+                codegen &= "        field_add_users_id = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("upd_users_id") Then
+                codegen &= "        field_upd_users_id = """"" & vbCrLf
+            End If
+            If Not fields.ContainsKey("upd_time") Then
+                codegen &= "        field_upd_time = """"" & vbCrLf
+            End If
+
+            If Not Utils.f2bool(entity("is_fw")) Then
+                codegen &= "        is_normalize_names = True" & vbCrLf
+            End If
+        End If
+        mdemo = mdemo.Replace("'###CODEGEN", codegen)
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
+    End Sub
 
-        fw.FLASH("success", model_name & ".vb model created")
-        fw.redirect(base_url)
-    End Function
+    Private Sub createLookup(entity As Hashtable)
+        Dim ltable = fw.model(Of LookupManagerTables).oneByTname(entity("table"))
 
-    Public Function CreateControllerAction() As Hashtable
-        Dim item = reqh("item")
-        Dim model_name = Trim(item("model_name"))
-        Dim controller_url = Trim(item("controller_url"))
+        Dim columns = ""
+        Dim column_names = ""
+        Dim fields = Me.array2hashtable(entity("fields"), "fw_name")
+        If fields.ContainsKey("iname") Then
+            columns &= IIf(columns > "", ",", "") & "iname"
+            column_names &= IIf(column_names > "", ",", "") & fields("iname")("iname")
+        End If
+        If fields.ContainsKey("idesc") Then
+            columns &= IIf(columns > "", ",", "") & "idesc"
+            column_names &= IIf(column_names > "", ",", "") & fields("idesc")("iname")
+        End If
+
+        Dim item As New Hashtable From {
+                {"tname", entity("table")},
+                {"iname", entity("iname")},
+                {"columns", columns},
+                {"column_names", column_names}
+            }
+        If ltable.Count > 0 Then
+            'replace
+            fw.model(Of LookupManagerTables).update(ltable("id"), item)
+        Else
+            fw.model(Of LookupManagerTables).add(item)
+        End If
+    End Sub
+
+    Private Sub createController(entity As Hashtable, entities As ArrayList)
+        Dim model_name = entity("model_name")
+        Dim controller_url = entity("controller_url")
+        Dim controller_title = entity("controller_title")
+
+        If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
-        Dim controller_title = Trim(item("controller_title"))
+        If controller_title = "" Then controller_title = name2human(model_name)
 
-        If model_name = "" OrElse controller_url = "" OrElse controller_title = "" Then Throw New ApplicationException("No model or no controller name or no title")
-        If _controllers.Contains(controller_name) Then Throw New ApplicationException("Such controller already exists")
+        If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
+        'If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
+
+        'save back to entity as it can be used by caller
+        entity("controller_url") = controller_url
+        entity("controller_title") = controller_title
+
+        If Utils.f2bool(entity("controller_is_lookup")) Then
+            'if requested controller as a lookup table - just add/update lookup tables, no actual controller creation
+            Me.createLookup(entity)
+            Return
+        End If
 
         'copy DemoDicts.vb to model_name.vb
         Dim path = fw.config("site_root") & "\App_Code\controllers"
@@ -125,6 +954,13 @@ Public Class DevManageController
         replaceInFiles(tpl_to, replacements)
 
         'update config.json:
+        updateControllerConfigJson(entity, tpl_to, entities)
+
+        'add controller to sidebar menu
+        updateMenuItem(controller_url, controller_title)
+    End Sub
+
+    Public Sub updateControllerConfigJson(entity As Hashtable, tpl_to As String, entities As ArrayList)
         ' save_fields - all fields from model table (except id and sytem add_time/user fields)
         ' save_fields_checkboxes - empty (TODO based on bit field?)
         ' list_view - model.table_name
@@ -136,76 +972,144 @@ Public Class DevManageController
         '   field NOT NULL and no default - required
         '   field has foreign key - add that table as dropdown
         Dim config_file = tpl_to & "/config.json"
-        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
-        If config Is Nothing Then config = New Hashtable
+        Dim config = loadJson(Of Hashtable)(config_file)
 
-        Dim model = fw.model(model_name)
-        db.connect()
-        Dim fields = db.load_table_schema_full(model.table_name)
+        updateControllerConfig(entity, config, entities)
+
+        'Utils.jsonEncode(config) - can't use as it produces unformatted json string
+        saveJson(config, config_file)
+    End Sub
+
+    Public Sub updateControllerConfig(entity As Hashtable, config As Hashtable, entities As ArrayList)
+        Dim model_name As String = entity("model_name")
+        Dim table_name = entity("table")
+        logger("updating config for controller=", entity("controller_url"))
+
+        Dim tables As New Hashtable 'hindex by table name to entities
+        Dim fields As ArrayList = entity("fields")
+        If fields Is Nothing Then
+            'TODO deprecate reading from db, always use entity info
+            Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            fields = db.load_table_schema_full(table_name)
+            Dim atables = db.tables()
+            For Each tbl As String In atables
+                tables(tbl) = New Hashtable
+            Next
+        Else
+            For Each tentity As Hashtable In entities
+                tables(tentity("table")) = tentity
+            Next
+        End If
+
+        Dim is_fw = Utils.f2bool(entity("is_fw"))
         Dim hfields As New Hashtable
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
         Dim saveFields As New ArrayList
-        Dim hFieldsMap As New Hashtable
+        Dim hFieldsMap As New Hashtable   'name => iname
+        Dim hFieldsMapFW As New Hashtable 'fw_name => name
         Dim showFields As New ArrayList
         Dim showFormFields As New ArrayList
 
         Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
+            logger("field name=", fld("name"), fld)
             hfields(fld("name")) = fld
-            hFieldsMap(fld("name")) = fld("name")
+            hFieldsMap(fld("name")) = fld("iname")
+            If Not is_fw Then
+                hFieldsMap(fld("fw_name")) = fld("iname")
+                hFieldsMapFW(fld("fw_name")) = fld("name")
+            End If
 
             Dim sf As New Hashtable
             Dim sff As New Hashtable
             Dim is_skip = False
             sf("field") = fld("name")
-            sf("label") = fld("name")
+            sf("label") = fld("iname")
             sf("type") = "plaintext"
 
             sff("field") = fld("name")
-            sff("label") = fld("name")
+            sff("label") = fld("iname")
 
-            If fld("is_nullable") = "0" AndAlso fld("default") = "" Then sff("required") = True 'if not nullable and no default - required
+            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then sff("required") = True 'if not nullable - required
 
-            If Utils.f2int(fld("maxlen")) > 0 Then sff("maxlength") = Utils.f2int(fld("maxlen"))
-            If fld("internal_type") = "varchar" Then
-                If Utils.f2int(fld("maxlen")) = -1 Then 'large text
+            Dim maxlen = Utils.f2int(fld("maxlen"))
+            If maxlen > 0 Then sff("maxlength") = maxlen
+            If fld("fw_type") = "varchar" Then
+                If maxlen <= 0 Then 'large text
                     sf("type") = "markdown"
                     sff("type") = "textarea"
                     sff("rows") = 5
                     sff("class_control") = "markdown autoresize" 'or fw-html-editor or fw-html-editor-short
                 Else
+                    'normal text input
                     sff("type") = "input"
-                End If
-            ElseIf fld("internal_type") = "int" Then
-                If Right(fld("name"), 3) = "_id" AndAlso fld("name") <> "dict_link_auto_id" Then 'TODO remove dict_link_auto_id
-                    'TODO better detect if field has foreign key
-                    'if link to other table - make type=select
-                    Dim mname = _tablename2model(Left(fld("name"), Len(fld("name")) - 3))
-                    If mname = "Parent" Then mname = model_name
+                    If maxlen < 255 Then
+                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 2)
+                        If col < 1 Then col = 1
+                        If col > 9 Then col = 9
+                        sff("class_contents") = "col-md-" & col
+                    End If
 
-                    sf("lookup_model") = mname
-                    'sf("lookup_field") = "iname"
-
-                    sff("type") = "select"
-                    sff("lookup_model") = mname
-                    sff("is_option0") = True
-                    sff("class_contents") = "col-md-3"
-                ElseIf fld("type") = "tinyint" Then
-                    'make it as yes/no radio
-                    sff("type") = "yesno"
-                    sff("is_inline") = True
-                Else
-                    sff("type") = "number"
-                    sff("min") = 0
-                    sff("max") = 999999
-                    sff("class_contents") = "col-md-3"
                 End If
-            ElseIf fld("internal_type") = "float" Then
+            ElseIf fld("fw_type") = "int" Then
+                'int fields could be: foreign keys, yes/no, just a number input
+
+                'check foreign keys - and make type=select
+                Dim is_fk = False
+                If entity.ContainsKey("foreign_keys") Then
+                    For Each fkinfo As Hashtable In entity("foreign_keys")
+                        If fkinfo("column") = fld("name") Then
+                            is_fk = True
+                            Dim mname = _tablename2model(Utils.name2fw(fkinfo("pk_table")))
+
+                            sf("lookup_model") = mname
+                            'sf("lookup_field") = "iname"
+
+                            sff("type") = "select"
+                            sff("lookup_model") = mname
+                            If Regex.Replace(fld("default") & "", "\D+", "") = "0" Then 'remove all non-digits
+                                'if default is 0 - allow 0 option
+                                sff("is_option0") = True
+                            Else
+                                sff("is_option_empty") = True
+                            End If
+
+                            sff("class_contents") = "col-md-3"
+                            Exit For
+                        End If
+                    Next
+                End If
+
+                If Not is_fk Then
+                    If fld("name") = "parent_id" Then
+                        'special case - parent_id
+                        Dim mname = model_name
+
+                        sf("lookup_model") = mname
+                        'sf("lookup_field") = "iname"
+
+                        sff("type") = "select"
+                        sff("lookup_model") = mname
+                        sff("is_option0") = True
+                        sff("class_contents") = "col-md-3"
+                    ElseIf fld("fw_subtype") = "boolean" Then 'not sure about tinyint and unsignedtinyint
+                        'make it as yes/no radio
+                        sff("type") = "yesno"
+                        sff("is_inline") = True
+                    Else
+                        sff("type") = "number"
+                        sff("min") = 0
+                        sff("max") = 999999
+                        sff("class_contents") = "col-md-3"
+                    End If
+                End If
+
+            ElseIf fld("fw_type") = "float" Then
                 sff("type") = "number"
                 sff("step") = 0.1
                 sff("class_contents") = "col-md-3"
-            ElseIf fld("internal_type") = "datetime" Then
+            ElseIf fld("fw_type") = "datetime" Then
                 sf("type") = "date"
                 sff("type") = "date_popup"
                 sff("class_contents") = "col-md-3"
@@ -260,7 +1164,16 @@ Public Class DevManageController
                 Case "add_users_id", "upd_users_id"
                     is_skip = True
                 Case Else
-                    'nothing else
+                    If Regex.IsMatch(fld("iname"), "\bState$") Then
+                        'if human name ends with State - make it State select
+                        sf("lookup_tpl") = "/common/sel/state.sel"
+
+                        sff("type") = "select"
+                        sff("lookup_tpl") = "/common/sel/state.sel"
+                        sff("class_contents") = "col-md-3"
+                    Else
+                        'nothing else
+                    End If
             End Select
 
             If Not is_skip Then
@@ -277,11 +1190,10 @@ Public Class DevManageController
         Next
 
         'special case - "Lookup via Link Table" - could be multiple tables
-        Dim rx_table_link = "^" & Regex.Escape(model.table_name) & "_(.+?)_link$"
-        Dim tables = db.tables()
+        Dim rx_table_link = "^" & Regex.Escape(table_name) & "_(.+?)_link$"
         Dim table_name_linked = ""
         Dim table_name_link = ""
-        For Each table In tables
+        For Each table In tables.Keys
             Dim m = Regex.Match(table, rx_table_link)
             If m.Success Then
                 table_name_linked = m.Groups(1).Value
@@ -295,7 +1207,7 @@ Public Class DevManageController
                         {"type", "multi"},
                         {"lookup_model", _tablename2model(table_name_linked)},
                         {"table_link", table_name_link},
-                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_id_name", table_name & "_id"},
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
                     Dim sfflink As New Hashtable From {
@@ -304,7 +1216,7 @@ Public Class DevManageController
                         {"type", "multicb"},
                         {"lookup_model", _tablename2model(table_name_linked)},
                         {"table_link", table_name_link},
-                        {"table_link_id_name", model.table_name & "_id"},
+                        {"table_link_id_name", table_name & "_id"},
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
 
@@ -328,161 +1240,396 @@ Public Class DevManageController
         Next
         'end special case for link table
 
-
         config("model") = model_name
+        config("is_dynamic_index") = True
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
-        config("list_sortdef") = If(hfields.ContainsKey("iname"), "iname asc", "id desc") 'either sort by iname or id
+
+        'either deault sort by iname or id
+        config("list_sortdef") = "id desc"
+        If hfields.ContainsKey("iname") Then
+            config("list_sortdef") = "iname asc"
+        Else
+            'just get first field
+            config("list_sortdef") = fields(0)("fw_name")
+        End If
+
         config.Remove("list_sortmap") 'N/A in dynamic controller
         config.Remove("required_fields") 'not necessary in dynamic controller as controlled by showform_fields required attribute
         config("related_field_name") = "" 'TODO?
-        config("list_view") = model.table_name
-        config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+        config("list_view") = table_name
+
+
+        'default fields for list view
+        'alternatively - just show couple fields
+        'If is_fw Then config("view_list_defaults") = "id" & If(hfields.ContainsKey("iname"), " iname", "") & If(hfields.ContainsKey("add_time"), " add_time", "") & If(hfields.ContainsKey("status"), " status", "")
+
+        'just show all fields, except identity, large text and system fields
+        config("view_list_defaults") = ""
+        For i = 0 To fields.Count - 1
+            If fields(i)("is_identity") = "1" Then Continue For
+            If fields(i)("fw_type") = "varchar" AndAlso fields(i)("maxlen") <= 0 Then Continue For
+            If is_fw Then
+                If fields(i)("name") = "add_time" OrElse fields(i)("name") = "add_users_id" OrElse fields(i)("name") = "upd_time" OrElse fields(i)("name") = "upd_users_id" Then Continue For
+                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("name")
+            Else
+                config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            End If
+        Next
+
+        If Not is_fw Then
+            'nor non-fw tables - just show first 3 fields
+            'config("view_list_defaults") = ""
+            'For i = 0 To Math.Min(2, fields.Count - 1)
+            '    config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("fw_name")
+            'Next
+
+            'for non-fw - list_sortmap separately
+            config("list_sortmap") = hFieldsMapFW
+        End If
         config("view_list_map") = hFieldsMap 'fields to names
         config("view_list_custom") = "status"
-        config("show_fields") = showFields
-        config("showform_fields") = showFormFields
+
+        config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
+        If config("is_dynamic_show") Then config("show_fields") = showFields
+        config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
+        If config("is_dynamic_showform") Then config("showform_fields") = showFormFields
 
         'remove all commented items - name start with "#"
         For Each key In config.Keys.Cast(Of String).ToArray()
             If Left(key, 1) = "#" Then config.Remove(key)
         Next
 
-        'Utils.jsonEncode(config) - can't use as it produces unformatted json string
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
-
-        fw.FLASH("controller_created", controller_name)
-        fw.FLASH("controller_url", controller_url)
-        fw.redirect(base_url)
-
-    End Function
-
-    Public Function ExtractControllerAction() As Hashtable
-        Dim item = reqh("item")
-        Dim controller_name = Trim(item("controller_name"))
-
-        If Not _controllers.Contains(controller_name) Then Throw New ApplicationException("No controller found")
-
-        Dim cInstance As FwDynamicController = Activator.CreateInstance(Type.GetType(controller_name, True))
-        cInstance.init(fw)
-
-        Dim tpl_to = LCase(cInstance.base_url)
-        Dim tpl_path = fw.config("template") & tpl_to
-        Dim config_file = tpl_path & "/config.json"
-        Dim config As Hashtable = Utils.jsonDecode(FW.get_file_content(config_file))
-        If config Is Nothing Then config = New Hashtable
-
-        'extract ShowAction
-        config("is_dynamic_show") = False
-        Dim fitem As New Hashtable
-        Dim fields = cInstance.prepareShowFields(fitem, New Hashtable)
-        _makeValueTags(fields)
-
-        Dim ps As New Hashtable
-        ps("fields") = fields
-        Dim parser As ParsePage = New ParsePage(fw)
-        Dim content As String = parser.parse_page(tpl_to & "/show", "/common/form/show/extract/form.html", ps)
-        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
-        FW.set_file_content(tpl_path & "/show/form.html", content)
-
-        'extract ShowAction
-        config("is_dynamic_showform") = False
-        fields = cInstance.prepareShowFormFields(fitem, New Hashtable)
-        _makeValueTags(fields)
-        ps = New Hashtable
-        ps("fields") = fields
-        parser = New ParsePage(fw)
-        content = parser.parse_page(tpl_to & "/show", "/common/form/showform/extract/form.html", ps)
-        content = Regex.Replace(content, "^(?:[\t ]*(?:\r?\n|\r))+", "", RegexOptions.Multiline) 'remove empty lines
-        content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
-        FW.set_file_content(tpl_path & "/showform/form.html", content)
-
-        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
-
-        'now we could remove dynamic field definitions - uncomment if necessary
-        'config.Remove("show_fields")
-        'config.Remove("showform_fields")
-
-        Dim config_str = Newtonsoft.Json.JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented)
-        FW.set_file_content(config_file, config_str)
-
-        fw.FLASH("success", "Controller " & controller_name & " extracted dynamic show/showfrom to static templates")
-        fw.redirect(base_url)
-    End Function
-
-
-    Private Function _models() As IOrderedEnumerable(Of String)
-        Dim baseType = GetType(FwModel)
-        Dim assembly = baseType.Assembly
-        Return From t In assembly.GetTypes()
-               Where t.IsSubclassOf(baseType)
-               Select t.Name
-               Order By Name
-    End Function
-
-    Private Function _controllers() As IOrderedEnumerable(Of String)
-        Dim baseType = GetType(FwController)
-        Dim assembly = baseType.Assembly
-        Return From t In assembly.GetTypes()
-               Where t.IsSubclassOf(baseType)
-               Select t.Name
-               Order By Name
-    End Function
-
-    'replaces strings in all files under defined dir
-    'RECURSIVE!
-    Private Sub replaceInFiles(dir As String, strings As Hashtable)
-        For Each filename As String In Directory.GetFiles(dir)
-            replaceInFile(filename, strings)
-        Next
-
-        'dive into dirs
-        For Each foldername As String In Directory.GetDirectories(dir)
-            replaceInFiles(foldername, strings)
-        Next
     End Sub
 
-    Private Sub replaceInFile(filepath As String, strings As Hashtable)
-        Dim content = FW.get_file_content(filepath)
-        If content.Length = 0 Then Return
+    'convert db.json entity to SQL CREATE TABLE
+    Private Function entity2SQL(entity As Hashtable) As String
+        Dim result = "CREATE TABLE " & db.q_ident(entity("table")) & " (" & vbCrLf
 
-        For Each str As String In strings.Keys
-            content = content.Replace(str, strings(str))
+        Dim i = 1
+        For Each field As Hashtable In entity("fields")
+            Dim fsql = ""
+            If field("name") = "status" Then fsql &= vbCrLf 'add empty line before system fields starting with "status"
+
+            fsql &= "  " & db.q_ident(field("name")).PadRight(21, " ") & " " & entityfield2dbtype(field)
+            If field("is_identity") = 1 Then
+                fsql &= " IDENTITY(1, 1) PRIMARY KEY CLUSTERED"
+            End If
+            fsql &= IIf(field("is_nullable") = 0, " NOT NULL", "")
+            fsql &= entityfield2dbdefault(field)
+            fsql &= entityfield2dbfk(field, entity)
+
+            result &= fsql & IIf(i < entity("fields").Count, ",", "") & vbCrLf
+            i += 1
         Next
 
-        FW.set_file_content(filepath, content)
-    End Sub
+        result &= ")"
 
-    'demo_dicts => DemoDicts
-    Private Function _tablename2model(table_name As String) As String
-        Dim result As String = ""
-        Dim pieces As String() = Split(table_name, "_")
-        For Each piece As String In pieces
-            result &= Utils.capitalize(piece)
-        Next
         Return result
     End Function
 
-    Private Sub _makeValueTags(fields As ArrayList)
-        For Each def As Hashtable In fields
-            Dim tag = "<~i[" & def("field") & "]"
-            Select Case def("type")
-                Case "date"
-                    def("value") = tag & " date>"
-                Case "date_long"
-                    def("value") = tag & " date=""long"">"
-                Case "float"
-                    def("value") = tag & " number_format=""2"">"
-                Case "markdown"
-                    def("value") = tag & " markdown>"
-                Case "noescape"
-                    def("value") = tag & " noescape>"
-                Case Else
-                    def("value") = tag & ">"
-            End Select
+    Private Function entityfield2dbtype(entity As Hashtable) As String
+        Dim result = ""
+
+        Select Case entity("fw_type")
+            Case "int"
+                If entity("fw_subtype") = "boolean" OrElse entity("fw_subtype") = "bit" Then
+                    result = "BIT"
+                ElseIf entity("numeric_precision") = 3 Then
+                    result = "TINYINT"
+                Else
+                    result = "INT"
+                End If
+            Case "float"
+                result = "FLOAT"
+            Case "datetime"
+                If entity("fw_subtype") = "date" Then
+                    result = "DATE"
+                Else
+                    result = "DATETIME2"
+                End If
+            Case Else '"varchar"
+                result = "NVARCHAR"
+                If entity("maxlen") > 0 And entity("maxlen") < 256 Then
+                    result &= "(" & entity("maxlen") & ")"
+                Else
+                    result &= "(MAX)"
+                End If
+        End Select
+
+        Return result
+    End Function
+
+    Private Function entityfield2dbdefault(entity As Hashtable) As String
+        Dim result = ""
+        Dim def As String = entity("default")
+        If def IsNot Nothing Then
+            result &= " DEFAULT "
+            'remove outer parentheses if any
+            def = Regex.Replace(def, "^\((.+)\)$", "$1")
+            def = Regex.Replace(def, "^\((.+)\)$", "$1") 'and again because of ((0)) but don't touch (getdate())
+
+            If Regex.IsMatch(def, "^\d+$") Then
+                'only digits
+                result &= "(" & def & ")"
+
+            ElseIf def = "getdate()" OrElse Regex.IsMatch(def, "^\=?now\(\)$", RegexOptions.IgnoreCase) Then
+                'access now() => getdate()
+                result &= "(getdate())"
+            Else
+                'any other text - quote
+                def = Regex.Replace(def, "^'(.*)'$", "$1") 'remove outer quotes if any
+
+                If entity("fw_type") = "int" Then
+                    'if field type int - convert to int
+                    result &= "(" & db.qi(def) & ")"
+                Else
+                    result &= "(" & db.q(def) & ")"
+                End If
+            End If
+        End If
+
+        Return result
+    End Function
+
+    'if field is referece to other table - add named foreign key
+    'CONSTRAINT FK_entity("table_name")_remotetable FOREIGN KEY REFERENCES remotetable(id)
+    Private Function entityfield2dbfk(field As Hashtable, entity As Hashtable) As String
+        Dim result = ""
+
+        If Not entity.ContainsKey("foreign_keys") Then Return result
+
+        For Each fk As Hashtable In entity("foreign_keys")
+            If fk("column") = field("name") Then
+                result = " CONSTRAINT FK_" & entity("fw_name") & "_" & Utils.name2fw(fk("pk_table")) & " FOREIGN KEY REFERENCES " & db.q_ident(fk("pk_table")) & "(" & db.q_ident(fk("pk_column")) & ")"
+                Exit For
+            End If
         Next
+
+        Return result
+    End Function
+
+    'return default fields for the entity
+    'id[, icode], iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id
+    Private Function defaultFields() As ArrayList
+        'New Hashtable From {
+        '    {"name", "icode"},
+        '    {"fw_name", "icode"},
+        '    {"iname", "Code"},
+        '    {"is_identity", 0},
+        '    {"default", ""},
+        '    {"maxlen", 64},
+        '    {"numeric_precision", Nothing},
+        '    {"is_nullable", 1},
+        '    {"fw_type", "varchar"},
+        '    {"fw_subtype", "nvarchar"}
+        '},
+
+        Return New ArrayList From {
+            New Hashtable From {
+                {"name", "id"},
+                {"fw_name", "id"},
+                {"iname", "ID"},
+                {"is_identity", 1},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 0},
+                {"fw_type", "int"},
+                {"fw_subtype", "integer"}
+            },
+            New Hashtable From {
+                {"name", "iname"},
+                {"fw_name", "iname"},
+                {"iname", "Name"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", "idesc"},
+                {"fw_name", "idesc"},
+                {"iname", "Notes"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", -1},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 1},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            }
+        }
+    End Function
+
+    Private Function defaultFieldsAfter() As ArrayList
+        Return New ArrayList From {
+            New Hashtable From {
+                {"name", "status"},
+                {"fw_name", "status"},
+                {"iname", "Status"},
+                {"is_identity", 0},
+                {"default", 0},
+                {"maxlen", Nothing},
+                {"numeric_precision", 3},
+                {"is_nullable", 0},
+                {"fw_type", "int"},
+                {"fw_subtype", "tinyint"}
+            },
+            New Hashtable From {
+                {"name", "add_time"},
+                {"fw_name", "add_time"},
+                {"iname", "Added on"},
+                {"is_identity", 0},
+                {"default", "getdate()"},
+                {"maxlen", Nothing},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "datetime"},
+                {"fw_subtype", "datetime2"}
+            },
+            New Hashtable From {
+                {"name", "add_users_id"},
+                {"fw_name", "add_users_id"},
+                {"iname", "Added by"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 1},
+                {"fw_type", "int"},
+                {"fw_subtype", "int"}
+            },
+            New Hashtable From {
+                {"name", "upd_time"},
+                {"fw_name", "upd_time"},
+                {"iname", "Updated on"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 1},
+                {"fw_type", "datetime"},
+                {"fw_subtype", "datetime2"}
+            },
+            New Hashtable From {
+                {"name", "upd_users_id"},
+                {"fw_name", "upd_users_id"},
+                {"iname", "Updated by"},
+                {"is_identity", 0},
+                {"default", Nothing},
+                {"maxlen", Nothing},
+                {"numeric_precision", 10},
+                {"is_nullable", 1},
+                {"fw_type", "int"},
+                {"fw_subtype", "int"}
+            }
+        }
+    End Function
+
+    Private Function addressFields(field_name As String) As ArrayList
+        Dim m = Regex.Match(field_name, "(.*?)(Address)$", RegexOptions.IgnoreCase)
+        Dim prefix As String = m.Groups(1).Value
+        Dim city_name = prefix & "city"
+        Dim state_name = prefix & "state"
+        Dim zip_name = prefix & "zip"
+        Dim country_name = prefix & "country"
+        If m.Groups(2).Value = "Address" Then
+            city_name = prefix & "City"
+            state_name = prefix & "State"
+            zip_name = prefix & "Zip"
+            country_name = prefix & "Country"
+        End If
+
+        Return New ArrayList From {
+            New Hashtable From {
+                {"name", field_name},
+                {"fw_name", Utils.name2fw(field_name)},
+                {"iname", name2human(field_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", field_name & "2"},
+                {"fw_name", Utils.name2fw(field_name & "2")},
+                {"iname", name2human(field_name & "2")},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 255},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", city_name},
+                {"fw_name", Utils.name2fw(city_name)},
+                {"iname", name2human(city_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 64},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", state_name},
+                {"fw_name", Utils.name2fw(state_name)},
+                {"iname", name2human(state_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 2},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            },
+            New Hashtable From {
+                {"name", zip_name},
+                {"fw_name", Utils.name2fw(zip_name)},
+                {"iname", name2human(zip_name)},
+                {"is_identity", 0},
+                {"default", ""},
+                {"maxlen", 11},
+                {"numeric_precision", Nothing},
+                {"is_nullable", 0},
+                {"fw_type", "varchar"},
+                {"fw_subtype", "nvarchar"}
+            }
+        }
+    End Function
+
+    'update by url
+    Private Sub updateMenuItem(controller_url As String, controller_title As String)
+        Dim fields = New Hashtable From {
+                {"url", controller_url},
+                {"iname", controller_title},
+                {"controller", Replace(controller_url, "/", "")}
+            }
+
+        Dim mitem = db.row("menu_items", New Hashtable From {{"url", controller_url}})
+        If mitem.Count > 0 Then
+            db.update("menu_items", fields, New Hashtable From {{"id", mitem("id")}})
+        Else
+            'add to menu_items
+            db.insert("menu_items", fields)
+        End If
     End Sub
+
+    Private Function isFwTableName(table_name As String) As Boolean
+        Dim tables = Utils.qh(FW_TABLES)
+        Return tables.ContainsKey(table_name.ToLower())
+    End Function
+
 
 End Class

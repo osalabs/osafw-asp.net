@@ -67,8 +67,8 @@ Public Class FwAdminController
         Dim item As Hashtable = model0.one(id)
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         'userlists support
         ps("list_view") = IIf(list_view = "", model0.table_name, list_view)
@@ -116,8 +116,8 @@ Public Class FwAdminController
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         ps("id") = id
         ps("i") = item

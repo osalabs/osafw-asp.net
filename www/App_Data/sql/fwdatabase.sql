@@ -1,3 +1,5 @@
+-- core framework tables only, create app-specific tables in database.sql
+
 /* upload categories */
 DROP TABLE att_categories;
 CREATE TABLE att_categories (
@@ -291,3 +293,22 @@ CREATE TABLE user_lists_items (
   upd_users_id          INT DEFAULT 0
 );
 CREATE UNIQUE INDEX user_lists_items_UK ON user_lists_items (user_lists_id, item_id);
+
+/*Custom menu items for sidebar*/
+DROP TABLE menu_items;
+CREATE TABLE menu_items (
+  id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
+
+  iname                 NVARCHAR(64) NOT NULL default '',
+  url                   NVARCHAR(255) NOT NULL default '',  -- menu url
+  icon                  NVARCHAR(64) NOT NULL default '',   -- menu icon
+  controller            NVARCHAR(255) NOT NULL default '',  -- controller class name for UI highlighting
+  access_level          TINYINT NOT NULL DEFAULT 0,         -- min access level
+
+  status                TINYINT DEFAULT 0,        /*0-ok, 10-hidden, 127-deleted*/
+  add_time              DATETIME2 NOT NULL DEFAULT getdate(),
+  add_users_id          INT DEFAULT 0,
+  upd_time              DATETIME2,
+  upd_users_id          INT DEFAULT 0
+);
+-- INSERT INTO menu_items (iname, url, icon, controller) VALUES ('Test Menu Item', '/Admin/Demos', 'glyphicon glyphicon-dashboard', 'AdminDemos');

@@ -99,8 +99,8 @@ Public Class AdminUsersController
             'here make additional changes if necessary
         End If
 
-        hf("add_users_id_name") = fw.model(Of Users).getFullName(item("add_users_id"))
-        hf("upd_users_id_name") = fw.model(Of Users).getFullName(item("upd_users_id"))
+        hf("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
+        hf("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         hf("id") = id
         hf("i") = item
@@ -220,7 +220,7 @@ Public Class AdminUsersController
         Dim ps As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        model.send_pwd_reset(id)
+        model.sendPwdReset(id)
 
         ps("success") = True
         ps("_json") = True
@@ -228,7 +228,7 @@ Public Class AdminUsersController
     End Function
 
     'for migration to hashed passwords
-    Public Function HashPasswordsAction() As Hashtable
+    Public Sub HashPasswordsAction()
         rw("hashing passwords")
         Dim rows = db.array("select id, pwd from " & db.q_ident(model.table_name) & " order by id")
         For Each row As Hashtable In rows
@@ -237,6 +237,6 @@ Public Class AdminUsersController
             db.update(model.table_name, New Hashtable From {{"pwd", hashed}}, New Hashtable From {{"id", row("id")}})
         Next
         rw("done")
-    End Function
+    End Sub
 
 End Class

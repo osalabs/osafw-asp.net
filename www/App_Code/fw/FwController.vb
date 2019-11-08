@@ -106,7 +106,13 @@ Public MustInherit Class FwController
 
         search_fields = Utils.f2str(Me.config("search_fields"))
         list_sortdef = Utils.f2str(Me.config("list_sortdef"))
-        list_sortmap = Utils.qh(Utils.f2str(Me.config("list_sortmap")))
+
+        Dim list_sortmap_raw = Me.config("list_sortmap")
+        If TypeOf list_sortmap_raw Is IDictionary Then
+            list_sortmap = list_sortmap_raw
+        Else
+            list_sortmap = Utils.qh(Utils.f2str(Me.config("list_sortmap")))
+        End If
 
         related_field_name = Utils.f2str(Me.config("related_field_name"))
 
@@ -283,10 +289,11 @@ Public MustInherit Class FwController
                 Else
                     order = "desc"
                 End If
-                aorderby(i) = field & " " & order
+                aorderby(i) = db.q_ident(field) & " " & order
             Next
             orderby = Join(aorderby, ", ")
-
+        Else
+            orderby = db.q_ident(orderby)
         End If
         Me.list_orderby = orderby
     End Sub
@@ -390,17 +397,39 @@ Public MustInherit Class FwController
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
         If list_view = "" Then list_view = model0.table_name
-        Me.list_count = db.value("select count(*) from " & list_view & " where " & Me.list_where)
+        Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
+
+        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
         If Me.list_count > 0 Then
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
 
-            'for SQL Server 2012+
-            Dim sql As String = "SELECT * FROM " & list_view &
-                                " WHERE " & Me.list_where &
-                                " ORDER BY " & Me.list_orderby &
-                                " OFFSET " & offset & " ROWS " &
-                                " FETCH NEXT " & limit & " ROWS ONLY"
+            Dim sql As String
+
+            If db.dbtype = "SQL" Then
+                'for SQL Server 2012+
+                sql = "SELECT * FROM " & list_view_name &
+                      " WHERE " & Me.list_where &
+                      " ORDER BY " & Me.list_orderby &
+                      " OFFSET " & offset & " ROWS " &
+                      " FETCH NEXT " & limit & " ROWS ONLY"
+                Me.list_rows = db.array(sql)
+            ElseIf db.dbtype = "OLE" Then
+                'OLE - for Access - emulate using TOP and return just a limit portion (bad perfomance, but no way)
+                sql = "SELECT TOP " & (offset + limit) & " * FROM " & list_view_name &
+                      " WHERE " & Me.list_where &
+                      " ORDER BY " & Me.list_orderby
+                Dim rows = db.array(sql)
+                If offset >= rows.Count Then
+                    'offset too far
+                    Me.list_rows = New ArrayList
+                Else
+                    Me.list_rows = rows.GetRange(offset, Math.Min(limit, rows.Count - offset))
+                End If
+            Else
+                Throw New ApplicationException("Unsupported db type")
+            End If
+            model0.normalizeNames(Me.list_rows)
 
             'for 2005<= SQL Server versions <2012
             'offset+1 because _RowNumber starts from 1
@@ -413,7 +442,7 @@ Public MustInherit Class FwController
             'for MySQL this would be much simplier
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 
-            Me.list_rows = db.array(sql)
+
             Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
         Else
             Me.list_rows = New ArrayList

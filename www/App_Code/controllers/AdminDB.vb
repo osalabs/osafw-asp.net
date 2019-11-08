@@ -13,7 +13,10 @@ Public Class AdminDBController
     Private Const dbpwd As String = "db321"
 
     Public Function IndexAction() As Hashtable
-        Dim hf As New Hashtable
+        Dim ps As New Hashtable
+        Dim selected_db = reqs("db")
+        If selected_db = "" Then selected_db = "main"
+
         Dim sql As String = reqs("sql")
         Dim tablehead As ArrayList = Nothing
         Dim tablerows As ArrayList = Nothing
@@ -21,6 +24,11 @@ Public Class AdminDBController
         Dim sql_time As Long = DateTime.Now().Ticks
 
         Try
+            If selected_db > "" Then
+                logger("CONNECT TO", selected_db)
+                db = New DB(fw, fw.config("db")(selected_db), selected_db)
+            End If
+
             If fw.SESSION("admindb_pwd_checked") Or reqs("pwd") = dbpwd Then
                 fw.SESSION("admindb_pwd_checked", True)
             Else
@@ -50,13 +58,24 @@ Public Class AdminDBController
             fw.G("err_msg") = "Error occured: " & ex.Message
         End Try
 
-        hf("sql") = sql
-        hf("sql_ctr") = sql_ctr
-        hf("sql_time") = (DateTime.Now().Ticks - sql_time) / 10 / 1000 / 1000 '100nano/micro/milliseconds/seconds
-        hf("head_fields") = tablehead
-        hf("rows") = tablerows
-        If tablerows IsNot Nothing Or tablehead IsNot Nothing Then hf("is_results") = True
-        Return hf
+        Dim dbsources As New ArrayList
+        For Each dbname As String In fw.config("db").Keys
+            dbsources.Add(New Hashtable From {
+                            {"id", dbname},
+                            {"iname", dbname},
+                            {"is_checked", dbname = selected_db}
+                          })
+        Next
+
+        ps("dbsources") = dbsources
+        ps("selected_db") = selected_db
+        ps("sql") = sql
+        ps("sql_ctr") = sql_ctr
+        ps("sql_time") = (DateTime.Now().Ticks - sql_time) / 10 / 1000 / 1000 '100nano/micro/milliseconds/seconds
+        ps("head_fields") = tablehead
+        ps("rows") = tablerows
+        If tablerows IsNot Nothing Or tablehead IsNot Nothing Then ps("is_results") = True
+        Return ps
     End Function
 
     Public Sub SaveAction()
@@ -117,6 +136,7 @@ Public Class AdminDBController
                 tblrow("fields") = New ArrayList
 
                 Dim tblfld As New Hashtable
+                tblfld("db") = db.db_name
                 tblfld("value") = tblname
                 tblfld("is_select_link") = True
                 tblrow("fields").Add(tblfld)
@@ -125,6 +145,7 @@ Public Class AdminDBController
                 tblfld("value") = get_tbl_count(tblname)
                 tblrow("fields").Add(tblfld)
 
+                tblrow("db") = db.db_name
                 tablerows.Add(tblrow)
             End If
         Next

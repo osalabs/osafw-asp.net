@@ -73,6 +73,7 @@ Public Class LoginController
             End If
 
         Catch ex As ApplicationException
+            logger("ERROR", ex.Message)
             fw.G("err_ctr") = reqi("err_ctr") + 1
             fw.G("err_msg") = ex.Message
             fw.routeRedirect("Index")

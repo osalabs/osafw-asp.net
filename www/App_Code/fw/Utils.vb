@@ -236,7 +236,13 @@ Public Class Utils
         Return result.ToString()
     End Function
 
-    'standard function for exporting to csv
+    ''' <summary>
+    ''' standard function for exporting to csv
+    ''' </summary>
+    ''' <param name="csv_export_headers">CSV headers row, comma-separated format</param>
+    ''' <param name="csv_export_fields">empty, * or Utils.qw format</param>
+    ''' <param name="rows">DB array</param>
+    ''' <returns></returns>
     Public Shared Function getCSVExport(csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As StringBuilder
         Dim headers_str As String = csv_export_headers
         Dim csv As New StringBuilder
@@ -248,7 +254,7 @@ Public Class Utils
                 headers_str = Join(fields, ",")
             End If
         Else
-            fields = Split(csv_export_fields, ",")
+            fields = Utils.qw(csv_export_fields)
         End If
 
         csv.Append(headers_str & vbLf)
@@ -809,6 +815,21 @@ Public Class Utils
             Return reader2.ReadToEnd()
         End Using
 
+    End Function
+
+    'convert/normalize external table/field name to fw standard name
+    '"SomeCrazy/Name" => "some_crazy_name"
+    Shared Function name2fw(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl,dbo prefixes if any
+        result = Regex.Replace(result, "([A-Z]+)", "_$1") 'split CamelCase to underscore, but keep abbrs together ZIP/Code -> zip_code
+
+        result = Regex.Replace(result, "\W+", "_") 'replace all non-alphanum to underscore
+        result = Regex.Replace(result, "_+", "_") 'deduplicate underscore
+        result = Regex.Replace(result, "^_+|_+$", "") 'remove first and last _ if any
+        result = result.ToLower() 'and finally to lowercase
+        result = result.Trim()
+        Return result
     End Function
 
 End Class

@@ -95,6 +95,7 @@ Public Class FW
         FwConfig.init(req)
 
         db = New DB(Me)
+        DB.SQL_QUERY_CTR = 0 'reset query counter
 
         G = config().Clone() 'by default G contains conf
 
@@ -486,7 +487,7 @@ Public Class FW
         End Try
 
         Dim end_timespan As TimeSpan = DateTime.Now - start_time
-        logger(LogLevel.INFO, "REQUEST END   [", cur_method, " ", url, "] in ", end_timespan.TotalSeconds, "s, ", String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds), "/s")
+        logger(LogLevel.INFO, "REQUEST END   [", cur_method, " ", url, "] in ", end_timespan.TotalSeconds, "s, ", String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds), "/s, ", DB.SQL_QUERY_CTR, " SQL")
     End Sub
 
     'simple auth check based on /controller/action - and rules filled in in Config class
@@ -603,17 +604,22 @@ Public Class FW
         'skip logging if requested level more than config's debug level
         If level > CType(Me.config("log_level"), LogLevel) Then Return
 
-        Dim str As New StringBuilder(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ff"))
+        Dim str As New StringBuilder(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"))
         str.Append(" ").Append(level.ToString()).Append(" ")
         str.Append(Diagnostics.Process.GetCurrentProcess().Id).Append(" ")
         Dim st As New Diagnostics.StackTrace(True)
-        Dim sf As Diagnostics.StackFrame = st.GetFrame(1)
 
         Try
-            If sf.GetMethod().Name = "logger" Then sf = st.GetFrame(2)
+            Dim i = 1
+            Dim sf As Diagnostics.StackFrame = st.GetFrame(i)
+            'skip logger methods and DB internals as we want to know line where logged thing actually called from
+            While sf.GetMethod().Name = "logger" OrElse Right(sf.GetFileName() & "", 6) = "\DB.vb"
+                i += 1
+                sf = st.GetFrame(i)
+            End While
             Dim fname As String = sf.GetFileName()
             If fname IsNot Nothing Then 'nothing in Release configuration
-                str.Append(Replace(Replace(sf.GetFileName().ToString(), Me.config("site_root"), ""), "\App_Code", ""))
+                str.Append(Replace(Replace(fname.ToString(), Me.config("site_root"), ""), "\App_Code", ""))
             End If
             str.Append(":").Append(sf.GetMethod().Name).Append(" ").Append(sf.GetFileLineNumber().ToString).Append(" # ")
         Catch ex As Exception

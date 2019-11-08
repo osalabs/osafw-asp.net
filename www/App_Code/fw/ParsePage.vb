@@ -445,6 +445,9 @@ Public Class ParsePage
                             Exit For
                         End If
 
+                    ElseIf TypeOf (ptr) Is IList Then
+                        ptr = DirectCast(ptr, IList).Item(k)
+
                     ElseIf TypeOf (ptr) Is HttpSessionState Then
                         If DirectCast(ptr, HttpSessionState).Item(k) IsNot Nothing Then
                             ptr = DirectCast(ptr, HttpSessionState).Item(k)
@@ -629,14 +632,14 @@ Public Class ParsePage
         Dim ttpath As String = tag_tplpath(tag, tpl_name)
 
         For i As Integer = 0 To tag_val_array.Count - 1
-            proc_repeat_modifiers(tag_val_array, i, parent_hf)
-            value.Append(_parse_page(ttpath, tag_val_array(i), "", inline_tpl, parent_hf))
+            Dim row = proc_repeat_modifiers(tag_val_array, i, parent_hf)
+            value.Append(_parse_page(ttpath, row, "", inline_tpl, parent_hf))
         Next
         Return value.ToString()
     End Function
 
-    Private Sub proc_repeat_modifiers(ByRef uftag As IList, ByVal i As Integer, parent_hf As Hashtable)
-        Dim uftagi As Hashtable = uftag(i)
+    Private Function proc_repeat_modifiers(uftag As IList, i As Integer, parent_hf As Hashtable) As Hashtable
+        Dim uftagi As Hashtable = uftag(i).Clone() 'make a shallow copy as we modify this level
         Dim cnt As Integer = uftag.Count
 
         If i = 0 Then
@@ -662,8 +665,8 @@ Public Class ParsePage
         Else
             uftagi("repeat.even") = 1
         End If
-
-    End Sub
+        Return uftagi
+    End Function
 
     Function tag_tplpath(ByVal tag As String, ByVal tpl_name As String) As String
         Dim add_path As String = ""
