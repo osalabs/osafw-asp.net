@@ -35,12 +35,12 @@ Public Class Users
     ''' <summary>
     ''' return full user name - First Name Last Name
     ''' </summary>
-    ''' <param name="id"></param>
+    ''' <param name="id">Object type because if upd_users_id could be null</param>
     ''' <returns></returns>
-    Public Overrides Function iname(id As Integer) As String
+    Public Overloads Function iname(id As Object) As String
         Dim result As String = ""
 
-        If id > 0 Then
+        If Utils.f2int(id) > 0 Then
             Dim item = one(id)
             result = item("fname") & "  " & item("lname")
         End If

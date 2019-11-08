@@ -397,7 +397,9 @@ Public MustInherit Class FwController
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
         If list_view = "" Then list_view = model0.table_name
-        Me.list_count = db.value("select count(*) from " & db.q_ident(list_view) & " where " & Me.list_where)
+        Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
+
+        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
         If Me.list_count > 0 Then
             Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
             Dim limit As Integer = Me.list_filter("pagesize")
@@ -406,7 +408,7 @@ Public MustInherit Class FwController
 
             If db.dbtype = "SQL" Then
                 'for SQL Server 2012+
-                sql = "SELECT * FROM " & db.q_ident(list_view) &
+                sql = "SELECT * FROM " & list_view_name &
                       " WHERE " & Me.list_where &
                       " ORDER BY " & Me.list_orderby &
                       " OFFSET " & offset & " ROWS " &
@@ -414,7 +416,7 @@ Public MustInherit Class FwController
                 Me.list_rows = db.array(sql)
             ElseIf db.dbtype = "OLE" Then
                 'OLE - for Access - emulate using TOP and return just a limit portion (bad perfomance, but no way)
-                sql = "SELECT TOP " & (offset + limit) & " * FROM " & db.q_ident(list_view) &
+                sql = "SELECT TOP " & (offset + limit) & " * FROM " & list_view_name &
                       " WHERE " & Me.list_where &
                       " ORDER BY " & Me.list_orderby
                 Dim rows = db.array(sql)

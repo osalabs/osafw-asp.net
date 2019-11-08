@@ -156,7 +156,7 @@ Public Class AdminLookupManagerController
             If swhere > "" Then where &= " and (0=1 " & swhere & ")"
         End If
 
-        hf("count") = db.value("select count(*) from " & list_table_name & " where " & where)
+        hf("count") = db.value("select count(*) from " & db.q_ident(list_table_name) & " where " & where)
         If hf("count") > 0 Then
             Dim offset As Integer = f("pagenum") * f("pagesize")
             Dim limit As Integer = f("pagesize")
@@ -170,15 +170,11 @@ Public Class AdminLookupManagerController
                 orderby = orderby & " desc"
             End If
 
-            'offset+1 because _RowNumber starts from 1
-            Dim sql As String = "SELECT TOP " & limit & " * " &
-                            " FROM (" &
-                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & orderby & ") AS _RowNumber" &
-                            "   FROM " & db.q_ident(list_table_name) &
-                            "   WHERE " & where &
-                            ") tmp" &
-                        " WHERE _RowNumber >= " & (offset + 1) &
-                        " ORDER BY " & orderby
+            Dim sql = "SELECT * FROM " & db.q_ident(list_table_name) &
+                      " WHERE " & where &
+                      " ORDER BY " & orderby &
+                      " OFFSET " & offset & " ROWS " &
+                      " FETCH NEXT " & limit & " ROWS ONLY"
 
             hf("list_rows") = db.array(sql)
             hf("pager") = FormUtils.getPager(hf("count"), f("pagenum"), f("pagesize"))

@@ -57,15 +57,15 @@
         </div>
         <div class="col">
           <div class="custom-control custom-checkbox custom-control-inline">
-            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcoview" name="item[<~fw_name>#coview]" checked>
+            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcoview" name="item[<~fw_name>#coview]" <~/common/checked unless="controller_is_lookup">>
             <label class="custom-control-label" for="<~fw_name>#cbcoview">View</label>
           </div>
           <div class="custom-control custom-checkbox custom-control-inline">
-            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcoedit" name="item[<~fw_name>#coedit]" checked>
+            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcoedit" name="item[<~fw_name>#coedit]" <~/common/checked unless="controller_is_lookup">>
             <label class="custom-control-label" for="<~fw_name>#cbcoedit">Edit</label>
           </div>
           <div class="custom-control custom-checkbox custom-control-inline cb-lookup">
-            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcolookup" name="item[<~fw_name>#colookup]">
+            <input type="checkbox" class="custom-control-input" id="<~fw_name>#cbcolookup" name="item[<~fw_name>#colookup]" <~/common/checked if="controller_is_lookup">>
             <label class="custom-control-label" for="<~fw_name>#cbcolookup">Lookup</label>
           </div>
         </div>

@@ -288,6 +288,14 @@ Public Class DevManageController
         Dim config_file = fw.config("template") & DB_JSON_PATH
         Dim entities = loadJson(Of ArrayList)(config_file)
 
+        If Not is_sql_only Then
+            'drop all FKs we created before, so we'll be able to drop tables later
+            Dim fks = db.array("SELECT fk.name, o.name as table_name FROM sys.foreign_keys fk, sys.objects o where fk.is_system_named=0 and o.object_id=fk.parent_object_id")
+            For Each fk As Hashtable In fks
+                db.exec("ALTER TABLE " & db.q_ident(fk("table_name")) & " DROP CONSTRAINT " & db.q_ident(fk("name")))
+            Next
+        End If
+
         Dim database_sql = ""
         For Each entity In entities
             Dim sql = entity2SQL(entity)
@@ -298,7 +306,13 @@ Public Class DevManageController
                 database_sql &= sql & ";" & vbCrLf & vbCrLf
             Else
                 'create db tables directly in db
-                'TODO re-create - first drop with all FK dependencies
+                're-create - first drop with all FK dependencies
+                Try
+                    db.exec("DROP TABLE " & db.q_ident(entity("table")))
+                Catch ex As Exception
+                    logger(ex.Message)
+                    'just ignore drop exceptions
+                End Try
                 db.exec(sql)
             End If
         Next
@@ -489,7 +503,7 @@ Public Class DevManageController
         result = Regex.Replace(result, "_+", " ") 'underscores to spaces
         result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
         result = Regex.Replace(result, " +", " ") 'deduplicate spaces
-        result = Utils.capitalize(result) 'Title Case
+        result = Utils.capitalize(result, "all") 'Title Case
         result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
         result = result.Trim()
         Return result
@@ -598,6 +612,9 @@ Public Class DevManageController
             fw.logger(line)
 
             If line.Substring(0, 1) = "-" Then
+                'if new entity - add system fields to previous entity
+                If table_entity IsNot Nothing Then table_entity("fields").AddRange(defaultFieldsAfter())
+
                 'new entity
                 table_entity = New Hashtable
                 entities.Add(table_entity)
@@ -607,7 +624,7 @@ Public Class DevManageController
                 Dim table_name = parts(0) 'name is first 
 
                 table_entity("db_config") = "" 'main
-                table_entity("iname") = table_name
+                table_entity("iname") = Me.name2human(table_name)
                 table_entity("table") = Utils.name2fw(table_name)
                 If isFwTableName(table_entity("table")) Then Throw New ApplicationException("Cannot have table name " & table_entity("table"))
 
@@ -693,16 +710,16 @@ Public Class DevManageController
                         field("fw_type") = "float"
                         field("fw_subtype") = "float"
                     ElseIf Regex.IsMatch(line, "\bdate\b", RegexOptions.IgnoreCase) Then
-                        field("fw_type") = "date"
+                        field("fw_type") = "datetime"
                         field("fw_subtype") = "date"
                     ElseIf Regex.IsMatch(line, "\bdatetime\b", RegexOptions.IgnoreCase) Then
-                        field("fw_type") = "date"
+                        field("fw_type") = "datetime"
                         field("fw_subtype") = "datetime2"
                     Else
                         'not type specified
                         'additionally detect date field from name
                         If Regex.IsMatch(field("name"), "Date$", RegexOptions.IgnoreCase) Then
-                            field("fw_type") = "date"
+                            field("fw_type") = "datetime"
                             field("fw_subtype") = "date"
                         Else
                             'just a default varchar(255)
@@ -725,6 +742,8 @@ Public Class DevManageController
 
             End If
         Next
+        'add system fields to last entity
+        If table_entity IsNot Nothing Then table_entity("fields").AddRange(defaultFieldsAfter())
 
         'save db.json
         saveJson(entities, fw.config("template") & DB_JSON_PATH)
@@ -801,10 +820,10 @@ Public Class DevManageController
                 fld_iname = fld_identity
             End If
 
-            If fld_identity IsNot Nothing Then
+            If fld_identity IsNot Nothing AndAlso fld_identity("name") <> "id" Then
                 codegen &= "        field_id = """ & fld_identity("name") & """" & vbCrLf
             End If
-            If fld_iname IsNot Nothing Then
+            If fld_iname IsNot Nothing AndAlso fld_identity("name") <> "iname" Then
                 codegen &= "        field_iname = """ & fld_iname("name") & """" & vbCrLf
             End If
 
@@ -833,15 +852,30 @@ Public Class DevManageController
 
     Private Sub createLookup(entity As Hashtable)
         Dim ltable = fw.model(Of LookupManagerTables).oneByTname(entity("table"))
-        Dim fields As New Hashtable From {
+
+        Dim columns = ""
+        Dim column_names = ""
+        Dim fields = Me.array2hashtable(entity("fields"), "fw_name")
+        If fields.ContainsKey("iname") Then
+            columns &= IIf(columns > "", ",", "") & "iname"
+            column_names &= IIf(column_names > "", ",", "") & fields("iname")("iname")
+        End If
+        If fields.ContainsKey("idesc") Then
+            columns &= IIf(columns > "", ",", "") & "idesc"
+            column_names &= IIf(column_names > "", ",", "") & fields("idesc")("iname")
+        End If
+
+        Dim item As New Hashtable From {
                 {"tname", entity("table")},
-                {"iname", entity("iname")}
+                {"iname", entity("iname")},
+                {"columns", columns},
+                {"column_names", column_names}
             }
         If ltable.Count > 0 Then
             'replace
-            fw.model(Of LookupManagerTables).update(ltable("id"), fields)
+            fw.model(Of LookupManagerTables).update(ltable("id"), item)
         Else
-            fw.model(Of LookupManagerTables).add(fields)
+            fw.model(Of LookupManagerTables).add(item)
         End If
     End Sub
 
@@ -965,13 +999,13 @@ Public Class DevManageController
             Dim sff As New Hashtable
             Dim is_skip = False
             sf("field") = fld("name")
-            sf("label") = fld("name")
+            sf("label") = fld("iname")
             sf("type") = "plaintext"
 
             sff("field") = fld("name")
-            sff("label") = fld("name")
+            sff("label") = fld("iname")
 
-            If fld("is_nullable") = "0" Then sff("required") = True 'if not nullable - required
+            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then sff("required") = True 'if not nullable - required
 
             Dim maxlen = Utils.f2int(fld("maxlen"))
             If maxlen > 0 Then sff("maxlength") = maxlen
@@ -1104,7 +1138,16 @@ Public Class DevManageController
                 Case "add_users_id", "upd_users_id"
                     is_skip = True
                 Case Else
-                    'nothing else
+                    If Regex.IsMatch(fld("iname"), "\bState$") Then
+                        'if human name ends with State - make it State select
+                        sf("lookup_tpl") = "/common/sel/state.sel"
+
+                        sff("type") = "select"
+                        sff("lookup_tpl") = "/common/sel/state.sel"
+                        sff("class_contents") = "col-md-3"
+                    Else
+                        'nothing else
+                    End If
             End Select
 
             If Not is_skip Then
@@ -1235,13 +1278,16 @@ Public Class DevManageController
 
         Dim i = 1
         For Each field As Hashtable In entity("fields")
-            Dim fsql = "  " & db.q_ident(field("name")).PadRight(21, " ") & " " & entityfield2dbtype(field)
+            Dim fsql = ""
+            If field("name") = "status" Then fsql &= vbCrLf 'add empty line before system fields starting with "status"
+
+            fsql &= "  " & db.q_ident(field("name")).PadRight(21, " ") & " " & entityfield2dbtype(field)
             If field("is_identity") = 1 Then
                 fsql &= " IDENTITY(1, 1) PRIMARY KEY CLUSTERED"
             End If
             fsql &= IIf(field("is_nullable") = 0, " NOT NULL", "")
             fsql &= entityfield2dbdefault(field)
-            'TODO FOREIGN KEY REFERENCES att_categories(id)
+            fsql &= entityfield2dbfk(field, entity)
 
             result &= fsql & IIf(i < entity("fields").Count, ",", "") & vbCrLf
             i += 1
@@ -1254,7 +1300,7 @@ Public Class DevManageController
 
     Private Function entityfield2dbtype(entity As Hashtable) As String
         Dim result = ""
-        logger(entity("fw_type"))
+
         Select Case entity("fw_type")
             Case "int"
                 If entity("fw_subtype") = "boolean" OrElse entity("fw_subtype") = "bit" Then
@@ -1280,16 +1326,16 @@ Public Class DevManageController
                     result &= "(MAX)"
                 End If
         End Select
-        logger(result)
+
         Return result
     End Function
 
     Private Function entityfield2dbdefault(entity As Hashtable) As String
         Dim result = ""
         Dim def As String = entity("default")
-        If def > "" Then
+        If def IsNot Nothing Then
             result &= " DEFAULT "
-            'remove outer parentness if any
+            'remove outer parentheses if any
             def = Regex.Replace(def, "^\((.+)\)$", "$1")
             def = Regex.Replace(def, "^\((.+)\)$", "$1") 'and again because of ((0)) but don't touch (getdate())
 
@@ -1316,9 +1362,39 @@ Public Class DevManageController
         Return result
     End Function
 
+    'if field is referece to other table - add named foreign key
+    'CONSTRAINT FK_entity("table_name")_remotetable FOREIGN KEY REFERENCES remotetable(id)
+    Private Function entityfield2dbfk(field As Hashtable, entity As Hashtable) As String
+        Dim result = ""
+
+        If Not entity.ContainsKey("foreign_keys") Then Return result
+
+        For Each fk As Hashtable In entity("foreign_keys")
+            If fk("column") = field("name") Then
+                result = " CONSTRAINT FK_" & entity("fw_name") & "_" & Utils.name2fw(fk("pk_table")) & " FOREIGN KEY REFERENCES " & db.q_ident(fk("pk_table")) & "(" & db.q_ident(fk("pk_column")) & ")"
+                Exit For
+            End If
+        Next
+
+        Return result
+    End Function
+
     'return default fields for the entity
-    'id, icode, iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id
+    'id[, icode], iname, idesc, status, add_time, add_users_id, upd_time, upd_users_id
     Private Function defaultFields() As ArrayList
+        'New Hashtable From {
+        '    {"name", "icode"},
+        '    {"fw_name", "icode"},
+        '    {"iname", "Code"},
+        '    {"is_identity", 0},
+        '    {"default", ""},
+        '    {"maxlen", 64},
+        '    {"numeric_precision", Nothing},
+        '    {"is_nullable", 1},
+        '    {"fw_type", "varchar"},
+        '    {"fw_subtype", "nvarchar"}
+        '},
+
         Return New ArrayList From {
             New Hashtable From {
                 {"name", "id"},
@@ -1333,23 +1409,11 @@ Public Class DevManageController
                 {"fw_subtype", "integer"}
             },
             New Hashtable From {
-                {"name", "icode"},
-                {"fw_name", "icode"},
-                {"iname", "Code"},
-                {"is_identity", 0},
-                {"default", ""},
-                {"maxlen", 64},
-                {"numeric_precision", Nothing},
-                {"is_nullable", 1},
-                {"fw_type", "varchar"},
-                {"fw_subtype", "nvarchar"}
-            },
-            New Hashtable From {
                 {"name", "iname"},
                 {"fw_name", "iname"},
                 {"iname", "Name"},
                 {"is_identity", 0},
-                {"default", ""},
+                {"default", Nothing},
                 {"maxlen", 255},
                 {"numeric_precision", Nothing},
                 {"is_nullable", 0},
@@ -1367,7 +1431,12 @@ Public Class DevManageController
                 {"is_nullable", 1},
                 {"fw_type", "varchar"},
                 {"fw_subtype", "nvarchar"}
-            },
+            }
+        }
+    End Function
+
+    Private Function defaultFieldsAfter() As ArrayList
+        Return New ArrayList From {
             New Hashtable From {
                 {"name", "status"},
                 {"fw_name", "status"},
