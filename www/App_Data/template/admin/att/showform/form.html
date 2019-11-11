@@ -6,7 +6,7 @@
 
     <~/common/form/group_id>
 
-    <div class="form-group row">
+    <div class="form-row">
       <label class="col-form-label col-md-3" for="att_categories_id">`Category`</label>
       <div class="col-md-3">
         <select id="att_categories_id" name="item[att_categories_id]" class="form-control">
@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <div class="form-group row">
+    <div class="form-row">
       <label class="col-form-label col-md-3 required" for="iname">`File name`</label>
       <div class="col-md-9">
         <input id="iname" name="item[iname]" maxlength="128" value="<~i[iname]>" type="text" class="form-control">
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div class="form-group row">
+    <div class="form-row">
       <label class="col-form-label col-md-3 required" for="file1">`File`</label>
       <div class="col-md-9">
         <~not_uploaded unless="i[fsize]" inline>

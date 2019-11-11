@@ -1,11 +1,10 @@
-<div class="list_filter d-print-none">
-<form method="GET" id="FFilter" name="FFilter" class="form-horizontal">
+<form method="GET" id="FFilter" name="FFilter" class="form-horizontal d-print-none" >
   <input type="hidden" name="dofilter" value="1">
   <input type="hidden" name="f[pagesize]" value="<~f[pagesize]>">
 
-    <div class="filter_option form-group row">
+    <div class="form-row">
         <~/admin/reports/common/filter_dates>
-        <div class="col-sm-3">
+        <div class="col">
             <button class="btn btn-primary"><i class="glyphicon glyphicon-refresh"></i> Apply/Reload</button>
             <button type="button" class="btn btn-default on-print"><i class="glyphicon glyphicon-print"></i> Print</button>
         </div>
@@ -13,4 +12,3 @@
 
     <~/admin/reports/common/filter_format>
 </form>
-</div>

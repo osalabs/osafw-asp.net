@@ -288,11 +288,11 @@
         },
         {
             "type": "row",
-            "class": ""
+            "class": "form-row"
         },
             {
                 "type": "col",
-                "class": ""
+                "class": "col-md-6"
             },
                 {
                     "field": "fint",
@@ -301,14 +301,14 @@
                     "min": 0,
                     "max": 999999,
                     "class_label": "col-6",
-                    "class_contents": "col-3"
+                    "class_contents": "col-md-3"
                 },
             {
                 "type": "col_end"
             },
             {
                 "type": "col",
-                "class": ""
+                "class": "col-md-6"
             },
                 {
                     "field": "ffloat",
@@ -316,7 +316,7 @@
                     "type": "number",
                     "step": 0.1,
                     "class_label": "col-6",
-                    "class_contents": "col-3"
+                    "class_contents": "col-md-3"
                 },
             {
                 "type": "col_end"
@@ -362,18 +362,21 @@
             "label": "Radio",
             "type": "radio",
             "lookup_tpl": "/common/sel/fcombo.sel",
-            "is_inline": true
+            "is_inline": true,
+            "class_contents": "col d-flex align-items-center"
         },
         {
             "field": "fyesno",
             "label": "Yes or No",
             "type": "yesno",
-            "is_inline": true
+            "is_inline": true,
+            "class_contents": "col d-flex align-items-center"
         },
         {
             "field": "is_checkbox",
             "label": "Checkbox",
-            "type": "cb"
+            "type": "cb",
+            "class_contents": "col d-flex align-items-center"
         },
         {
             "field": "fdate_combo",

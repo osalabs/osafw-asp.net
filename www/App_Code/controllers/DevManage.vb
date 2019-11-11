@@ -75,6 +75,7 @@ Public Class DevManageController
     Public Sub DeleteMenuItemsAction()
         fw.FLASH("success", "Menu Items cleared")
 
+        db.del("menu_items", New Hashtable)
         FwCache.remove("menu_items")
 
         fw.redirect(base_url)
@@ -1097,6 +1098,7 @@ Public Class DevManageController
                         'make it as yes/no radio
                         sff("type") = "yesno"
                         sff("is_inline") = True
+                        sff("class_contents") = "d-flex align-items-center"
                     Else
                         sff("type") = "number"
                         sff("min") = 0

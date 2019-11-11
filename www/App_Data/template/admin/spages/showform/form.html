@@ -2,28 +2,33 @@
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
 
-    <div class="float-right text-right sticky-top bg-white pl-3 pb-3" style="min-width:240px">
-        <span class="form-saved-status"></span>
-        <button type="submit" class="btn btn-primary">`Submit`</button>
-        <button type="button" class="btn btn-default on-cancel" data-href="<~/common/form/cancel_url>">`Cancel`</button>
-    </div>
-    <div class="btn-std">
-     <div class="btn-group">
-        <a class="btn btn-default" href="<~../url><~/common/list/relid>"><i class="glyphicon glyphicon-menu-left"></i><span class="d-none d-lg-inline"> `Back to list`</span></a>
-        <a class="btn btn-default" href="<~../url>/new<~/common/list/relid>"><i class="glyphicon glyphicon-plus"></i><span class="d-none d-lg-inline"> `Add New`</span></a>
-     </div>
-     <div class="btn-group">
-        <a class="btn btn-default <~/common/disabledcl unless="i[parent_id]">" href="<~../url>/<~i[parent_id]>/edit" ><i class="glyphicon glyphicon-level-up"></i> `Up`</a>
-        <~add_sub if="id" inline>
-          <~add_sub2 unless="i[is_home]" inline>
-            <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i><span class="d-none d-lg-inline"> `Add Sub-Page`</span><span class="d-inline d-lg-none"> `Sub`</span></a>
-          </~add_sub2>
-        </~add_sub>
+    <div class="row">
+      <div class="col">
+        <div class="btn-group">
+          <a class="btn btn-default" href="<~../url><~/common/list/relid>"><i class="glyphicon glyphicon-menu-left"></i><span class="d-none d-lg-inline"> `Back to list`</span></a>
+          <a class="btn btn-default" href="<~../url>/new<~/common/list/relid>"><i class="glyphicon glyphicon-plus"></i><span class="d-none d-lg-inline"> `Add New`</span></a>
+        </div>
+        <div class="btn-group">
+          <a class="btn btn-default <~/common/disabledcl unless="i[parent_id]">" href="<~../url>/<~i[parent_id]>/edit" ><i class="glyphicon glyphicon-level-up"></i> `Up`</a>
+          <~add_sub if="id" inline>
+            <~add_sub2 unless="i[is_home]" inline>
+              <a class="btn btn-default" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i><span class="d-none d-lg-inline"> `Add Sub-Page`</span><span class="d-inline d-lg-none"> `Sub`</span></a>
+            </~add_sub2>
+          </~add_sub>
+        </div>
+        <~btn_preview if="id" inline>
+          <a href="<~full_url>" target="_blank" class="btn btn-outline-secondary" title="View"><i class="glyphicon glyphicon-new-window"></i><span class="d-none d-lg-inline"> `Preview`</span></a>
+        </~btn_preview>
       </div>
-      <~btn_preview if="id" inline>
-      <a href="<~full_url>" target="_blank" class="btn btn-outline-secondary" title="View"><i class="glyphicon glyphicon-new-window"></i><span class="d-none d-lg-inline"> `Preview`</span></a>
-      </~btn_preview>
+      <div class="col">
+        <div class="float-right text-right bg-white pl-3 pb-3" style="min-width:240px;">
+            <span class="form-saved-status"></span>
+            <button type="submit" class="btn btn-primary">`Submit`</button>
+            <button type="button" class="btn btn-default on-cancel" data-href="<~/common/form/cancel_url>">`Cancel`</button>
+        </div>
+      </div>
     </div>
+
 
   <div class="row">
     <div class="col-lg-9">

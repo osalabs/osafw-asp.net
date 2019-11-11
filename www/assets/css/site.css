@@ -127,6 +127,7 @@ form .required:before {
     content: "*";
     color:#ff0000;
     font-family: Menlo, Monaco, "Courier New", monospace;
+    line-height: 1.2;
 }
 
 form [class^='err-'] {
@@ -143,6 +144,14 @@ form .has-danger label {
     form .has-danger .invalid-feedback {
         display: block;
     }
+
+form[data-list-filter] {
+    margin-bottom: 0.5rem;
+}
+
+.form-row {
+    padding-bottom: 0.2rem;
+}
 
 .a_visited a:visited {
     color: #800080;
@@ -175,12 +184,8 @@ form .has-danger label {
     top: -3px !important;
 }
 
-.filter_option label {
-    text-align: right;
-}
-
 .btn-std {
-    margin-bottom: 20px;
+    margin-bottom: 0.5rem;
 }
 
 .w100 {
@@ -388,6 +393,10 @@ div.jGrowl div.jGrowl-notification
 @media screen and (max-width: 768px) {
     .fwlayout-fluid .site-footer {
         position: relative;
+    }
+    .field-multi-value .custom-control{
+        padding-top: 3px;
+        padding-bottom: 3px;
     }
 }
 
