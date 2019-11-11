@@ -330,7 +330,6 @@ div.jGrowl div.jGrowl-notification
     z-index: 100;
     padding: 0;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-    background-color: #e9ecef;
     color: #000;
 }
     .fwlayout-fluid .sidebar.collapsing,
@@ -403,4 +402,6 @@ div.jGrowl div.jGrowl-notification
 /*** end of fw ***/
 
 /*** add site specific css below ***/
-
+.bg-theme-color {
+    background-color: #e9ecef;
+}

@@ -1,4 +1,4 @@
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: https://cdn.tinymce.com; script-src 'self' 'unsafe-inline' https://www.google-analytics.com https://oss.maxcdn.com https://cdnjs.cloudflare.com https://cdn.tinymce.com">
+<meta http-equiv="Content-Security-Policy" content="<~./content_security_policy>">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,6 +10,7 @@
 <link href="<~GLOBAL[ASSETS_URL]>/css/bootstrap.min.css" rel="stylesheet">
 <link href="<~GLOBAL[ASSETS_URL]>/css/glyphicons.css" rel="stylesheet">
 <link href="<~GLOBAL[ASSETS_URL]>/css/jgrowl.min.css" rel="stylesheet">
+<~./theme_link if="SESSION[theme]">
 <link href="<~GLOBAL[ASSETS_URL]>/css/site.css?v<~GLOBAL[SITE_VERSION]>" rel="stylesheet">
 
 <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->

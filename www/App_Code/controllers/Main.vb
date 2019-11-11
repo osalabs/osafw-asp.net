@@ -7,6 +7,11 @@ Public Class MainController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 0
 
+    Public Overrides Sub init(fw As FW)
+        MyBase.init(fw)
+        base_url = "/Main"
+    End Sub
+
     Public Function IndexAction() As Hashtable
         Dim ps As Hashtable = New Hashtable
 
@@ -103,6 +108,12 @@ Public Class MainController
 
         Return ps
     End Function
+
+    Sub ThemeAction(form_id As String)
+        fw.SESSION("theme", Utils.f2int(form_id))
+
+        fw.redirect(base_url)
+    End Sub
 
 End Class
 
