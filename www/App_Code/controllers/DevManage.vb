@@ -436,7 +436,8 @@ Public Class DevManageController
 
             'set is_fw flag - if it's fw compatible (contains id,iname,status,add_time,add_users_id)
             Dim fields = array2hashtable(table_entity("fields"), "name")
-            table_entity("is_fw") = fields.Contains("id") AndAlso fields.Contains("iname") AndAlso fields.Contains("status") AndAlso fields.Contains("add_time") AndAlso fields.Contains("add_users_id")
+            'AndAlso fields.Contains("iname") 
+            table_entity("is_fw") = fields.Contains("id") AndAlso fields.Contains("status") AndAlso fields.Contains("add_time") AndAlso fields.Contains("add_users_id")
             result.Add(table_entity)
         Next
 
@@ -850,7 +851,7 @@ Public Class DevManageController
             If fld_identity IsNot Nothing AndAlso fld_identity("name") <> "id" Then
                 codegen &= "        field_id = """ & fld_identity("name") & """" & vbCrLf
             End If
-            If fld_iname IsNot Nothing AndAlso fld_identity("name") <> "iname" Then
+            If fld_iname IsNot Nothing AndAlso fld_iname("name") <> "iname" Then
                 codegen &= "        field_iname = """ & fld_iname("name") & """" & vbCrLf
             End If
 
