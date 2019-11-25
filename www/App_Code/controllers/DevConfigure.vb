@@ -18,7 +18,7 @@ Public Class DevConfigureController
         ps("config_file_name") = fw.config("config_override")
 
         ps("is_db_config") = False
-        If fw.config("current_db") > "" AndAlso fw.config("db") IsNot Nothing AndAlso fw.config("db")(fw.config("current_db")) IsNot Nothing AndAlso fw.config("db")(fw.config("current_db"))("connection_string") > "" Then ps("is_db_config") = True
+        If fw.config("db") IsNot Nothing AndAlso fw.config("db")("main") IsNot Nothing AndAlso fw.config("db")("main")("connection_string") > "" Then ps("is_db_config") = True
 
         Dim db As DB
         ps("is_db_conn") = False
