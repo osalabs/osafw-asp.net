@@ -1,7 +1,7 @@
 $(document).on('click', '.on-pwd-hideshow', pwd_hideshow);
 pwd_hideshow();
 
-// $('#login').focus()
+$('#login').focus()
 
 $(document).on('keyup change', '.form-label-group input', input_on_change);
 setTimeout(function() {
