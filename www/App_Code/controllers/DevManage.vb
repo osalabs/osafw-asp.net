@@ -831,7 +831,7 @@ Public Class DevManageController
                 End If
 
                 'for iname - just use 2nd to 4th field which not end with ID, varchar type and has some maxlen
-                If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("maxlen") > 0 AndAlso fld("fw_type") = "varchar" AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
+                If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("fw_type") = "varchar" AndAlso Utils.f2int(fld("maxlen")) > 0 AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
                     fld_iname = fld
                 End If
 
