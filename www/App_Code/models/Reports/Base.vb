@@ -71,7 +71,7 @@ Public Class ReportBase
     Protected Function _calcPerc(rows As ArrayList) As Integer
         Dim total_ctr As Integer = 0
         For Each row As Hashtable In rows
-            total_ctr = total_ctr + Utils.f2int(row("ctr"))
+            total_ctr += Utils.f2int(row("ctr"))
         Next
         If total_ctr > 0 Then
             For Each row As Hashtable In rows

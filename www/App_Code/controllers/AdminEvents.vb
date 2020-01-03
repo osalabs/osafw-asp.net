@@ -61,7 +61,7 @@ Public Class AdminEventsController
             If Not orderby > "" Then Throw New Exception("No orderby defined for [" & f("sortby") & "]")
             If f("sortdir") = "desc" Then
                 If InStr(orderby, ",") Then orderby = Replace(orderby, ",", " desc,")
-                orderby = orderby & " desc"
+                orderby &= " desc"
             End If
 
             'offset+1 because _RowNumber starts from 1

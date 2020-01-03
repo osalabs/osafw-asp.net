@@ -91,7 +91,7 @@ Public Class FwHttpModule
     End Sub
 
     Private Sub Application_PostAcquireRequestState(source As Object, e As EventArgs)
-        Dim app As HttpApplication = DirectCast(source, HttpApplication)
+        'Dim app As HttpApplication = DirectCast(source, HttpApplication)
         Dim context As HttpContext = HttpContext.Current
 
         Dim resourceHttpHandler As FwHttpHandler = TryCast(context.Handler, FwHttpHandler)

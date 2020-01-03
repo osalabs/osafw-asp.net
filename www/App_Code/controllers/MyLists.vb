@@ -108,7 +108,7 @@ Public Class MyListsController
             ps("iname") = user_lists("iname")
             ps("action") = IIf(res, "added", "removed")
 
-        Catch ex As Exception
+        Catch ex As ApplicationException
             ps("success") = False
             ps("err_msg") = ex.Message
         End Try

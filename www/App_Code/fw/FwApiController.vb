@@ -51,7 +51,7 @@ Public Class FwApiController
         ' logger(referrer)
 
         'validate referrer is same as our hostname
-        If origin = "" OrElse (origin <> "http://" & fw.config("hostname") AndAlso origin <> "https://" & fw.config("hostname") AndAlso origin <> fw.config("API_ALLOW_ORIGIN")) Then Throw New ApplicationException("Invalid origin " & origin)
+        If String.IsNullOrEmpty(origin) OrElse (origin <> "http://" & fw.config("hostname") AndAlso origin <> "https://" & fw.config("hostname") AndAlso origin <> fw.config("API_ALLOW_ORIGIN")) Then Throw New ApplicationException("Invalid origin " & origin)
 
         'create headers
         fw.resp.Headers.Remove("Access-Control-Allow-Origin")

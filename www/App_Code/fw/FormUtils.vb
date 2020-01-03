@@ -119,7 +119,7 @@ Public Class FormUtils
         Return result
     End Function
 
-    Public Shared Function selectTplOptions(ByVal tpl_path As String, ByVal sel_id As String, Optional is_multi As Boolean = False) As ArrayList
+    Public Shared Function selectTplOptions(ByVal tpl_path As String, ByVal sel_id As String) As ArrayList
         Dim result As New ArrayList
         If sel_id Is Nothing Then sel_id = ""
 

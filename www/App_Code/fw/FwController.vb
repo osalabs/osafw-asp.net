@@ -307,7 +307,7 @@ Public MustInherit Class FwController
         Dim s As String = Trim(Me.list_filter("s"))
         If s > "" AndAlso Me.search_fields > "" Then
             Dim list_table_name As String = list_view
-            If list_table_name = "" Then list_table_name = model0.table_name
+            If String.IsNullOrEmpty(list_table_name) Then list_table_name = model0.table_name
 
             Dim like_quoted As String = db.q("%" & s & "%")
 
@@ -353,7 +353,7 @@ Public MustInherit Class FwController
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
-                Dim str = ""
+                Dim str As String
                 Dim value = hsearch(fieldname)
                 If Left(value, 1) = "=" Then
                     str = " = " & db.q(Mid(value, 2))
@@ -397,7 +397,7 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
-        If list_view = "" Then list_view = model0.table_name
+        If String.IsNullOrEmpty(list_view) Then list_view = model0.table_name
         Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
 
         Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
@@ -543,7 +543,7 @@ Public MustInherit Class FwController
     ''' <param name="more_json">added to json response</param>
     ''' <returns></returns>
     Public Overridable Overloads Function saveCheckResult(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
-        If location = "" Then location = Me.getReturnLocation(id)
+        If String.IsNullOrEmpty(location) Then location = Me.getReturnLocation(id)
 
         If fw.isJsonExpected() Then
             Dim ps = New Hashtable From {

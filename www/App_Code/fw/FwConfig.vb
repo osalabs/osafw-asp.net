@@ -9,7 +9,7 @@ Public Class FwConfig
     Public Shared settings As Hashtable
     Public Shared route_prefixes_rx As String
 
-    Private Shared locker As New Object
+    Private Shared ReadOnly locker As New Object
 
     Public Shared Sub init(req As System.Web.HttpRequest, Optional ByVal hostname As String = "")
         'appSettings is Shared, so it's lifetime same as application lifetime 
@@ -36,7 +36,7 @@ Public Class FwConfig
     Private Shared Sub initDefaults(req As System.Web.HttpRequest, Optional ByVal hostname As String = "")
         settings = New Hashtable
 
-        If hostname = "" Then hostname = req.ServerVariables("HTTP_HOST")
+        If String.IsNullOrEmpty(hostname) Then hostname = req.ServerVariables("HTTP_HOST")
         settings("hostname") = hostname
 
         settings("ROOT_URL") = Regex.Replace(req.ApplicationPath, "\/$", "") 'removed last / if any

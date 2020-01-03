@@ -169,7 +169,7 @@ Public MustInherit Class FwModel : Implements IDisposable
         Dim where As New Hashtable
         where(Me.field_id) = id
 
-        If is_perm OrElse field_status = "" Then
+        If is_perm OrElse String.IsNullOrEmpty(field_status) Then
             'place here code that remove related data
             db.del(table_name, where)
             fw.cache.requestRemove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
@@ -320,7 +320,8 @@ Public MustInherit Class FwModel : Implements IDisposable
 
 
     Public Overridable Function findOrAddByIname(iname As String, ByRef Optional is_added As Boolean = False) As Integer
-        If Trim(iname) = "" Then Return 0
+        iname = Trim(iname)
+        If iname.Length = 0 Then Return 0
         Dim result As Integer
         Dim item As Hashtable = Me.oneByIname(iname)
         If item.ContainsKey(Me.field_id) Then
@@ -340,7 +341,7 @@ Public MustInherit Class FwModel : Implements IDisposable
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
-        Dim aselect_fields As String() = {}
+        Dim aselect_fields As String() = Array.Empty(Of String)()
         If csv_export_fields > "" Then
             aselect_fields = Utils.qw(csv_export_fields)
         End If

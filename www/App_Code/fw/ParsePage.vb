@@ -113,51 +113,51 @@
 Imports System.IO
 
 Public Class ParsePage
-    Private Shared RX_NOTS As New Regex("^(\S+)", RegexOptions.Compiled)
-    Private Shared RX_LANG As New Regex("`(.+?)`", RegexOptions.Compiled)
-    Private Shared RX_FULL_TAGS As New Regex("<~([^>]+)>", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_NOTS As New Regex("^(\S+)", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_LANG As New Regex("`(.+?)`", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_FULL_TAGS As New Regex("<~([^>]+)>", RegexOptions.Compiled)
 
-    Private Shared RX_ATTRS1 As New Regex("((?:\S+\=" + Chr(34) + "[^" + Chr(34) + "]*" + Chr(34) + ")|(?:\S+\='[^']*')|(?:[^'" + Chr(34) + "\s]+)|(?:\S+\=\S*))", RegexOptions.Compiled)
-    Private Shared RX_ATTRS2 As New Regex("^([^\s\=]+)=(['" + Chr(34) + "]?)(.*?)\2$", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_ATTRS1 As New Regex("((?:\S+\=" + Chr(34) + "[^" + Chr(34) + "]*" + Chr(34) + ")|(?:\S+\='[^']*')|(?:[^'" + Chr(34) + "\s]+)|(?:\S+\=\S*))", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_ATTRS2 As New Regex("^([^\s\=]+)=(['" + Chr(34) + "]?)(.*?)\2$", RegexOptions.Compiled)
 
-    Private Shared RX_ALL_DIGITS As New Regex("^\d+$", RegexOptions.Compiled)
-    Private Shared RX_LAST_SLASH As New Regex("[^\/]+$", RegexOptions.Compiled)
-    Private Shared RX_EXT As New Regex("\.[^\/]+$", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_ALL_DIGITS As New Regex("^\d+$", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_LAST_SLASH As New Regex("[^\/]+$", RegexOptions.Compiled)
+    Private Shared ReadOnly RX_EXT As New Regex("\.[^\/]+$", RegexOptions.Compiled)
 
-    Private Shared FILE_CACHE As New Hashtable
-    Private Shared LANG_CACHE As New Hashtable
-    Private Shared IFOPERS() As String = {"if", "unless", "ifne", "ifeq", "ifgt", "iflt", "ifge", "ifle"}
+    Private Shared ReadOnly FILE_CACHE As New Hashtable
+    Private Shared ReadOnly LANG_CACHE As New Hashtable
+    Private Shared ReadOnly IFOPERS() As String = {"if", "unless", "ifne", "ifeq", "ifgt", "iflt", "ifge", "ifle"}
 
-    Private Shared DATE_FORMAT_DEF As String = "M/d/yyyy" ' for US, TODO make based on user settigns (with fallback to server's settings)
-    Private Shared DATE_FORMAT_SHORT As String = "M/d/yyyy HH:mm"
-    Private Shared DATE_FORMAT_LONG As String = "M/d/yyyy HH:mm:ss"
-    Private Shared DATE_FORMAT_SQL As String = "yyyy-MM-dd HH:mm:ss"
+    Private Const DATE_FORMAT_DEF As String = "M/d/yyyy" ' for US, TODO make based on user settigns (with fallback to server's settings)
+    Private Const DATE_FORMAT_SHORT As String = "M/d/yyyy HH:mm"
+    Private Const DATE_FORMAT_LONG As String = "M/d/yyyy HH:mm:ss"
+    Private Const DATE_FORMAT_SQL As String = "yyyy-MM-dd HH:mm:ss"
     '"d M yyyy HH:mm"
 
     'for dynamic load of CommonMark markdown converter
     Private Shared CommonMarkSettings As Object
     Private Shared mConvert As Reflection.MethodInfo
 
-    Private fw As FW
+    Private ReadOnly fw As FW
     'checks if template files modifies and reload them, depends on config's "log_level"
     'true if level at least DEBUG, false for production as on production there are no tempalte file changes (unless during update, which leads to restart App anyway)
-    Private is_check_file_modifications As Boolean = False
-    Private TMPL_PATH As String
+    Private ReadOnly is_check_file_modifications As Boolean = False
+    Private ReadOnly TMPL_PATH As String
     Private basedir As String = ""
     Private data_top As Hashtable 'reference to the topmost hashtable
     Private is_found_last_hfvalue As Boolean = False
-    Private lang As String = "en"
-    Private lang_parse As Boolean = True 'parse lang strings in `` or not - true - parse(default), false - no
-    Private lang_update As Boolean = True 'save unknown matches to lang file (helps during development) 
-    Private lang_evaluator As MatchEvaluator
+    Private ReadOnly lang As String = "en"
+    Private ReadOnly lang_parse As Boolean = True 'parse lang strings in `` or not - true - parse(default), false - no
+    Private ReadOnly lang_update As Boolean = True 'save unknown matches to lang file (helps during development) 
+    Private ReadOnly lang_evaluator As MatchEvaluator
 
     Public Sub New(fw As FW)
         Me.fw = fw
         TMPL_PATH = fw.config("template")
         is_check_file_modifications = fw.config("log_level") >= LogLevel.DEBUG
         lang = fw.G("lang")
-        If lang = "" Then lang = fw.config("lang")
-        If lang = "" Then lang = "en"
+        If String.IsNullOrEmpty(lang) Then lang = fw.config("lang")
+        If String.IsNullOrEmpty(lang) Then lang = "en"
 
         'load cache for all current lang matches 
         If LANG_CACHE(lang) Is Nothing Then
@@ -178,7 +178,7 @@ Public Class ParsePage
         'Return _parse_page(tpl_name, hf, "", "", parent_hf)
 
         'Dim start_time = DateTime.Now
-        Dim result = _parse_page(tpl_name, hf, "", "", parent_hf)
+        Dim result = _parse_page(tpl_name, hf, "", parent_hf)
         'Dim end_timespan As TimeSpan = DateTime.Now - start_time
         'fw.logger("ParsePage speed: " & String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds) & "/s")
         Return result
@@ -187,10 +187,10 @@ Public Class ParsePage
     Public Function parse_string(tpl As String, hf As Hashtable) As String
         basedir = "/"
         Dim parent_hf As Hashtable = New Hashtable
-        Return _parse_page("", hf, "", tpl, parent_hf)
+        Return _parse_page("", hf, tpl, parent_hf)
     End Function
 
-    Private Function _parse_page(ByVal tpl_name As String, ByVal hf As Hashtable, ByVal out_filename As String, ByVal page As String, ByRef parent_hf As Hashtable) As String
+    Private Function _parse_page(ByVal tpl_name As String, ByVal hf As Hashtable, ByVal page As String, ByRef parent_hf As Hashtable) As String
         If Left(tpl_name, 1) <> "/" Then tpl_name = basedir + "/" + tpl_name
 
         'fw.logger("DEBUG", "ParsePage - Parsing template = " + tpl_name + ", pagelen=" & page.Length)
@@ -244,7 +244,7 @@ Public Class ParsePage
 
                             Dim value As String
                             If attrs.ContainsKey("repeat") Then
-                                value = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl, hf)
+                                value = _attr_repeat(tag, tag_value, tpl_name, inline_tpl, hf)
                             ElseIf attrs.ContainsKey("select") Then
                                 ' this is special case for '<select>' HTML tag when options passed as ArrayList
                                 value = _attr_select(tag, tpl_name, hf, attrs)
@@ -265,7 +265,7 @@ Public Class ParsePage
                             tag_replace(page, tag_full, value, attrs)
 
                         ElseIf attrs.ContainsKey("repeat") Then
-                            v = _attr_repeat(attrs, tag, tag_value, tpl_name, inline_tpl, hf)
+                            v = _attr_repeat(tag, tag_value, tpl_name, inline_tpl, hf)
                             tag_replace(page, tag_full, v, attrs)
                         ElseIf attrs.ContainsKey("var") Then
                             tag_replace(page, tag_full, "", attrs)
@@ -298,7 +298,7 @@ Public Class ParsePage
                                 v = ""
                             Else
                                 'value not found - looks like subtemplate in file
-                                v = _parse_page(tag_tplpath(tag, tpl_name), hf, "", inline_tpl, parent_hf)
+                                v = _parse_page(tag_tplpath(tag, tpl_name), hf, inline_tpl, parent_hf)
                             End If
                             tag_replace(page, tag_full, v, attrs)
                         End If
@@ -322,7 +322,7 @@ Public Class ParsePage
         LANG_CACHE.Clear()
     End Sub
 
-    Private Function precache_file(ByVal filename As String, Optional ByRef ErrInfo As String = "") As String
+    Private Function precache_file(ByVal filename As String) As String
         Dim modtime As String = ""
         Dim file_data As String = ""
         filename = Replace(filename, "/", "\")
@@ -335,7 +335,7 @@ Public Class ParsePage
             If is_check_file_modifications Then
                 modtime = File.GetLastWriteTime(filename)
                 Dim mtmp As String = cached_item("modtime")
-                If mtmp = "" OrElse mtmp = modtime Then
+                If String.IsNullOrEmpty(mtmp) OrElse mtmp = modtime Then
                     Return cached_item("data")
                 End If
             Else
@@ -349,7 +349,7 @@ Public Class ParsePage
         'get from fs(if not in cache)
         If File.Exists(filename) Then
             file_data = FW.get_file_content(filename)
-            If is_check_file_modifications AndAlso modtime = "" Then modtime = File.GetLastWriteTime(filename)
+            If is_check_file_modifications AndAlso String.IsNullOrEmpty(modtime) Then modtime = File.GetLastWriteTime(filename)
         End If
 
         'get from fs(if not in cache)
@@ -508,7 +508,7 @@ Public Class ParsePage
             fw.logger(LogLevel.DEBUG, "ParsePage - not a Hash passed for a SUB tag=", tag, ", sub=" & attrs("sub"))
             tag_value = New Hashtable
         End If
-        Return _parse_page(tag_tplpath(tag, tpl_name), tag_value, "", inline_tpl, parent_hf)
+        Return _parse_page(tag_tplpath(tag, tpl_name), tag_value, inline_tpl, parent_hf)
     End Function
 
     ' Check for misc if attrs
@@ -522,10 +522,10 @@ Public Class ParsePage
                 Exit For
             End If
         Next i
-        If oper = "" Then Return True ' if there are no if operation - return true anyway
+        If String.IsNullOrEmpty(oper) Then Return True ' if there are no if operation - return true anyway
 
         Dim eqvar As String = attrs(oper)
-        If eqvar Is Nothing OrElse eqvar = "" Then Return False 'return false if var need to be compared is empty
+        If String.IsNullOrEmpty(eqvar) Then Return False 'return false if var need to be compared is empty
 
         Dim eqvalue As Object = hfvalue(eqvar, hf)
         If eqvalue Is Nothing Then eqvalue = ""
@@ -617,7 +617,7 @@ Public Class ParsePage
     End Function
 
     'return ready HTML
-    Private Function _attr_repeat(ByRef attrs As Hashtable, ByRef tag As String, ByRef tag_val_array As Object, ByRef tpl_name As String, ByRef inline_tpl As String, parent_hf As Hashtable) As String
+    Private Function _attr_repeat(ByRef tag As String, ByRef tag_val_array As Object, ByRef tpl_name As String, ByRef inline_tpl As String, parent_hf As Hashtable) As String
         'Validate: if input doesn't contain array - return "" - nothing to repeat
         If Not TypeOf (tag_val_array) Is IList Then
             If tag_val_array IsNot Nothing AndAlso tag_val_array.ToString() <> "" Then
@@ -632,13 +632,13 @@ Public Class ParsePage
         Dim ttpath As String = tag_tplpath(tag, tpl_name)
 
         For i As Integer = 0 To tag_val_array.Count - 1
-            Dim row = proc_repeat_modifiers(tag_val_array, i, parent_hf)
-            value.Append(_parse_page(ttpath, row, "", inline_tpl, parent_hf))
+            Dim row = proc_repeat_modifiers(tag_val_array, i)
+            value.Append(_parse_page(ttpath, row, inline_tpl, parent_hf))
         Next
         Return value.ToString()
     End Function
 
-    Private Function proc_repeat_modifiers(uftag As IList, i As Integer, parent_hf As Hashtable) As Hashtable
+    Private Function proc_repeat_modifiers(uftag As IList, i As Integer) As Hashtable
         Dim uftagi As Hashtable = uftag(i).Clone() 'make a shallow copy as we modify this level
         Dim cnt As Integer = uftag.Count
 
@@ -684,14 +684,14 @@ Public Class ParsePage
 
         result = add_path + result
         If Not RX_EXT.IsMatch(tag) Then
-            result = result & ".html"
+            result &= ".html"
         End If
 
         Return result
     End Function
 
     Private Sub tag_replace(ByRef hpage_ref As String, ByRef tag_full_ref As String, ByRef value_ref As String, ByRef hattrs As Hashtable)
-        If hpage_ref Is Nothing OrElse hpage_ref = "" Then
+        If String.IsNullOrEmpty(hpage_ref) Then
             hpage_ref = ""
             Exit Sub
         End If
@@ -866,7 +866,7 @@ Public Class ParsePage
         If TypeOf seloptions Is ICollection Then
             ' hf(tag) is ArrayList of Hashes with "id" and "iname" keys, for example rows returned from db.array('select id, iname from ...')
             ' "id" key is optional, if not present - iname will be used for values too
-            Dim value As String, desc As String, selected As String = ""
+            Dim value As String, desc As String
             For Each item As Hashtable In seloptions
                 desc = Utils.htmlescape(item("iname"))
                 If item.ContainsKey("id") Then
@@ -876,6 +876,7 @@ Public Class ParsePage
                 End If
 
                 'check for selected value before escaping
+                Dim selected As String
                 If Array.IndexOf(asel, value) <> -1 Then
                     selected = " selected"
                 Else
@@ -900,7 +901,7 @@ Public Class ParsePage
 
             Dim lines As String() = FW.get_file_lines(TMPL_PATH + "/" + tpl_path)
             Dim line As String
-            Dim selected As String = ""
+
             For Each line In lines
                 If line.Length < 2 Then Continue For
                 '            line.chomp()
@@ -912,6 +913,7 @@ Public Class ParsePage
                 _replace_commons(desc)
 
                 'check for selected value before escaping
+                Dim selected As String
                 If Array.IndexOf(asel, value) <> -1 Then
                     selected = " selected"
                 Else
@@ -944,7 +946,6 @@ Public Class ParsePage
 
         Dim i As Integer = 0
         Dim line As String
-        Dim str_checked As String = ""
         For Each line In lines
             'line.chomp()
             If line.Length < 2 Then Continue For
@@ -956,7 +957,7 @@ Public Class ParsePage
             If desc.Length < 1 Then Continue For
 
             Dim parent_hf As Hashtable = New Hashtable
-            desc = _parse_page("", hf, "", desc, parent_hf)
+            desc = _parse_page("", hf, desc, parent_hf)
 
             If Not attrs.ContainsKey("noescape") Then
                 value = Utils.htmlescape(value)
@@ -964,7 +965,8 @@ Public Class ParsePage
             End If
 
             Dim name_id As String = name & "$" & i.ToString
-            str_checked = ""
+            Dim str_checked As String = ""
+
             If value = sel_value Then str_checked = " checked='checked' "
 
             ''Bootstrap 3 style
@@ -1053,10 +1055,9 @@ Public Class ParsePage
     End Sub
 
     Private Function lang_replacer(m As Match) As String
-        Dim result = ""
         Dim value = Trim(m.Groups(1).Value)
         'fw.logger("checking:", lang, value)
-        result = LANG_CACHE(lang)(value)
+        Dim result = LANG_CACHE(lang)(value)
         If result = "" Then
             'if no language - return original string
             result = value
@@ -1074,7 +1075,7 @@ Public Class ParsePage
 
         For Each line In lines
             line = Trim(line)
-            If line = "" OrElse Not line.Contains("===") Then Continue For
+            If String.IsNullOrEmpty(line) OrElse Not line.Contains("===") Then Continue For
             Dim pair = Split(line, "===", 2)
             'fw.logger("added to cache:", Trim(pair(0)))
             LANG_CACHE(lang)(Trim(pair(0))) = pair(1)

@@ -50,7 +50,7 @@ Public Class FW
     Private floggerFS As System.IO.FileStream
     Private floggerSW As System.IO.StreamWriter
 
-    Private models As New Hashtable
+    Private ReadOnly models As New Hashtable
     Public Shared Current As FW 'store FW current "singleton", set in run WARNING - avoid to use as if 2 parallel requests come, a bit later one will overwrite this
     Public cache As New FwCache 'request level cache
 
@@ -264,7 +264,7 @@ Public Class FW
             Dim m As Match = Regex.Match(url, "^/([^/]+)(?:/(new|\.\w+)|/([\d\w_-]+)(?:\.(\w+))?(?:/(edit|delete))?)?/?$")
             If m.Success Then
                 cur_controller = Utils.routeFixChars(m.Groups(1).Value)
-                If cur_controller = "" Then Throw New Exception("Wrong request")
+                If String.IsNullOrEmpty(cur_controller) Then Throw New Exception("Wrong request")
 
                 'capitalize first letter - TODO - URL-case-insensitivity should be an option!
                 cur_controller = cur_controller.Substring(0, 1).ToUpper + cur_controller.Substring(1)
@@ -336,7 +336,7 @@ Public Class FW
         'add controller prefix if any
         cur_controller = controller_prefix & cur_controller
         cur_action = Utils.routeFixChars(cur_action_raw)
-        If cur_action = "" Then cur_action = "Index"
+        If String.IsNullOrEmpty(cur_action) Then cur_action = "Index"
 
         Dim args() As [String] = {cur_id} 'TODO - add rest of possible params from parts
 
@@ -640,8 +640,9 @@ Public Class FW
             If floggerFS Is Nothing Then
                 'open log with shared read/write so loggers from other processes can still write to it
                 floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
-                floggerSW = New System.IO.StreamWriter(floggerFS)
-                floggerSW.AutoFlush = True
+                floggerSW = New System.IO.StreamWriter(floggerFS) With {
+                    .AutoFlush = True
+                }
             End If
             'force seek to end just in case other process added to file
             floggerFS.Seek(0, SeekOrigin.End)
@@ -720,7 +721,7 @@ Public Class FW
     ''' <param name="errInfo"></param>
     ''' <returns></returns>
     Public Shared Function get_file_lines(ByRef filename As String, Optional ByRef errInfo As String = "") As String()
-        Dim result As String() = {}
+        Dim result As String() = Array.Empty(Of String)()
         Try
             result = File.ReadAllLines(filename)
         Catch ex As Exception
@@ -952,7 +953,7 @@ Public Class FW
                 Dim amail_to As ArrayList = Utils.splitEmails(mail_to)
                 For Each email As String In amail_to
                     email = Trim(email)
-                    If email = "" Then Continue For
+                    If String.IsNullOrEmpty(email) Then Continue For
                     message.To.Add(New MailAddress(email))
                 Next
 
@@ -966,7 +967,7 @@ Public Class FW
                     Else
                         For Each cc As String In aCC
                             cc = Trim(cc)
-                            If cc = "" Then Continue For
+                            If String.IsNullOrEmpty(cc) Then Continue For
                             message.CC.Add(New MailAddress(cc))
                         Next
                     End If
@@ -979,10 +980,11 @@ Public Class FW
                     fkeys.Sort()
                     For Each human_filename As String In fkeys
                         Dim filename As String = filenames(human_filename)
-                        Dim att As New Attachment(filename, System.Net.Mime.MediaTypeNames.Application.Octet)
+                        Dim att As New Attachment(filename, System.Net.Mime.MediaTypeNames.Application.Octet) With {
+                            .Name = human_filename,
+                            .NameEncoding = System.Text.Encoding.UTF8
+                        }
                         'att.ContentDisposition.FileName = human_filename
-                        att.Name = human_filename
-                        att.NameEncoding = System.Text.Encoding.UTF8
                         logger(LogLevel.DEBUG, "attachment ", human_filename, " => ", filename)
                         message.Attachments.Add(att)
                     Next

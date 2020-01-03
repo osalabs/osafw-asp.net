@@ -35,7 +35,7 @@ Public Class SysBackupController
     Public download_token As String = "FWB@CKUP" 'password to use in download links (to automate downloads from external place)
 
     'working vars
-    Private aexclude_ext As String = ".log .svn .git"
+    Private ReadOnly aexclude_ext As String = ".log .svn .git"
     Private exclude_ext As Hashtable
     Private db_name As String
     Private timestamp As String
@@ -130,7 +130,7 @@ Public Class SysBackupController
             outfile = get_latest_backup_file()
         End If
 
-        If outfile = "" OrElse Not File.Exists(outfile) Then Throw New ApplicationException("No backups found")
+        If String.IsNullOrEmpty(outfile) OrElse Not File.Exists(outfile) Then Throw New ApplicationException("No backups found")
 
         fw.file_response(outfile, Path.GetFileName(outfile))
     End Sub
@@ -220,7 +220,7 @@ Public Class SysBackupController
 #If Not is_backup_to_S3 Then
         aws_key = ""
 #End If
-        If aws_key = "" Then
+        If String.IsNullOrEmpty(aws_key) Then
             rw("No S3 backup configured")
             logger("No S3 backup configured")
             Return

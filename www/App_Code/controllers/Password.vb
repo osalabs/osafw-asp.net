@@ -46,7 +46,7 @@ Public Class PasswordController
             model.sendPwdReset(hU("id"))
 
             fw.redirect(base_url & "/(Sent)")
-        Catch ex As Exception
+        Catch ex As ApplicationException
             fw.G("err_msg") = ex.Message
             fw.routeRedirect("Index")
         End Try

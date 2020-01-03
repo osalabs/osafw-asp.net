@@ -1333,7 +1333,7 @@ Public Class DevManageController
     End Function
 
     Private Function entityfield2dbtype(entity As Hashtable) As String
-        Dim result = ""
+        Dim result As String
 
         Select Case entity("fw_type")
             Case "int"

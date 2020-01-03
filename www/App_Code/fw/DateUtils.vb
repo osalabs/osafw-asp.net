@@ -18,7 +18,7 @@ Public Class DateUtils
     Public Shared Function SQL2Date(ByVal str As String) As DateTime
         Dim result As DateTime
 
-        If str = "" OrElse str = "0000-00-00" OrElse str = "0000-00-00 00:00:00" Then Return result
+        If String.IsNullOrEmpty(str) OrElse str = "0000-00-00" OrElse str = "0000-00-00 00:00:00" Then Return result
         'yyyy-mm-dd
         Dim m As Match = Regex.Match(str, "^(\d+)-(\d+)-(\d+)")
         'hh:mm:ss

@@ -12,7 +12,7 @@ Public Class Users
     Public Const ACL_MEMBER As Integer = 0
     Public Const ACL_ADMIN As Integer = 100
 
-    Private table_menu_items As String = "menu_items"
+    Private ReadOnly table_menu_items As String = "menu_items"
 
     Public Sub New()
         MyBase.New()

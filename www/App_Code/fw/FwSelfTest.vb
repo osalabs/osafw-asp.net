@@ -90,7 +90,7 @@ Public Class FwSelfTest
         is_notempty("support_email", fw.config("support_email"))
 
         'test send email to "test+mail_from"
-        is_true("Send Emails", fw.send_email("", IIf(test_email = "", "test+" & fw.config("mail_from"), test_email), "test email", "test body"), "Failed")
+        is_true("Send Emails", fw.send_email("", IIf(String.IsNullOrEmpty(test_email), "test+" & fw.config("mail_from"), test_email), "test email", "test body"), "Failed")
 
         Try
             db.connect()
@@ -335,7 +335,7 @@ Public Class FwSelfTest
     Public Function is_notempty(label As String, value As Object, Optional err_str As String = "EMPTY") As Result
         Dim res As Result = Result.ERR
         total_ctr += 1
-        If value Is Nothing OrElse value.ToString() = "" Then
+        If String.IsNullOrEmpty(value) Then
             err_ctr += 1
         Else
             ok_ctr += 1
@@ -354,7 +354,7 @@ Public Class FwSelfTest
     Public Function is_empty(label As String, value As Object, Optional err_str As String = "EMPTY") As Result
         Dim res As Result = Result.ERR
         total_ctr += 1
-        If value Is Nothing OrElse value.ToString() = "" Then
+        If String.IsNullOrEmpty(value) Then
             ok_ctr += 1
             err_str = "OK"
             res = Result.OK

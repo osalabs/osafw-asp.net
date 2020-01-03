@@ -28,10 +28,10 @@ Public Class ConvUtils
         'remove_old_files()
         FW.set_file_content(html_file, html_data)
 
-        If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
+        If String.IsNullOrEmpty(out_filename) OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
             html2pdf(fw, html_file, pdf_file, options)
 
-            If out_filename = "" Then out_filename = "output"
+            If String.IsNullOrEmpty(out_filename) Then out_filename = "output"
             fw.file_response(pdf_file, out_filename & ".pdf", "application/pdf", options("disposition"))
             Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
@@ -96,10 +96,10 @@ Public Class ConvUtils
         'TEMPORARY - store html right to .doc file
         FW.set_file_content(doc_file, html_data)
 
-        If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/]") Then
+        If String.IsNullOrEmpty(out_filename) OrElse Not Regex.IsMatch(out_filename, "[\/]") Then
             'TODO html2doc(fw, html_file, doc_file)
 
-            If out_filename = "" Then out_filename = "output"
+            If String.IsNullOrEmpty(out_filename) Then out_filename = "output"
             fw.file_response(doc_file, out_filename & ".doc")
             Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
@@ -147,10 +147,10 @@ Public Class ConvUtils
         'remove_old_files()
         FW.set_file_content(html_file, html_data)
 
-        If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
+        If String.IsNullOrEmpty(out_filename) OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
             html2xls(fw, html_file, xls_file)
 
-            If out_filename = "" Then out_filename = "output"
+            If String.IsNullOrEmpty(out_filename) Then out_filename = "output"
             fw.file_response(xls_file, out_filename & ".xls", "application/vnd.ms-excel")
             Utils.cleanupTmpFiles() 'this will cleanup temporary .pdf, can't delete immediately as file_response may not yet finish transferring file
         Else
@@ -170,8 +170,8 @@ Public Class ConvUtils
 
         html_data = _replace_specials(html_data)
 
-        If out_filename = "" OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
-            If out_filename = "" Then out_filename = "output"
+        If String.IsNullOrEmpty(out_filename) OrElse Not Regex.IsMatch(out_filename, "[\/\\]") Then
+            If String.IsNullOrEmpty(out_filename) Then out_filename = "output"
             'out to browser
             fw.resp.AddHeader("Content-type", "application/vnd.ms-excel")
             fw.resp.AddHeader("Content-Disposition", "attachment; filename=""" & out_filename & ".xls""")

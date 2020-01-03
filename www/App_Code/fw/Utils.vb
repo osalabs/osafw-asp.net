@@ -679,7 +679,7 @@ Public Class Utils
                     fld = Replace(fld, " desc", " asc")
                 Else
                     'if no asc/desc - just add desc at the end
-                    fld = fld & " desc"
+                    fld &= " desc"
                 End If
                 order_fields.Add(fld)
             Next

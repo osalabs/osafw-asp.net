@@ -26,7 +26,7 @@ Public Class AdminLookupManagerController
         If defs.Count = 0 Then dict = ""
     End Sub
 
-    Private Sub _check_dict()
+    Private Sub check_dict()
         If Not dict > "" Then fw.redirect(base_url & "/(Dictionaries)")
     End Sub
 
@@ -59,7 +59,7 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Function IndexAction() As Hashtable
-        _check_dict()
+        check_dict()
 
         'if this is one-form dictionary - show edit form with first record
         If defs("is_one_form") = 1 Then
@@ -167,7 +167,7 @@ Public Class AdminLookupManagerController
             End If
             If f("sortdir") = "desc" Then
                 If InStr(orderby, ",") Then orderby = Replace(orderby, ",", " desc,")
-                orderby = orderby & " desc"
+                orderby &= " desc"
             End If
 
             Dim sql = "SELECT * FROM " & db.q_ident(list_table_name) &
@@ -236,7 +236,7 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
-        _check_dict()
+        check_dict()
 
         Dim hf As Hashtable = New Hashtable
         Dim item As Hashtable
@@ -327,7 +327,7 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
-        _check_dict()
+        check_dict()
 
         Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
@@ -381,7 +381,7 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Function ShowDeleteAction(ByVal form_id As String) As Hashtable
-        _check_dict()
+        check_dict()
 
         Dim hf As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
@@ -396,7 +396,7 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Sub DeleteAction(ByVal form_id As String)
-        _check_dict()
+        check_dict()
         Dim id As Integer = Utils.f2int(form_id)
 
         model.deleteByTname(dict, id)
@@ -405,7 +405,7 @@ Public Class AdminLookupManagerController
     End Sub
 
     Public Sub SaveMultiAction()
-        _check_dict()
+        check_dict()
 
         Try
             Dim del_ctr As Integer = 0

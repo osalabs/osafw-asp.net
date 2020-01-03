@@ -4,7 +4,7 @@
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
 ' (c) 2009-2015 Oleg Savchuk www.osalabs.com
 
-Public Class FwHooks
+Public NotInheritable Class FwHooks
 
     'called from FW.run before request dispatch
     Public Shared Sub initRequest(fw As FW)

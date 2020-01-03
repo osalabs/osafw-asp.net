@@ -77,18 +77,18 @@ Public Class DB
 
     Public Shared SQL_QUERY_CTR As Integer = 0 'counter for SQL queries during request
 
-    Private fw As FW 'for now only used for: fw.logger and fw.cache (for request-level cacheing of multi-db connections)
+    Private ReadOnly fw As FW 'for now only used for: fw.logger and fw.cache (for request-level cacheing of multi-db connections)
 
     Public db_name As String = ""
     Public dbtype As String = "SQL"
-    Private conf As New Hashtable  'config contains: connection_string, type
-    Private connstr As String = ""
+    Private ReadOnly conf As New Hashtable  'config contains: connection_string, type
+    Private ReadOnly connstr As String = ""
 
     Private schema As New Hashtable 'schema for currently connected db
     Private conn As DbConnection 'actual db connection - SqlConnection or OleDbConnection
 
     Private is_check_ole_types As Boolean = False 'if true - checks for unsupported OLE types during readRow
-    Private UNSUPPORTED_OLE_TYPES As New Hashtable
+    Private ReadOnly UNSUPPORTED_OLE_TYPES As New Hashtable
 
     ''' <summary>
     ''' construct new DB object with
@@ -317,7 +317,7 @@ Public Class DB
     ''' <param name="order_by">optional order by (MUST be quoted)</param>
     ''' <returns></returns>
     Public Overloads Function col(table As String, where As Hashtable, Optional field_name As String = "", Optional ByRef order_by As String = "") As ArrayList
-        If field_name = "" Then
+        If String.IsNullOrEmpty(field_name) Then
             field_name = "*"
         Else
             field_name = q_ident(field_name)
@@ -352,7 +352,7 @@ Public Class DB
     ''' <param name="order_by"></param>
     ''' <returns></returns>
     Public Overloads Function value(table As String, where As Hashtable, Optional field_name As String = "", Optional ByRef order_by As String = "") As Object
-        If field_name = "" Then
+        If String.IsNullOrEmpty(field_name) Then
             field_name = "*"
         ElseIf field_name = "count(*)" OrElse field_name = "1" Then
             'no changes
@@ -364,7 +364,7 @@ Public Class DB
 
     'string will be Left(RTrim(str),length)
     Public Function left(str As String, length As Integer) As String
-        If str = "" Then Return ""
+        If String.IsNullOrEmpty(str) Then Return ""
         Return RTrim(str).Substring(0, length)
     End Function
 
@@ -417,7 +417,7 @@ Public Class DB
 
     'simple quote as Date Value
     Public Function qd(ByVal str As String) As String
-        Dim result As String = ""
+        Dim result As String
         If dbtype = "SQL" Then
             Dim tmpdate As DateTime
             If DateTime.TryParse(str, tmpdate) Then
@@ -741,7 +741,7 @@ Public Class DB
             Dim vv = h(k)
             Dim v = ""
             Dim delim = kv_delim
-            If delim = "" Then
+            If String.IsNullOrEmpty(delim) Then
                 If TypeOf vv Is DBOperation Then
                     Dim dbop = DirectCast(vv, DBOperation)
                     delim = " " & dbop.opstr & " "
@@ -995,7 +995,7 @@ Public Class DB
     End Sub
 
     Private Function map_mssqltype2fwtype(mstype As String) As String
-        Dim result As String = ""
+        Dim result As String
         Select Case LCase(mstype)
             'TODO - unsupported: image, varbinary, timestamp
             Case "tinyint", "smallint", "int", "bigint", "bit"
@@ -1012,7 +1012,7 @@ Public Class DB
     End Function
 
     Private Function map_oletype2fwtype(mstype As Integer) As String
-        Dim result As String = ""
+        Dim result As String
         Select Case mstype
             'TODO - unsupported: image, varbinary, longvarbinary, dbtime, timestamp
             'NOTE: Boolean here is: True=-1 (vbTrue), False=0 (vbFalse)

@@ -10,10 +10,10 @@ Public Class AdminAttController
     Public Shared Shadows access_level As Integer = 80
 
     Protected model As New Att
-    Private Shared MAX_THUMB_W_S As Integer = 180
-    Private Shared MAX_THUMB_H_S As Integer = 180
-    Private Shared MAX_THUMB_W_M As Integer = 315
-    Private Shared MAX_THUMB_H_M As Integer = 315
+    Private Const MAX_THUMB_W_S As Integer = 180
+    Private Const MAX_THUMB_H_S As Integer = 180
+    Private Const MAX_THUMB_W_M As Integer = 315
+    Private Const MAX_THUMB_H_M As Integer = 315
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -51,7 +51,7 @@ Public Class AdminAttController
             If Not orderby > "" Then Throw New Exception("No orderby defined for [" & f("sortby") & "]")
             If f("sortdir") = "desc" Then
                 If InStr(orderby, ",") Then orderby = Replace(orderby, ",", " desc,")
-                orderby = orderby & " desc"
+                orderby &= " desc"
             End If
 
             'offset+1 because _RowNumber starts from 1
@@ -271,12 +271,11 @@ Public Class AdminAttController
         Dim hf As New Hashtable
         Dim category_icode As String = reqs("category")
         Dim att_categories_id As String = reqi("att_categories_id")
-        Dim att_cat As New Hashtable
 
         Dim where As New Hashtable
         where("status") = 0
         If category_icode > "" Then
-            att_cat = fw.model(Of AttCategories).oneByIcode(category_icode)
+            Dim att_cat As Hashtable = fw.model(Of AttCategories).oneByIcode(category_icode)
             If att_cat.Count > 0 Then
                 att_categories_id = att_cat("id")
                 where("att_categories_id") = att_categories_id

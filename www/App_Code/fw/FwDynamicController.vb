@@ -73,7 +73,7 @@ Public Class FwDynamicController
         If is_dynamic_show Then ps("fields") = prepareShowFields(item, ps)
 
         'userlists support
-        ps("list_view") = IIf(list_view = "", model0.table_name, list_view)
+        ps("list_view") = IIf(String.IsNullOrEmpty(list_view), model0.table_name, list_view)
         ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
 
         ps("id") = id
@@ -187,7 +187,7 @@ Public Class FwDynamicController
 
     Protected Function validateRequiredDynamic(item As Hashtable) As Boolean
         Dim result = True
-        If Me.required_fields = "" AndAlso is_dynamic_showform Then
+        If String.IsNullOrEmpty(Me.required_fields) AndAlso is_dynamic_showform Then
             'if required_fields not defined - fill from showform_fields
             Dim fields As ArrayList = Me.config("showform_fields")
             Dim req As New ArrayList

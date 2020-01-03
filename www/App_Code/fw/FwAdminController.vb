@@ -71,7 +71,7 @@ Public Class FwAdminController
         ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
 
         'userlists support
-        ps("list_view") = IIf(list_view = "", model0.table_name, list_view)
+        ps("list_view") = IIf(String.IsNullOrEmpty(list_view), model0.table_name, list_view)
         ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
 
         ps("id") = id

@@ -6,7 +6,7 @@
 
 Public Class FwCache
     Public Shared cache As New Hashtable 'app level cache
-    Private Shared locker As New Object
+    Private Shared ReadOnly locker As New Object
 
     Public request_cache As New Hashtable 'request level cache
 

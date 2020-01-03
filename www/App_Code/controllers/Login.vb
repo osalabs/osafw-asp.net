@@ -48,7 +48,7 @@ Public Class LoginController
 
             'for dev config only - login as first admin
             Dim is_dev_login = False
-            If Utils.f2bool(fw.config("IS_DEV")) AndAlso login = "" AndAlso pwd = "~" Then
+            If Utils.f2bool(fw.config("IS_DEV")) AndAlso String.IsNullOrEmpty(login) AndAlso pwd = "~" Then
                 Dim dev = db.row("select TOP 1 email, pwd from users where status=0 and access_level=100 order by id")
                 login = dev("email")
                 is_dev_login = True
