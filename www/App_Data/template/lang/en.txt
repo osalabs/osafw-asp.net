@@ -109,3 +109,19 @@ Show ===
 records on page === 
 Delete === 
 checked rows === 
+My Profile === 
+Site Name === 
+Such email already exists in our database === 
+Invalid Email === 
+Address 1 === 
+Address 2 === 
+City === 
+State === 
+Zip === 
+Phone === 
+Language === 
+Submit === 
+Please fill in all required fields === 
+Please correct the errors === 
+Record has been deleted === 
+records has been deleted === 

@@ -2,3 +2,5 @@
 /www/upload/att
 /www/bin
 /doc
+/www/App_Data/template/dev/db.json
+/www/App_Data/template/dev/entities.txt

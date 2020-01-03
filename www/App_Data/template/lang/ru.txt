@@ -1,1 +1,1 @@
-aaa === this is a test for russian
+My Profile === Мои Настройки

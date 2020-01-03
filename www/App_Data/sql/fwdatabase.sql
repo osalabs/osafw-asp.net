@@ -82,6 +82,7 @@ CREATE TABLE users (
   state                 NVARCHAR(4) NOT NULL DEFAULT '',
   zip                   NVARCHAR(16) NOT NULL DEFAULT '',
   phone                 NVARCHAR(16) NOT NULL DEFAULT '',
+  lang                  NVARCHAR(16) NOT NULL DEFAULT 'en', -- user interface language
 
   notes                 NVARCHAR(MAX),
   att_id                INT NULL FOREIGN KEY REFERENCES att(id),                -- avatar

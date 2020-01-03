@@ -56,9 +56,9 @@
         var data = cd.getData('text/html');
         var bodyHtml = /<body.*?>([\s\S]*)<\/body>/.exec(data)[1];
 
-        console.log('data before:', bodyHtml)
+        //console.log('data before:', bodyHtml)
         data = turndownService.turndown(bodyHtml);
-        console.log('data after:', data)
+        //console.log('data after:', data)
 
         //data = toMarkdown(data, { gfm: true });
         //data = toMarkdown(data, { converters: aconverters });
