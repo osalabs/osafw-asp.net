@@ -580,7 +580,7 @@ Public Class DevManageController
         Dim entities = New ArrayList
 
         Dim lines = Regex.Split(entities_text, "[\n\r]+")
-        Dim table_entity As Hashtable
+        Dim table_entity As Hashtable = Nothing
         For Each line As String In lines
             line = Regex.Replace(line, "#.+$", "") 'remove any human comments
             If Trim(line) = "" Then Continue For
@@ -816,9 +816,9 @@ Public Class DevManageController
 
             'detect id and iname fields
             Dim i = 1
-            Dim fld_int As Hashtable
-            Dim fld_identity As Hashtable
-            Dim fld_iname As Hashtable
+            Dim fld_int As Hashtable = Nothing
+            Dim fld_identity As Hashtable = Nothing
+            Dim fld_iname As Hashtable = Nothing
             For Each fld As Hashtable In entity("fields")
                 'find identity
                 If fld_identity Is Nothing AndAlso fld("is_identity") = "1" Then

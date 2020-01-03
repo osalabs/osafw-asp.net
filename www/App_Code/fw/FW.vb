@@ -1115,6 +1115,7 @@ Public Class FW
             Try
                 db.Dispose() 'this will return db connections to pool
                 If floggerSW IsNot Nothing Then floggerSW.Close() 'no need to close floggerFS as StreamWriter closes it
+                If floggerFS IsNot Nothing Then floggerFS.Close()
                 ' TODO: set large fields to null.
             Catch ex As Exception
                 Diagnostics.Debug.WriteLine("exception in Dispose:" & ex.Message())

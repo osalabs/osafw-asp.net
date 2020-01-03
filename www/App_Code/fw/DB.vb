@@ -461,7 +461,7 @@ Public Class DB
         If Not schema(table).containskey(field_name) Then Throw New ApplicationException("field " & table & "." & field_name & " does not defined in FW.config(""schema"") ")
 
         Dim field_value As Object
-        Dim dbop As DBOperation
+        Dim dbop As DBOperation = Nothing
         If TypeOf field_value_or_op Is DBOperation Then
             dbop = DirectCast(field_value_or_op, DBOperation)
             field_value = dbop.value

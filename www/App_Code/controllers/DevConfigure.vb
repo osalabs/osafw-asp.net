@@ -22,24 +22,22 @@ Public Class DevConfigureController
 
         Dim db As DB
         ps("is_db_conn") = False
+        ps("is_db_tables") = False
         If ps("is_db_config") Then
             Try
                 db = New DB(fw)
                 db.connect()
                 ps("is_db_conn") = True
+
+                Try
+                    Dim value = db.value("select count(*) from menu_items") 'just a last table in database.sql script
+                    ps("is_db_tables") = True
+                Catch ex As Exception
+                    ps("db_tables_err") = ex.Message
+                End Try
+
             Catch ex As Exception
                 ps("db_conn_err") = ex.Message
-            End Try
-        End If
-
-        'user_lists_items
-        ps("is_db_tables") = False
-        If ps("is_db_conn") Then
-            Try
-                Dim value = db.value("select count(*) from user_lists_items") 'just a last table in database.sql script
-                ps("is_db_tables") = True
-            Catch ex As Exception
-                ps("db_tables_err") = ex.Message
             End Try
         End If
 

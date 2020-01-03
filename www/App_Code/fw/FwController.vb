@@ -48,7 +48,8 @@ Public MustInherit Class FwController
     Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
     Protected related_field_name As String         ' if set (in Controller) and $related_id passed - list will be filtered on this field
 
-    Public Sub New(Optional fw As FW = Nothing)
+
+    Protected Sub New(Optional fw As FW = Nothing)
         If fw IsNot Nothing Then
             Me.fw = fw
             Me.db = fw.db

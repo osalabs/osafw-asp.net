@@ -5,7 +5,7 @@
 
 Imports System.IO
 
-Public MustInherit Class FwModel
+Public MustInherit Class FwModel : Implements IDisposable
     Const STATUS_ACTIVE = 0
     Const STATUS_DELETED = 127
 
@@ -27,7 +27,8 @@ Public MustInherit Class FwModel
     Public field_upd_time As String = "upd_time"
     Public is_normalize_names As Boolean = False 'if true - Utils.name2fw() will be called for all fetched rows to normalize names (no spaces or special chars)
 
-    Public Sub New(Optional fw As FW = Nothing)
+
+    Protected Sub New(Optional fw As FW = Nothing)
         If fw IsNot Nothing Then
             Me.fw = fw
             Me.db = fw.db
@@ -75,9 +76,16 @@ Public MustInherit Class FwModel
         Next
     End Sub
 
-    Public Overridable Function iname(id As Integer) As String
+    Public Overridable Overloads Function iname(id As Integer) As String
         Dim row As Hashtable = one(id)
         Return row(field_iname)
+    End Function
+    Public Overridable Overloads Function iname(id As Object) As String
+        Dim result = ""
+        If Utils.f2int(id) > 0 Then
+            result = iname(Utils.f2int(id))
+        End If
+        Return result
     End Function
 
     'return standard list of id,iname where status=0 order by iname
@@ -341,5 +349,9 @@ Public MustInherit Class FwModel
         Return Utils.getCSVExport(csv_export_headers, csv_export_fields, rows)
 
     End Function
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        DirectCast(fw, IDisposable).Dispose()
+    End Sub
 End Class
 
