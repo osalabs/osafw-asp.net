@@ -315,7 +315,7 @@ Public Class FwDynamicController
     End Sub
 
     Public Sub SaveUserViewsAction()
-        Dim item As Hashtable = reqh("item")
+        Dim fld As Hashtable = reqh("fld")
         Dim success = True
 
         Try
@@ -324,7 +324,7 @@ Public Class FwDynamicController
             Else
                 'save fields
                 'order by value
-                Dim ordered = reqh("fld").Cast(Of DictionaryEntry).OrderBy(Function(entry) Utils.f2int(entry.Value)).ToList()
+                Dim ordered = fld.Cast(Of DictionaryEntry).OrderBy(Function(entry) Utils.f2int(entry.Value)).ToList()
                 'and then get ordered keys
                 Dim anames As New List(Of String)
                 For Each el In ordered
@@ -481,7 +481,7 @@ Public Class FwDynamicController
                     End If
 
                 ElseIf def.ContainsKey("lookup_tpl") Then
-                    def("select_options") = FormUtils.selectTplOptions(def("lookup_tpl"), item(field))
+                    def("select_options") = FormUtils.selectTplOptions(def("lookup_tpl"))
                     def("value") = item(field)
                     For Each row As Hashtable In def("select_options") 'contains id, iname
                         row("is_inline") = def("is_inline")

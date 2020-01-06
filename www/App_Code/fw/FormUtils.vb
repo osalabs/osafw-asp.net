@@ -119,9 +119,8 @@ Public Class FormUtils
         Return result
     End Function
 
-    Public Shared Function selectTplOptions(ByVal tpl_path As String, ByVal sel_id As String) As ArrayList
+    Public Shared Function selectTplOptions(ByVal tpl_path As String) As ArrayList
         Dim result As New ArrayList
-        If sel_id Is Nothing Then sel_id = ""
 
         Dim lines As String() = FW.get_file_lines(FwConfig.settings("template") + tpl_path)
 
