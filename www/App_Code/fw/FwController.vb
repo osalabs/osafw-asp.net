@@ -306,8 +306,14 @@ Public MustInherit Class FwController
     Public Overridable Sub setListSearch()
         Dim s As String = Trim(Me.list_filter("s"))
         If s > "" AndAlso Me.search_fields > "" Then
+            Dim is_subquery = False
             Dim list_table_name As String = list_view
-            If String.IsNullOrEmpty(list_table_name) Then list_table_name = model0.table_name
+            If String.IsNullOrEmpty(list_table_name) Then
+                list_table_name = model0.table_name
+            Else
+                'list_table_name could contain subquery as "(...) t" - detect it (contains whitespace)
+                is_subquery = Regex.IsMatch(list_table_name, "\s")
+            End If
 
             Dim like_quoted As String = db.q("%" & s & "%")
 
@@ -320,7 +326,12 @@ Public MustInherit Class FwController
                     If fand.Substring(0, 1) = "!" Then
                         'exact match
                         fand = fand.Substring(1)
-                        afieldsand(j) = fand & " = " & db.qone(list_table_name, fand, s)
+                        If is_subquery Then
+                            'for subqueries - just use string quoting, but convert to number (so only numeric search supported in this case)
+                            afieldsand(j) = fand & " = " & db.q(Utils.f2int(s))
+                        Else
+                            afieldsand(j) = fand & " = " & db.qone(list_table_name, fand, s)
+                        End If
                     Else
                         'like match
                         afieldsand(j) = fand & " LIKE " & like_quoted
