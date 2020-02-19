@@ -364,7 +364,7 @@ Public MustInherit Class FwController
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
-                Dim str As String
+                Dim str = ""
                 Dim value = hsearch(fieldname)
                 If Left(value, 1) = "=" Then
                     str = " = " & db.q(Mid(value, 2))
@@ -376,7 +376,7 @@ Public MustInherit Class FwController
                     str = " LIKE " & db.q("%" & value & "%")
                 End If
 
-                Me.list_where &= " and " & db.q_ident(fieldname) & str
+                Me.list_where &= " and ISNULL(" & db.q_ident(fieldname) & ", '') " & str
             End If
         Next
     End Sub
@@ -609,7 +609,12 @@ Public MustInherit Class FwController
 
         If is_all Then
             'rest/all fields
-            For Each k As String In view_list_map.Keys
+            'sorted by values (visible field name)
+            Dim keys = view_list_map.Keys.Cast(Of String)().ToArray()
+            Dim values = view_list_map.Values.Cast(Of String)().ToArray()
+            Array.Sort(values, keys)
+
+            For Each k As String In keys
                 'Dim v = Replace(k, "&nbsp;", " ")
                 'Dim asub() As String = Split(v, "|", 2)
                 'If UBound(asub) < 1 Then Throw New ApplicationException("Wrong Format for view_list_map")

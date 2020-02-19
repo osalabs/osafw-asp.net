@@ -274,6 +274,32 @@ Public Class Utils
         Return True
     End Function
 
+    'Detect orientation and auto-rotate correctly
+    Public Shared Function rotateImage(Image As Image) As Boolean
+        Dim result = False
+        Dim rot = RotateFlipType.RotateNoneFlipNone
+        Dim props = Image.PropertyItems()
+
+        For Each p In props
+            If p.Id = 274 Then
+                Select Case BitConverter.ToInt16(p.Value, 0)
+                    Case 1
+                        rot = RotateFlipType.RotateNoneFlipNone
+                    Case 3
+                        rot = RotateFlipType.Rotate180FlipNone
+                    Case 6
+                        rot = RotateFlipType.Rotate90FlipNone
+                    Case 8
+                        rot = RotateFlipType.Rotate270FlipNone
+                End Select
+            End If
+        Next
+        If rot <> RotateFlipType.RotateNoneFlipNone Then
+            Image.RotateFlip(rot)
+            result = True
+        End If
+        Return result
+    End Function
 
     'resize image in from_file to w/h and save to to_file
     'w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
@@ -284,11 +310,14 @@ Public Class Utils
         ' Create new image.
         Dim image As System.Drawing.Image = System.Drawing.Image.FromStream(stream)
 
+        'Detect orientation and auto-rotate correctly
+        Dim is_rotated = rotateImage(image)
+
         ' Calculate proportional max width and height.
         Dim oldWidth As Integer = image.Width
         Dim oldHeight As Integer = image.Height
 
-        If oldWidth / w > 1 Or oldHeight / h > 1 Then
+        If oldWidth / w > 1 Or oldHeight / h > 1 Or is_rotated Then
             'downsizing
         Else
             'image already smaller no resize required - keep sizes same

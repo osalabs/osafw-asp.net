@@ -5,7 +5,7 @@
 */
 
 window.fw={
-  HTML_LOADING : '<span class="spinner-border spinner-border" role="status" aria-hidden="true"></span> Loading...',
+  HTML_LOADING : '<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...',
 
   ok: function (str, options){
     options = $.extend({}, {theme: 'hint_green'}, options);
@@ -97,10 +97,11 @@ window.fw={
         var $fis = $f.find('input[name="f[is_search]"]');
         if ($fis.val()=='1'){
             //if search ON - add search fields to the form
+            $f.find('.osafw-list-search').remove();
             var html=[];
             $('table.list:first .search input').each(function (i, el) {
               if (el.value>''){
-                html.push( '<input type="hidden" name="'+el.name.replace(/"/g,'&quot;')+'" value="'+el.value.replace(/"/g,'&quot;')+'">');
+                html.push( '<input class="osafw-list-search" type="hidden" name="'+el.name.replace(/"/g,'&quot;')+'" value="'+el.value.replace(/"/g,'&quot;')+'">');
               }
             });
             $f.append(html.join(''));
@@ -265,10 +266,12 @@ window.fw={
 
     $('body').on('change', 'form[data-autosave]', function(e){
       var $f = $(this);
-      //console.log('on change', $f);
+      // console.log('on form change', $f, e);
       $f.data('is-changed', true);
 
       set_status($f, 1);
+      // checkboxes trigger autosave instantly
+      if ($(e.target).is('input[type=checkbox]:not([data-noautosave])')) $f.trigger('autosave');
     });
 
     $('body').on('keyup', 'form[data-autosave] :input:not([data-noautosave])', function(e){
@@ -283,13 +286,14 @@ window.fw={
 
     $('body').on('focus', 'form[data-autosave] :input:not([data-noautosave])', function(e){
       var $inp = $(this);
-      //console.log('on focus');
+      // console.log('on form input focus');
       $inp.data('oldval', $inp.val());
     });
 
-    $('body').on('blur', 'form[data-autosave] :input:not([data-noautosave])', function(e){
+    // "*:not(.bs-searchbox)" - exclude search input in the bs selectpicker container
+    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not([data-noautosave])', function(e){
       var $f = $(this.form);
-      //console.log('on blur', $f);
+      // console.log('on form input blur', $f);
       if ($f.data('is-changed')===true){
           //form changed, need autosave
           $f.trigger('autosave');
@@ -300,7 +304,10 @@ window.fw={
       var $f = $(this);
       if ($f.data('is-submitting')===true || $f.data('is-ajaxsubmit')===true){
           //console.log('on autosave - ALREADY SUBMITTING');
-          //if form already submitting by user intput - no autosave
+          //if form already submitting by user intput - schedule autosave again later
+          setTimeout(function() {
+            $f.trigger('autosave');
+          }, 500)
           return false;
       }
       //console.log('on autosave', $f);
@@ -311,9 +318,11 @@ window.fw={
       }
 
       //console.log('before ajaxSubmit', $f);
+      set_progress($f, true);
       $f.ajaxSubmit({
           dataType: 'json',
           success: function function_name (data) {
+              set_progress($f, false);
               //console.log('ajaxSubmit success', data);
               $('#fw-form-msg').hide();
               fw.clean_form_errors($f);
@@ -335,6 +344,7 @@ window.fw={
               $f.trigger('autosave-success',[data]);
           },
           error: function function_name (argument) {
+              set_progress($f, false);
               //console.log('ajaxSubmit error', data);
               $f.data('is-ajaxsubmit',false);
               //hint_error('Server error occured during auto save form');
@@ -342,7 +352,10 @@ window.fw={
       });
     });
 
-    function set_status(f, status){
+    function set_status($f, status){
+      $f=$($f);
+      var $html = $('<span>').append($f[0]._saved_status);
+      var spinner = $('<span>').append($html.find('.spinner-border').clone()).html();
       var cls='', txt='';
       if (status==0){
           //nothing
@@ -353,10 +366,28 @@ window.fw={
           cls='badge-success';
           txt='saved';
       }
-      var html='<span class="badge '+cls+'">'+txt+'</span>';
-      $(f).find('.form-saved-status').html(html);
+      var html=spinner+'<span class="badge '+cls+'">'+txt+'</span>';
+      $f[0]._saved_status=html;
+      $f.find('.form-saved-status').html(html);
       $('.form-saved-status-global').html(html);
     }
+
+    function set_progress($f, is_working){
+      $f=$($f);
+      var $html = $('<span>').append($f[0]._saved_status);
+      var is_spinner = $html.find('.spinner-border').length>0;
+
+      if (is_working){
+        if (!is_spinner) $html.prepend('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>');
+      }else{
+        if (is_spinner) $html.find('.spinner-border').remove();
+      }
+
+      $f[0]._saved_status=$html.html();
+      $f.find('.form-saved-status').html($html.html());
+      $('.form-saved-status-global').html($html.html());
+    }
+
   },
 
   //cleanup any exisitng form errors
@@ -382,11 +413,11 @@ window.fw={
         $.each(errors,function(key, errcode) {
           var $input = $f.find('[name="item['+key+']"],[name="'+key+'"]');
           if ($input.length){
-            $input.closest('.form-group, .form-row').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
+            $input.closest('.form-group').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
             $input.addClass('is-invalid'); //mark input itself
             if (errcode!==true && errcode.length){
               var $p=$input.parent();
-              if ($p.is('.input-group')) $p = $p.parent();
+              if ($p.is('.input-group,.custom-control,.dropdown')) $p = $p.parent();
               $p.find('.err-'+errcode).addClass('invalid-feedback'); //find/show specific error message
             }
           }
