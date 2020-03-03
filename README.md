@@ -21,8 +21,8 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 
 ## Installation
 1. put contents of `/www` into your webserver's public html folder
-2. edit `/www/web.config` for db settings
-3. create database from `/www/App_Data/sql/database.sql`
+2. edit `/www/web.config` for database connection_string
+3. create database from `/www/App_Data/sql/fwdatabase.sql`
 4. open site in your browser and login with credentials as defined in database.sql (remember to change password)
 
 ## Documentation
