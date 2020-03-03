@@ -400,6 +400,46 @@ div.jGrowl div.jGrowl-notification
     }
 }
 
+/* print helpers */
+@media print {
+    .page-break-after {
+        page-break-after: always;
+    }
+
+    .page-break-inside-avoid {
+        page-break-inside: avoid
+    }
+
+    main {
+        max-width: 100% !important;
+        width: 100% !important;
+        flex-basis: 100% !important;
+        margin: 0 !important;
+    }
+
+    main.px-4 {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /*this is for PDF generation, layout_print.html*/
+    body.fwlayout-print .main-container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .table-striped > tbody > tr:nth-of-type(odd) > td {
+        background-color: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+
+    /* https://github.com/wkhtmltopdf/wkhtmltopdf/issues/2135 */
+    .wk-img-transparency-fix {
+        z-index: 100;
+        position: relative;
+    }
+}
+
 /*** end of fw ***/
 
 /*** add site specific css below ***/

@@ -12,14 +12,17 @@ Public Class ReportSample
         render_options("landscape") = False
     End Sub
 
-    'define report filters, filter defaults can be set here
+    'define report filters in Me.f (available in report templates as f[...])
+    'filter defaults can be Set here
     Public Overrides Function getReportFilters() As Hashtable
         If Not f.ContainsKey("from_date") AndAlso Not f.ContainsKey("to_date") Then
-            'default filters
-            'f("from_date") = DateUtils.Date2Str(Now())
+            'set default filters
+            f("from_date") = DateUtils.Date2Str(DateAdd(DateInterval.Day, -30, Now())) 'last 30 days
             'f("to_date") = DateUtils.Date2Str(Now())
         End If
         If f("from_date") > "" OrElse f("to_date") > "" Then f("is_dates") = True
+
+        f("select_events") = fw.model(Of FwEvents).listSelectOptions()
 
         Return f
     End Function
@@ -34,6 +37,9 @@ Public Class ReportSample
         End If
         If f("to_date") > "" Then
             where &= " and el.add_time<" & db.qd(DateAdd(DateInterval.Day, 1, Utils.f2date(f("to_date"))))
+        End If
+        If f("events_id") > "" Then
+            where &= " and el.events_id=" & db.qi(f("events_id"))
         End If
 
         'define query
@@ -54,7 +60,8 @@ Public Class ReportSample
         'ps("total_ctr") = _calcPerc(ps("rows")) - if you need calculate "perc" for each row based on row("ctr")
 
         Return ps
-        'hint: use <~rep[rows]> and <~f[from_date]> in /admin/reports/sample/report_html.html
+        'this response available in report templates as rep[...]
+        'for example: use <~rep[rows]> and <~f[from_date]> in /admin/reports/sample/report_html.html
     End Function
 
 End Class

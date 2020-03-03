@@ -1,4 +1,4 @@
-<form method="GET" id="FFilter" name="FFilter" class="form-horizontal d-print-none" >
+<form method="GET" id="FFilter" name="FFilter" class="form-horizontal d-print-none" data-list-filter data-autosubmit>
   <input type="hidden" name="dofilter" value="1">
   <input type="hidden" name="f[pagesize]" value="<~f[pagesize]>">
 
@@ -7,6 +7,15 @@
         <div class="col">
             <button class="btn btn-primary"><i class="glyphicon glyphicon-refresh"></i> Apply/Reload</button>
             <button type="button" class="btn btn-default on-print"><i class="glyphicon glyphicon-print"></i> Print</button>
+        </div>
+    </div>
+    <div class="form-row">
+        <label class="col-form-label col-md-3 col-lg-2" for="fevents_id">`Event`</label>
+        <div class="col col-lg-4">
+            <select name="f[events_id]" id="fevents_id" class="form-control">
+                <option value="">- all -</option>
+                <~f[select_events] select="f[events_id]">
+            </select>
         </div>
     </div>
 
