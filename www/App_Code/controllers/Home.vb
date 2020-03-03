@@ -9,8 +9,8 @@ Public Class HomeController
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
-        'override layout
-        fw.G("PAGE_LAYOUT") = fw.G("PAGE_LAYOUT_PUBLIC")
+        'override global layout because for this controller we need public pages template, not admin pages
+        fw.G("PAGE_LAYOUT") = fw.config("PAGE_LAYOUT_PUBLIC")
     End Sub
 
     'CACHED as home_page
@@ -26,6 +26,7 @@ Public Class HomeController
             FwCache.setValue("home_page", ps)
         End If
         ps("hide_sidebar") = True
+        'ps("_layout") = fw.config("PAGE_LAYOUT_PUBLIC") 'alternatively override layout just for this action
         Return ps
     End Function
 
