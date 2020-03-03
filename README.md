@@ -3,7 +3,7 @@ ASP.NET web framework in pure VB.NET code optimized for creation of Business App
 
 Created as simplified and lightweight alternative to other ASP.NET frameworks like ASP.NET MVC
 
-![image](https://user-images.githubusercontent.com/1141095/51185501-e952e700-189c-11e9-8b8e-902f40499d85.png)
+![image](https://user-images.githubusercontent.com/1141095/75820467-0200b380-5d62-11ea-9340-e0942b460eb1.png)
 
 ## Features
 - simple and straightforward in development and maintenance
