@@ -1,7 +1,7 @@
 -- core framework tables only, create app-specific tables in database.sql
 
 /* upload categories */
-DROP TABLE att_categories;
+DROP TABLE IF EXISTS att_categories;
 CREATE TABLE att_categories (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
@@ -23,7 +23,7 @@ INSERT INTO att_categories (icode, iname) VALUES
 ,('spage_banner', 'Page banners')
 ;
 
-DROP TABLE att;
+DROP TABLE IF EXISTS att;
 CREATE TABLE att (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED, /* files stored on disk under 0/0/0/id.dat */
   att_categories_id       INT NULL FOREIGN KEY REFERENCES att_categories(id),
@@ -49,7 +49,7 @@ CREATE TABLE att (
 CREATE INDEX att_table_name ON att (table_name, item_id);
 
 /* link att files to table items*/
-DROP TABLE att_table_link;
+DROP TABLE IF EXISTS att_table_link;
 CREATE TABLE att_table_link (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   att_id                INT NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE att_table_link (
 CREATE UNIQUE INDEX att_table_link_UX ON att_table_link (table_name, item_id, att_id);
 
 
-DROP TABLE users;
+DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
@@ -103,7 +103,7 @@ VALUES ('Website','Admin','admin@admin.com','CHANGE_ME',100);
 
 
 /*Site Settings - special table for misc site settings*/
-DROP TABLE settings;
+DROP TABLE IF EXISTS settings;
 CREATE TABLE settings (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   icat                  NVARCHAR(64) NOT NULL DEFAULT '', /*settings category: ''-system, 'other' -site specific*/
@@ -128,7 +128,7 @@ INSERT INTO settings (is_user_edit, input, icat, icode, ivalue, iname, idesc) VA
 (1, 10, '', 'test', 'novalue', 'test settings', 'description');
 
 /*Static pages*/
-DROP TABLE spages;
+DROP TABLE IF EXISTS spages;
 CREATE TABLE spages (
   id int IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   parent_id             INT NOT NULL DEFAULT 0,  /*parent page id*/
@@ -171,7 +171,7 @@ update spages set is_home=1 where id=1;
 
 
 /*event types for log*/
-DROP TABLE events;
+DROP TABLE IF EXISTS events;
 CREATE TABLE events (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   icode                 NVARCHAR(64) NOT NULL default '',
@@ -194,7 +194,7 @@ INSERT INTO events (icode, iname) VALUES ('users_upd',    'User updated');
 INSERT INTO events (icode, iname) VALUES ('users_del',    'User deleted');
 
 /* log of all user-initiated events */
-DROP TABLE event_log;
+DROP TABLE IF EXISTS event_log;
 CREATE TABLE event_log (
   id BIGINT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   events_id        INT NOT NULL DEFAULT 0,           /* email type sent */
@@ -215,7 +215,7 @@ CREATE INDEX event_log_add_users_id_dx ON event_log (add_users_id)
 CREATE INDEX event_log_add_time_idx ON event_log (add_time);
 
 /*Lookup Manager Tables*/
-DROP TABLE lookup_manager_tables;
+DROP TABLE IF EXISTS lookup_manager_tables;
 CREATE TABLE lookup_manager_tables (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
@@ -250,7 +250,7 @@ insert into lookup_manager_tables (tname, iname) VALUES
 GO
 
 /*user custom views*/
-DROP TABLE user_views;
+DROP TABLE IF EXISTS user_views;
 CREATE TABLE user_views (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   screen                NVARCHAR(128) NOT NULL, --related screen, ex: "Demos"
@@ -265,7 +265,7 @@ CREATE TABLE user_views (
 CREATE UNIQUE INDEX user_views_UK ON user_views (add_users_id, screen);
 
 /*user lists*/
-DROP TABLE user_lists;
+DROP TABLE IF EXISTS user_lists;
 CREATE TABLE user_lists (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   entity                NVARCHAR(128) NOT NULL, -- usually table name, ex: 'demos'
@@ -281,7 +281,7 @@ CREATE TABLE user_lists (
 );
 
 /*items linked to user lists */
-DROP TABLE user_lists_items;
+DROP TABLE IF EXISTS user_lists_items;
 CREATE TABLE user_lists_items (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   user_lists_id         INT NOT NULL FOREIGN KEY REFERENCES user_lists(id),
@@ -296,7 +296,7 @@ CREATE TABLE user_lists_items (
 CREATE UNIQUE INDEX user_lists_items_UK ON user_lists_items (user_lists_id, item_id);
 
 /*Custom menu items for sidebar*/
-DROP TABLE menu_items;
+DROP TABLE IF EXISTS menu_items;
 CREATE TABLE menu_items (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 

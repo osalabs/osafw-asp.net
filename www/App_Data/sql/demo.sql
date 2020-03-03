@@ -1,7 +1,7 @@
 -- demo tables, use for reference/development, remove when not required
 
 /*Demo Dictionary table*/
-DROP TABLE demo_dicts;
+DROP TABLE IF EXISTS demo_dicts;
 CREATE TABLE demo_dicts (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
 
@@ -19,7 +19,7 @@ INSERT INTO demo_dicts (iname, idesc, add_time) VALUES ('test2', 'test2 descript
 INSERT INTO demo_dicts (iname, idesc, add_time) VALUES ('test3', 'test3 description', GETDATE());
 
 /*Demo table*/
-DROP TABLE demos;
+DROP TABLE IF EXISTS demos;
 CREATE TABLE demos (
   id INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
   parent_id             INT NOT NULL DEFAULT 0,           /*parent id - combo selection from SQL*/
@@ -57,7 +57,7 @@ CREATE TABLE demos (
 CREATE UNIQUE INDEX demos_email ON demos (email);
 
 /*multi link table*/
-DROP TABLE demos_demo_dicts_link;
+DROP TABLE IF EXISTS demos_demo_dicts_link;
 CREATE TABLE demos_demo_dicts_link (
   demos_id              INT NULL FOREIGN KEY REFERENCES demos(id),
   demo_dicts_id         INT NULL FOREIGN KEY REFERENCES demo_dicts(id),
