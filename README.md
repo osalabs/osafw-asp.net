@@ -1,5 +1,5 @@
 # osafw-asp.net
-ASP.NET web framework in pure VB.NET code
+ASP.NET web framework in pure VB.NET code optimized for creation of Business Applications
 
 Created as simplified and lightweight alternative to other ASP.NET frameworks like ASP.NET MVC
 
