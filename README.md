@@ -127,6 +127,24 @@ The following controller fields used above can be defined in controller's `init(
 - `Me.search_fields` - search fields, space-separated
 - `Me.list_view` - table/view to use in `getListRows()`, if empty model's `table_name` used
 
+### fw.config()
+
+Application configuration available via `fw.config([SettingName])`.
+Most of the global settings defined in `web.config` `<appSettings>` section. But there are several caclulated settings:
+
+|SettingName|Description|Example|
+|-------|-----------|-------|
+|hostname|set from server variable HTTP_HOST|osalabs.com|
+|ROOT_DOMAIN|protocol+hostname|https://osalabs.com|
+|ROOT_URL|part of the url if Application installed under sub-url|/suburl if App installed under osalabs.com/suburl|
+|site_root|physical application path to the root of public directory|C:\inetpub\somesite\www|
+|template|physical path to the root of templates directory|C:\inetpub\somesite\www\App_Data\template|
+|log|physical path to application log file|C:\inetpub\somesite\www\App_Data\main.log|
+|tmp|physical path to the system tmp directory|C:\Windows\Temp|
+
+
+
+
 ### How to Debug
 
 Main and recommended approach - use `fw.logger()` function, which is available in controllers and models (so no prefix required).
