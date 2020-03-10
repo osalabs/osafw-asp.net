@@ -1,9 +1,9 @@
 # osafw-asp.net
-ASP.NET web framework in pure VB.NET code
+ASP.NET web framework in pure VB.NET code optimized for creation of Business Applications
 
 Created as simplified and lightweight alternative to other ASP.NET frameworks like ASP.NET MVC
 
-![image](https://user-images.githubusercontent.com/1141095/51185501-e952e700-189c-11e9-8b8e-902f40499d85.png)
+![image](https://user-images.githubusercontent.com/1141095/75820467-0200b380-5d62-11ea-9340-e0942b460eb1.png)
 
 ## Features
 - simple and straightforward in development and maintenance
@@ -21,8 +21,8 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 
 ## Installation
 1. put contents of `/www` into your webserver's public html folder
-2. edit `/www/web.config` for db settings
-3. create database from `/www/App_Data/sql/database.sql`
+2. edit `/www/web.config` for database connection_string
+3. create database from `/www/App_Data/sql/fwdatabase.sql`
 4. open site in your browser and login with credentials as defined in database.sql (remember to change password)
 
 ## Documentation
@@ -73,6 +73,77 @@ Controllers automatically directly mapped to URLs, so developer doesn't need to 
 
 For example `GET /Products` will call `ProductsController.IndexAction()`
 And this will cause rendering templates from `/www/App_Data/templates/products/index`
+
+### Request Flow
+
+highlighted as bold is where you could place your code.
+
+- `FW.run()`
+  - **`FwHooks.initRequest()`** - place code here which need to be run on request start
+- `fw.dispatch()` - performs REST urls matching and calls controller/action, if no controller found calls `HomeController.NotFoundAction()`, if no requested action found in controller - calls controller action defined in contoller's `route_default_action` (either "index" or "show")
+  - `fw._auth()`  - check if user can access requested controller/action, also performs basic CSRF validation
+  - `fw.call_controller()`
+    - **`SomeController.init()`** - place code here which need to be run every time request comes to this controller
+    - **`SomeController.SomeAction()`** - your code for particular action
+      - **`SomeModel.someMethod()`** - controllers may call model's methods, place most of your business logic in models
+- `fw.Finalize()`
+
+#### Examples:
+- GET /Admin/Users
+  - `FwHooks.initRequest()`
+  - `AdminUsers.init()`
+  - `AdminUsers.IndexAction()`
+  - then ParsePage parses templates from `/template/admin/users/index/`
+
+- GET /Admin/Users/123/edit
+  - `FwHooks.initRequest()`
+  - `AdminUsers.init()`
+  - `AdminUsers.ShowFormAction(123)`
+    - `Users.one(123)`
+  - then ParsePage parses templates from `/template/admin/users/showform/`
+
+- POST /Admin/Users/123
+  - `FwHooks.initRequest()`
+  - `AdminUsers.init()`
+  - `AdminUsers.SaveAction(123)`
+    - `Users.update(123)`
+  - `fw.redirect("/Admin/Users/123/edit")` //redirect back to edit screen after db updated
+
+#### Flow in IndexAction
+
+Frequently asked details about flow for the `IndexAction()` (in controllers inherited from `FwAdminController` and `FwDynamicController`):
+
+1. `initFilter()` - initializes `Me.list_filter` from query string filter params `&f[xxx]=...`, note, filters remembered in session
+1. `setListSorting()` - initializes `Me.list_orderby` based on `list_filter("sortby")` and `list_filter("sortdir")`, also uses `Me.list_sortdef` and `Me.list_sortmap` which can be set in controller's `init()` or in `config.json`
+1. `setListSearch()` - initializes `Me.list_where` based on `list_filter("s")` and `Me.search_fields`
+1. `setListSearchStatus()` - add to `Me.list_where` filtering  by `status` field if such field defined in the controller's model
+1. `getListRows()` - query database and save rows to `Me.list_rows` (only current page based on `Me.list_filter("pagenum")` and `Me.list_filter("pagesize")`). Also sets `Me.list_count` to total rows matched by filters and `Me.list_pager` for pagination if there are more than one page. Uses `Me.list_view`, `Me.list_where`, `Me.list_orderby`
+
+You could either override these particular methods or whole `IndexAction()` in your specific controller.
+
+The following controller fields used above can be defined in controller's `init()` or in `config.json`:
+- `Me.list_sortdef` - default list sorting in format: "sort_name[ asc|desc]"
+- `Me.list_sortmap` - mapping for sort names (from `list_filter["sortby"]`) to actual db fields, Hashtable `sort_name => db_field_name`
+- `Me.search_fields` - search fields, space-separated
+- `Me.list_view` - table/view to use in `getListRows()`, if empty model's `table_name` used
+
+### fw.config()
+
+Application configuration available via `fw.config([SettingName])`.
+Most of the global settings defined in `web.config` `<appSettings>` section. But there are several caclulated settings:
+
+|SettingName|Description|Example|
+|-------|-----------|-------|
+|hostname|set from server variable HTTP_HOST|osalabs.com|
+|ROOT_DOMAIN|protocol+hostname|https://osalabs.com|
+|ROOT_URL|part of the url if Application installed under sub-url|/suburl if App installed under osalabs.com/suburl|
+|site_root|physical application path to the root of public directory|C:\inetpub\somesite\www|
+|template|physical path to the root of templates directory|C:\inetpub\somesite\www\App_Data\template|
+|log|physical path to application log file|C:\inetpub\somesite\www\App_Data\main.log|
+|tmp|physical path to the system tmp directory|C:\Windows\Temp|
+
+
+
 
 ### How to Debug
 
