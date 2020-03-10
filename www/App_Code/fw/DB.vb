@@ -933,7 +933,29 @@ Public Class DB
     Public Function get_foreign_keys(Optional table As String = "") As ArrayList
         Dim result As New ArrayList
         If dbtype = "SQL" Then
-            'TODO implement for SQL Server
+            Dim where = ""
+            If table > "" Then where = " WHERE col1.TABLE_NAME=" & Me.q(table)
+            result = Me.array("SELECT " &
+                 " col1.CONSTRAINT_NAME as [name]" &
+                 ", col1.TABLE_NAME As [table]" &
+                 ", col1.COLUMN_NAME as [column]" &
+                 ", col2.TABLE_NAME as [pk_table]" &
+                 ", col2.COLUMN_NAME as [pk_column]" &
+                 ", rc.UPDATE_RULE as [on_update]" &
+                 ", rc.DELETE_RULE as [on_delete]" &
+                 " FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc " &
+                 " INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE col1 " &
+                 "   ON (col1.CONSTRAINT_CATALOG = rc.CONSTRAINT_CATALOG  " &
+                 "       AND col1.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA " &
+                 "       AND col1.CONSTRAINT_NAME = rc.CONSTRAINT_NAME)" &
+                 " INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE col2 " &
+                 "   ON (col2.CONSTRAINT_CATALOG = rc.UNIQUE_CONSTRAINT_CATALOG  " &
+                 "       AND col2.CONSTRAINT_SCHEMA = rc.UNIQUE_CONSTRAINT_SCHEMA " &
+                 "       AND col2.CONSTRAINT_NAME = rc.UNIQUE_CONSTRAINT_NAME " &
+                 "       AND col2.ORDINAL_POSITION = col1.ORDINAL_POSITION)" &
+                 where)
+            'on_update or on_delete can contain: NO ACTION, CASCASE
+
         Else
             Dim dt = DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Foreign_Keys, New Object() {Nothing})
             For Each row As DataRow In dt.Rows

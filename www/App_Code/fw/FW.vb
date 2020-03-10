@@ -980,7 +980,7 @@ Public Class FW
                     fkeys.Sort()
                     For Each human_filename As String In fkeys
                         Dim filename As String = filenames(human_filename)
-                        Dim att As New Attachment(filename, System.Net.Mime.MediaTypeNames.Application.Octet) With {
+                        Dim att As New Net.Mail.Attachment(filename, System.Net.Mime.MediaTypeNames.Application.Octet) With {
                             .Name = human_filename,
                             .NameEncoding = System.Text.Encoding.UTF8
                         }
