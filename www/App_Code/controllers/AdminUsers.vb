@@ -112,6 +112,8 @@ Public Class AdminUsersController
         Dim item = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
 
+        item("email") = item("ehack") 'just because Chrome autofills fields too agressively
+
         Try
             Validate(id, item)
             'load old record if necessary
