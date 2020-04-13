@@ -639,7 +639,7 @@ Public Class FW
             'keep log file open to avoid overhead
             If floggerFS Is Nothing Then
                 'open log with shared read/write so loggers from other processes can still write to it
-                floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite And FileShare.Delete)
+                floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
                 floggerSW = New System.IO.StreamWriter(floggerFS) With {
                     .AutoFlush = True
                 }
