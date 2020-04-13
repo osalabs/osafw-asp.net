@@ -408,13 +408,24 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
+        Dim is_export = False
+        Dim pagenum As Integer = Utils.f2int(list_filter("pagenum"))
+        Dim pagesize As Integer = Utils.f2int(list_filter("pagesize"))
+        'if export requested - start with first page and have a high limit (still better to have a limit just for the case)
+        If reqs("export") > "" Then
+            is_export = True
+            pagenum = 0
+            pagesize = 100000
+        End If
+
+
         If String.IsNullOrEmpty(list_view) Then list_view = model0.table_name
         Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
 
         Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
         If Me.list_count > 0 Then
-            Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
-            Dim limit As Integer = Me.list_filter("pagesize")
+            Dim offset As Integer = pagenum * pagesize
+            Dim limit As Integer = pagesize
 
             Dim sql As String
 
@@ -455,7 +466,9 @@ Public MustInherit Class FwController
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 
 
-            Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
+            If Not is_export Then
+                Me.list_pager = FormUtils.getPager(Me.list_count, pagenum, pagesize)
+            End If
         Else
             Me.list_rows = New ArrayList
             Me.list_pager = New ArrayList
