@@ -506,6 +506,8 @@ Public Class FwDynamicController
 
         Dim showform_fields = _fieldsToHash(Me.config("showform_fields"))
 
+        Dim fnullable = Utils.qh(save_fields_nullable)
+
         'special auto-processing for fields of particular types
         For Each field As String In fields.Keys.Cast(Of String).ToArray()
             If showform_fields.ContainsKey(field) Then
@@ -520,7 +522,12 @@ Public Class FwDynamicController
                 ElseIf def("type") = "time" Then
                     fields(field) = FormUtils.timeStrToInt(fields(field)) 'ftime - convert from HH:MM to int (0-24h in seconds)
                 ElseIf def("type") = "number" Then
-                    fields(field) = Utils.f2float(fields(field)) 'number - convert to number (if field empty or non-number - it will become 0)
+                    If fnullable.ContainsKey(field) AndAlso fields(field) = "" Then
+                        'if field nullable and empty - pass NULL
+                        fields(field) = Nothing
+                    Else
+                        fields(field) = Utils.f2float(fields(field)) 'number - convert to number (if field empty or non-number - it will become 0)
+                    End If
                 End If
             End If
         Next
