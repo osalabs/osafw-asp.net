@@ -38,7 +38,7 @@ CREATE TABLE demos (
 
   fcombo                INT NOT NULL DEFAULT 0,           /*index of combo selection*/
   fradio                INT NOT NULL DEFAULT 0,           /*index of radio selection*/
-  fyesno                TINYINT NOT NULL DEFAULT 0,       /*yes/no field 0 - NO, 1 - YES*/
+  fyesno                BIT NOT NULL DEFAULT 0,           /*yes/no field 0 - NO, 1 - YES*/
   is_checkbox           TINYINT NOT NULL DEFAULT 0,       /*checkbox field 0 - not set, 1 - set*/
 
   fdate_combo           DATE,                             /*date field with 3 combos editing*/

@@ -164,7 +164,7 @@
             "field": "fyesno",
             "label": "Yes or No",
             "type": "plaintext",
-            "lookup_tpl": "/common/sel/yn.sel"
+            "lookup_tpl": "/common/sel/yn_bool.sel"
         },
         {
             "field": "is_checkbox",
