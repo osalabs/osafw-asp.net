@@ -639,7 +639,7 @@ Public Class FW
             'keep log file open to avoid overhead
             If floggerFS Is Nothing Then
                 'open log with shared read/write so loggers from other processes can still write to it
-                floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
+                floggerFS = New FileStream(log_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite And FileShare.Delete)
                 floggerSW = New System.IO.StreamWriter(floggerFS) With {
                     .AutoFlush = True
                 }
@@ -1116,8 +1116,22 @@ Public Class FW
             'free unmanaged resources (unmanaged objects) and override Finalize() below.
             Try
                 db.Dispose() 'this will return db connections to pool
+
+                Dim log_length = 0
+                If floggerFS IsNot Nothing Then log_length = floggerFS.Length
+
                 If floggerSW IsNot Nothing Then floggerSW.Close() 'no need to close floggerFS as StreamWriter closes it
-                If floggerFS IsNot Nothing Then floggerFS.Close()
+                If floggerFS IsNot Nothing Then
+                    floggerFS.Close()
+
+                    'check if log file too large and need to be rotated
+                    Dim max_log_size = Utils.f2int(config("log_max_size"))
+                    If max_log_size > 0 AndAlso log_length > max_log_size Then
+                        Dim to_path = config("log") & ".1"
+                        File.Delete(to_path)
+                        File.Move(config("log"), to_path)
+                    End If
+                End If
                 ' TODO: set large fields to null.
             Catch ex As Exception
                 Diagnostics.Debug.WriteLine("exception in Dispose:" & ex.Message())

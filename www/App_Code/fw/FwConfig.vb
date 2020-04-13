@@ -43,7 +43,8 @@ Public Class FwConfig
         settings("site_root") = Regex.Replace(req.PhysicalApplicationPath, "\\$", "") 'removed last \ if any
 
         settings("template") = settings("site_root") & "\App_Data\template"
-        settings("log") = settings("site_root") & "\App_Data\main.log"
+        settings("log") = settings("site_root") & "\App_Data\logs\main.log"
+        settings("log_max_size") = 100 * 1024 * 1024 '100 MB is max log size
         settings("tmp") = Path.GetTempPath
 
         Dim http As String = "http://"

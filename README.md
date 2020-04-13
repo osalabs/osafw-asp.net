@@ -30,7 +30,7 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 ### Development
 1. in Visual Studio do `File -> Open -> Web Site...` (Shift+Alt+O) and open `/www` folder
 2. press Ctrl+F5 to run (or F5 if you really need debugger)
-3. review debug log in `/www/App_Data/main.log`
+3. review debug log in `/www/App_Data/logs/main.log`
 4. edit or create new controllers and models in `/www/App_Code/controllers` and `/www/App_Code/models`
 5. modify templates in `/www/App_Data/template`
 
@@ -43,7 +43,7 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 /App_Data          - non-public directory
   /sql             - initial database.sql script and update sql scripts
   /template        - all the html templates
-  /main.log        - application log (ensure to enable write rights for IIS)
+  /logs/main.log   - application log (ensure to enable write rights to /logs dir for IIS)
 /assets            - your web frontend assets
   /css
   /fonts
@@ -139,7 +139,7 @@ Most of the global settings defined in `web.config` `<appSettings>` section. But
 |ROOT_URL|part of the url if Application installed under sub-url|/suburl if App installed under osalabs.com/suburl|
 |site_root|physical application path to the root of public directory|C:\inetpub\somesite\www|
 |template|physical path to the root of templates directory|C:\inetpub\somesite\www\App_Data\template|
-|log|physical path to application log file|C:\inetpub\somesite\www\App_Data\main.log|
+|log|physical path to application log file|C:\inetpub\somesite\www\App_Data\logs\main.log|
 |tmp|physical path to the system tmp directory|C:\Windows\Temp|
 
 
@@ -149,7 +149,7 @@ Most of the global settings defined in `web.config` `<appSettings>` section. But
 
 Main and recommended approach - use `fw.logger()` function, which is available in controllers and models (so no prefix required).
 Examples: `logger("some string to log", var_to_dump)`, `logger(LogLevel.WARN, "warning message")`
-All logged messages and var content (complex objects will be dumped wit structure when possible) written on debug console as well as to log file (default `/App_Data/main.log`)
+All logged messages and var content (complex objects will be dumped wit structure when possible) written on debug console as well as to log file (default `/App_Data/logs/main.log`)
 You could configure log level in `web.config` - search "log_level" in `appSettings`
 
 Another debug function that might be helpful is `fw.rw()` - but it output it's parameter directly into response output (i.e. you will see output right in the browser)
@@ -159,7 +159,7 @@ Another debug function that might be helpful is `fw.rw()` - but it output it's p
   - table name: `user_lists` (lowercase, underscore delimiters is optional)
   - model name: `UserLists` (UpperCamelCase)
   - controller name: `UserListsController` or `AdminUserListsController` (UpperCamelCase with "Controller" suffix)
-  - template path: `/template/userlists`  
+  - template path: `/template/userlists`
 - keep all paths without trailing slash, use beginning slash where necessary
 - db updates:
   - first, make changes in `/App_Data/sql/database.sql` - this file is used to create db from scratch
@@ -171,6 +171,6 @@ Another debug function that might be helpful is `fw.rw()` - but it output it's p
   - for non-public uploads use `/www/App_Data/upload`
   - or `S3` model and upload to the cloud
 - put all validation code into controller's `Validate()`. See usage example in `AdminDemosController`
-- use `logger()` and review `/App_Data/main.log` if you stuck
+- use `logger()` and review `/App_Data/logs/main.log` if you stuck
   - make sure you have "log_level" set to "DEBUG" in `web.config`
 
