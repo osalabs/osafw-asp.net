@@ -49,9 +49,9 @@ Public Class FwAdminController
             {"count", Me.list_count},
             {"pager", Me.list_pager},
             {"f", Me.list_filter},
-            {"related_id", Me.related_id},
-            {"return_url", Me.return_url}
+            {"related_id", Me.related_id}
         }
+        If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
 
         'userlists support
         ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
