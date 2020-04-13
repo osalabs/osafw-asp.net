@@ -37,19 +37,11 @@ Public Class FwDynamicController
         '    row("field") = "value"
         'Next
 
-        Dim ps As Hashtable = New Hashtable From {
-            {"list_rows", Me.list_rows},
-            {"count", Me.list_count},
-            {"pager", Me.list_pager},
-            {"f", Me.list_filter},
-            {"related_id", Me.related_id},
-            {"return_url", Me.return_url}
-        }
+        'set standard output parse strings
+        Dim ps = Me.setPS()
 
         'userlists support
-        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
-        ps("list_view") = list_view
+        Me.setUserLists(ps)
 
         If is_dynamic_index Then
             'customizable headers

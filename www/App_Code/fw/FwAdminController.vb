@@ -44,19 +44,11 @@ Public Class FwAdminController
         '    row("field") = "value"
         'Next
 
-        Dim ps As Hashtable = New Hashtable From {
-            {"list_rows", Me.list_rows},
-            {"count", Me.list_count},
-            {"pager", Me.list_pager},
-            {"f", Me.list_filter},
-            {"related_id", Me.related_id}
-        }
-        If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
+        'set standard output parse strings
+        Dim ps = Me.setPS()
 
         'userlists support
-        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
-        ps("list_view") = list_view
+        Me.setUserLists(ps)
 
         Return ps
     End Function

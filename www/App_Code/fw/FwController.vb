@@ -585,6 +585,27 @@ Public MustInherit Class FwController
         Return saveCheckResult(success, "", False, "no_action", "", more_json)
     End Function
 
+    Public Overridable Function setPS(Optional ps As Hashtable = Nothing) As Hashtable
+        If ps Is Nothing Then ps = New Hashtable
+
+        ps("list_rows") = Me.list_rows
+        ps("count") = Me.list_count
+        ps("pager") = Me.list_pager
+        ps("f") = Me.list_filter
+        ps("related_id") = Me.related_id
+
+        If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
+
+        Return ps
+    End Function
+
+    Public Overridable Function setUserLists(ps As Hashtable) As Boolean
+        'userlists support
+        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
+        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
+        ps("list_view") = list_view
+        Return True
+    End Function
 
     '********************************** dynamic controller support
     'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order

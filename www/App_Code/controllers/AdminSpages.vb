@@ -68,11 +68,7 @@ Public Class AdminSpagesController
             row("full_url") = model.getFullUrl(row("id"))
         Next
 
-        Dim ps As Hashtable = New Hashtable
-        ps("list_rows") = Me.list_rows
-        ps("count") = Me.list_count
-        ps("pager") = Me.list_pager
-        ps("f") = Me.list_filter
+        Dim ps = Me.setPS()
 
         Return ps
     End Function
