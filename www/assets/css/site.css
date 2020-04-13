@@ -62,6 +62,9 @@ table.list > thead > tr > th[data-sort].active-sort{
 table.list .search {
     display: none;
 }
+table.list tbody td {
+    font-size: 0.9rem;
+}
 
 #modal-custom-cols .sort-arrows {
     float: right;
