@@ -222,8 +222,9 @@ Public Class Utils
 
     Public Shared Function toCSVRow(row As Hashtable, fields As Array) As String
         Dim result As New StringBuilder
+        Dim is_first = True
         For Each fld As String In fields
-            If result.Length > 0 Then result.Append(",")
+            If Not is_first Then result.Append(",")
 
             Dim str As String = Regex.Replace(row(fld) & "", "[\n\r]+", " ")
             str = Replace(str, """", """""")
@@ -232,6 +233,7 @@ Public Class Utils
                 str = """" & str & """"
             End If
             result.Append(str)
+            is_first = False
         Next
         Return result.ToString()
     End Function
@@ -272,6 +274,44 @@ Public Class Utils
 
         response.Write(Utils.getCSVExport(csv_export_headers, csv_export_fields, rows))
         Return True
+    End Function
+
+    Public Shared Function writeXLSExport(fw As FW, filename As String, csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As Boolean
+        Dim ps As New Hashtable
+        ps("rows") = rows
+
+        Dim headers As New ArrayList
+        For Each str As String In csv_export_headers.Split(",")
+            Dim h As New Hashtable
+            h("iname") = str
+            headers.Add(h)
+        Next
+        ps("headers") = headers
+
+        Dim fields() As String = Utils.qw(csv_export_fields)
+        For Each row As Hashtable In rows
+            Dim cell As New ArrayList
+            For Each f As String In fields
+                Dim h As New Hashtable
+                h("value") = row(f)
+                cell.Add(h)
+            Next
+            row("cell") = cell
+        Next
+
+        'parse and out document
+        'TODO ConvUtils.parse_page_xls(fw, LCase(fw.cur_controller_path & "/index/export"), "xls.html", hf, "filename")
+
+        Dim parser As ParsePage = New ParsePage(fw)
+        'Dim tpl_dir = LCase(fw.cur_controller_path & "/index/export")
+        Dim tpl_dir = "/common/list/export"
+        Dim page As String = parser.parse_page(tpl_dir, "xls.html", ps)
+
+        filename = filename.Replace("""", "_")
+
+        fw.resp.AddHeader("Content-type", "application/vnd.ms-excel")
+        fw.resp.AddHeader("Content-Disposition", "attachment; filename=""" & filename & """")
+        fw.resp.Write(page)
     End Function
 
     'Detect orientation and auto-rotate correctly

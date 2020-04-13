@@ -607,6 +607,26 @@ Public MustInherit Class FwController
         Return True
     End Function
 
+    'export to csv or html/xls
+    Public Overridable Sub exportList()
+        If list_rows Is Nothing Then list_rows = New ArrayList
+
+        Dim fields = getViewListUserFields()
+        'header names
+        Dim headers As New ArrayList
+        For Each fld In Utils.qw(fields)
+            headers.Add(view_list_map(fld))
+        Next
+
+        Dim csv_export_headers As String = Join(headers.ToArray(), ",")
+
+        If reqs("export") = "xls" Then
+            Utils.writeXLSExport(fw, "export.xls", csv_export_headers, fields, list_rows)
+        Else 'default = csv
+            Utils.writeCSVExport(fw.resp, "export.csv", csv_export_headers, fields, list_rows)
+        End If
+    End Sub
+
     '********************************** dynamic controller support
     'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order
     'if fields defined - show fields only

@@ -48,7 +48,11 @@ Public Class FwDynamicController
             setViewList(ps, reqh("search"))
         End If
 
-        Return ps
+        If reqs("export") > "" Then
+            exportList()
+        Else
+            Return ps
+        End If
     End Function
 
     Public Overridable Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
