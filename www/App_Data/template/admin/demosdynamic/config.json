@@ -248,7 +248,8 @@
             "lookup_model": "DemoDicts",
             "type": "select",
             "is_option0": true,
-            "class_contents": "col-md-3"
+            "class_contents": "col-md-3",
+            "class_control": "on-refresh"
         },
         {
             "field": "iname",

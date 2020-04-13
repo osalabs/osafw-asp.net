@@ -1,6 +1,7 @@
 <form id="FEdit" method="post" data-check-changes <~das if="id" inline>data-autosave</~das> action="<~../url><~uu1 if="id" inline>/<~id></~uu1>" data-errors="<~ERR json>">
  <input type="hidden" name="XSS" value="<~session[XSS]>">
  <input type="hidden" name="return_url" value="<~return_url>">
+ <input type="hidden" name="refresh" value="">
  <~/common/form/relid>
 
   <fieldset>
@@ -20,10 +21,13 @@
     <div class="form-row">
       <label class="col-form-label col-md-3" for="demo_dicts_id">`DemoDicts`</label>
       <div class="col-md-3">
-        <select id="demo_dicts_id" name="item[demo_dicts_id]" class="form-control">
+        <select id="demo_dicts_id" name="item[demo_dicts_id]" class="form-control on-refresh">
           <option value=""></option>
           <~select_options_demo_dicts_id select="i[demo_dicts_id]">
         </select>
+      </div>
+      <div class="col-md-6">
+        <p class="form-control-plaintext text-muted">add .on-refresh class if field change need to reload the form</p>
       </div>
     </div>
 

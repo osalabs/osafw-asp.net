@@ -172,6 +172,12 @@ window.fw={
       }
     });
 
+    $(document).on('change', '.on-refresh', function (e) {
+      var $f = $(this).closest('form');
+      $f.find('input[name=refresh]').val(1);
+      $f.submit();
+    });
+
     //form screen init
     fw.setup_cancel_form_handlers();
     fw.setup_autosave_form_handlers();
