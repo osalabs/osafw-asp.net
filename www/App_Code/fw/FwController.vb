@@ -364,8 +364,8 @@ Public MustInherit Class FwController
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
-                Dim str = ""
                 Dim value = hsearch(fieldname)
+                Dim str As String
                 If Left(value, 1) = "=" Then
                     str = " = " & db.q(Mid(value, 2))
                 ElseIf Left(value, 2) = "!=" Then

@@ -177,6 +177,7 @@ Public Class DB
 
         Dim cat As Object = CreateObject("ADOX.Catalog")
         cat.Create(connstr)
+        cat.ActiveConnection.Close()
     End Sub
 
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>

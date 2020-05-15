@@ -342,9 +342,10 @@ Public Class Utils
     End Function
 
     'resize image in from_file to w/h and save to to_file
-    'w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
+    '(optional)w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
+    'if no w/h passed - then no resizing occurs, just conversion (based on destination extension)
     'return false if no resize performed (if image already smaller than necessary). Note if to_file is not same as from_file - to_file will have a copy of the from_file
-    Public Shared Function resizeImage(ByVal from_file As String, ByVal to_file As String, ByVal w As Long, ByVal h As Long) As Boolean
+    Public Shared Function resizeImage(ByVal from_file As String, ByVal to_file As String, Optional ByVal w As Long = -1, Optional ByVal h As Long = -1) As Boolean
         Dim stream As New FileStream(from_file, FileMode.Open, FileAccess.Read)
 
         ' Create new image.
@@ -357,7 +358,10 @@ Public Class Utils
         Dim oldWidth As Integer = image.Width
         Dim oldHeight As Integer = image.Height
 
-        If oldWidth / w > 1 Or oldHeight / h > 1 Or is_rotated Then
+        If w = -1 Then w = oldWidth
+        If h = -1 Then h = oldHeight
+
+        If oldWidth / w >= 1 Or oldHeight / h >= 1 Then
             'downsizing
         Else
             'image already smaller no resize required - keep sizes same
