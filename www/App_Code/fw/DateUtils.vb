@@ -55,7 +55,7 @@ Public Class DateUtils
         Dim result As String = ""
         Dim tmpdate As DateTime
         If DateTime.TryParse(str, tmpdate) Then
-            result = tmpdate.Hour() & ":" & tmpdate.Minute()
+            result = tmpdate.Hour().ToString("00") & ":" & tmpdate.Minute().ToString("00")
         End If
 
         Return result

@@ -6,8 +6,9 @@
 Imports System.IO
 
 Public MustInherit Class FwModel : Implements IDisposable
-    Const STATUS_ACTIVE = 0
-    Const STATUS_DELETED = 127
+    Public Const STATUS_ACTIVE = 0
+    Public Const STATUS_INACTIVE = 10
+    Public Const STATUS_DELETED = 127
 
     Protected fw As FW
     Protected db As DB
@@ -77,6 +78,8 @@ Public MustInherit Class FwModel : Implements IDisposable
     End Sub
 
     Public Overridable Overloads Function iname(id As Integer) As String
+        If field_iname = "" Then Return ""
+
         Dim row As Hashtable = one(id)
         Return row(field_iname)
     End Function
@@ -117,6 +120,8 @@ Public MustInherit Class FwModel : Implements IDisposable
 
     'just return first row by iname field (you may want to make it unique)
     Public Overridable Function oneByIname(iname As String) As Hashtable
+        If field_iname = "" Then Return New Hashtable
+
         Dim where As Hashtable = New Hashtable
         where(field_iname) = iname
         Return db.row(table_name, where)
@@ -126,7 +131,7 @@ Public MustInherit Class FwModel : Implements IDisposable
     Public Overridable Function isExistsByField(uniq_key As Object, not_id As Integer, field As String) As Boolean
         Dim where As New Hashtable
         where(field) = uniq_key
-        where(field_id) = db.opNOT(not_id)
+        If field_id > "" Then where(field_id) = db.opNOT(not_id)
         Dim val As String = db.value(table_name, where, "1")
         If val = "1" Then
             Return True
