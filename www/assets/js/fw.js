@@ -78,6 +78,9 @@ window.fw={
       } else {
           $el.show();
           $fis.val('1');
+          //show search tooltip
+          $.jGrowl("WORD to search for contains word<br>=WORD to search for equals word<br>!=WORD to search for NOT equals word<br>!WORD to search for NOT contains word",
+            {header: 'Search hints', theme: 'hint_info', sticky: true});
       }
     });
 

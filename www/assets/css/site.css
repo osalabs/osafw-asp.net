@@ -223,12 +223,17 @@ form[data-list-filter] {
 
 /* jGrowl*/
 div.jGrowl div.hint_green{
- background-color:#090;
+ background-color:#28a745;
  color:#fff;
 }
 
 div.jGrowl div.hint_error{
- background-color:#900;
+ background-color:#dc3545;
+ color:#fff;
+}
+
+div.jGrowl div.hint_info{
+ background-color:#17a2b8;
  color:#fff;
 }
 
