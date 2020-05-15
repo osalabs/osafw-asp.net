@@ -172,16 +172,31 @@ window.fw={
       }
     });
 
+
+    //form screen init
+    fw.setup_cancel_form_handlers();
+    fw.setup_autosave_form_handlers();
+    fw.process_form_errors();
+
     $(document).on('change', '.on-refresh', function (e) {
       var $f = $(this).closest('form');
       $f.find('input[name=refresh]').val(1);
       $f.submit();
     });
 
-    //form screen init
-    fw.setup_cancel_form_handlers();
-    fw.setup_autosave_form_handlers();
-    fw.process_form_errors();
+    $(document).on('keyup', '.on-multi-search', function (e) {
+      var $this = $(this);
+      var s = $this.val().replace(/"/g, '').toUpperCase();
+      var $div = $this.closest('.field-multi-value');
+      var $cb = $div.find('.custom-checkbox');
+      if (s>''){
+          $cb.hide();
+          $cb.filter('[data-s*="'+s+'"]').show();
+      }else{
+          $cb.show();
+      }
+    });
+
   },
 
   //for all forms with data-check-changes on a page - setup changes tracker, call in $(document).ready()

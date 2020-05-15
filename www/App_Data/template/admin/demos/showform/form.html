@@ -95,8 +95,9 @@
       <label class="col-form-label col-md-3" for="dict_link_multi">DemoDicts Multi</label>
       <div class="col">
         <div class="field-multi-value">
+          <input type="input" class="form-control form-control-sm on-multi-search mb-1" value="" placeholder="`type to filter...`" data-noautosave>
           <~multi_datarow repeat inline>
-            <div class="custom-control custom-checkbox">
+            <div class="custom-control custom-checkbox" data-s="<~id upper> - <~iname upper>">
               <input type="checkbox" class="custom-control-input" id="dict_link_multi$<~id>" name="dict_link_multi[<~id>]" value="1" <~/common/checked if="is_checked">>
               <label class="custom-control-label" for="dict_link_multi$<~id>"><~iname></label>
             </div>
@@ -109,8 +110,9 @@
       <label class="col-form-label col-md-3" for="demo_dicts_link">DemoDicts via Link Table</label>
       <div class="col">
         <div class="field-multi-value">
+          <input type="input" class="form-control form-control-sm on-multi-search mb-1" value="" placeholder="`type to filter...`" data-noautosave>
           <~multi_datarow_link repeat inline>
-            <div class="custom-control custom-checkbox">
+            <div class="custom-control custom-checkbox" data-s="<~id upper> - <~iname upper>">
               <input type="checkbox" class="custom-control-input" id="demo_dicts_link$<~id>" name="demo_dicts_link[<~id>]" value="1" <~/common/checked if="is_checked">>
               <label class="custom-control-label" for="demo_dicts_link$<~id>"><~iname></label>
             </div>
