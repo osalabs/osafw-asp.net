@@ -819,6 +819,7 @@ Public Class DevManageController
             Dim fld_int As Hashtable = Nothing
             Dim fld_identity As Hashtable = Nothing
             Dim fld_iname As Hashtable = Nothing
+            Dim is_normalize_names = False
             For Each fld As Hashtable In entity("fields")
                 'find identity
                 If fld_identity Is Nothing AndAlso fld("is_identity") = "1" Then
@@ -833,6 +834,11 @@ Public Class DevManageController
                 'for iname - just use 2nd to 4th field which not end with ID, varchar type and has some maxlen
                 If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("fw_type") = "varchar" AndAlso Utils.f2int(fld("maxlen")) > 0 AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
                     fld_iname = fld
+                End If
+
+                If Regex.IsMatch(fld("name"), "\W", RegexOptions.IgnoreCase) Then
+                    'normalize names only if at least one field contains non-alphanumeric chars
+                    is_normalize_names = True
                 End If
 
                 i += 1
@@ -872,7 +878,14 @@ Public Class DevManageController
             If Not Utils.f2bool(entity("is_fw")) Then
                 codegen &= "        is_normalize_names = True" & vbCrLf
             End If
+
+            If is_normalize_names Then
+                codegen &= "        is_normalize_names = True" & vbCrLf
+            End If
+
         End If
+
+
         mdemo = mdemo.Replace("'###CODEGEN", codegen)
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
