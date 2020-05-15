@@ -16,6 +16,10 @@ Public Class FwDynamicController
         'base_url = "/Admin/DemosDynamic" 'base url must be defined for loadControllerConfig
         'Me.loadControllerConfig()
         'model_related = fw.model(Of FwModel)()
+
+        'hack to sort properly by formatted dates
+        'so in list view you have: FORMAT(DATE_FIELD, 'MM/dd/yyyy') as DATE_FIELD_str
+        'list_sortmap("DATE_FIELD_str") = "DATE_FIELD"
     End Sub
 
     Public Overridable Function IndexAction() As Hashtable

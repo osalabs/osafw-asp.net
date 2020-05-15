@@ -31,12 +31,12 @@
 
     "search_fields": "!id iname idesc",
     "list_sortdef": "iname asc",
-    "list_sortmap": "id|id iname|iname add_time|add_time demo_dicts_id|demo_dicts_id email|email status|status",
+    "#list_sortmap": "id|id iname|iname add_time|add_time demo_dicts_id|demo_dicts_id email|email status|status",
 
     "related_field_name": "demo_dicts_id",
 
     "is_dynamic_index": true,
-    "list_view": "(select d.*, dd.iname as demo_dicts_iname from demos d LEFT OUTER JOIN demo_dicts dd ON dd.id=d.demo_dicts_id) t",
+    "list_view": "(select d.*, dd.iname as demo_dicts_iname, FORMAT(d.fdate_pop, 'MM/dd/yyyy') as fdate_pop_str from demos d LEFT OUTER JOIN demo_dicts dd ON dd.id=d.demo_dicts_id) t",
     "view_list_defaults": "demo_dicts_iname iname email add_time status",
     "###view_list_map": "demo_dicts_iname|DemoDicts iname|Title email|Email add_time|Added&nbsp;on status|Status id|id",
     "view_list_map": {
@@ -45,6 +45,7 @@
         "email": "Email",
         "add_time": "Added on",
         "status": "Status",
+        "fdate_pop_str": "Date popup",
         "id": "id"
     },
     "view_list_custom": "status demo_dicts_iname",

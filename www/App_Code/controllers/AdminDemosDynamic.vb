@@ -1,7 +1,7 @@
 ﻿' Demo Dynamic Admin controller
 '
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
-' (c) 2009-2018 Oleg Savchuk www.osalabs.com
+' (c) 2009-2020 Oleg Savchuk www.osalabs.com
 
 Public Class AdminDemosDynamicController
     Inherits FwDynamicController
@@ -21,6 +21,8 @@ Public Class AdminDemosDynamicController
         db = model.getDB() 'model-based controller works with model's db
 
         model_related = fw.model(Of DemoDicts)()
+
+        list_sortmap("fdate_pop_str") = "fdate_pop"
     End Sub
 
 End Class
