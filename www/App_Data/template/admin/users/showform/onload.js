@@ -11,11 +11,14 @@ if (!id){
 }
 
 function on_send_pwd(e) {
+    var $this=$(this);
+    $this.html('<span class="spinner-border spinner-border-sm"></span> ' + $this.html() );
     $.getJSON('<~../url>/(SendPwd)/<~id>', function(data){
+        $this.find('.spinner-border').remove();
         if (data.success){
             fw.ok('Password reminder email sent');
         }else{
-            fw.error('Server error occured');
+            fw.error('Server error occured: '+data.err_msg, {'sticky': true});
         }
     });
 }

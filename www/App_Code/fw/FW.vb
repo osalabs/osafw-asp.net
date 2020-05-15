@@ -77,6 +77,8 @@ Public Class FW
     Public cache_control As String = "no-cache" 'cache control header to add to pages, controllers can change per request
     Public is_log_events As Boolean = True 'can be set temporarly to false to prevent event logging (for batch process for ex)
 
+    Public last_error_send_email As String = ""
+
     'begin processing one request
     Public Shared Sub run(Optional context As HttpContext = Nothing)
         If context Is Nothing Then context = HttpContext.Current
@@ -998,7 +1000,9 @@ Public Class FW
 
         Catch ex As Exception
             result = False
-            logger(LogLevel.ERROR, "send_email error:", ex.Message)
+            last_error_send_email = ex.Message
+            If ex.InnerException IsNot Nothing Then last_error_send_email &= " " & ex.InnerException.Message
+            logger(LogLevel.ERROR, "send_email error:", last_error_send_email)
         Finally
             If message IsNot Nothing Then message.Dispose() 'important, as this will close any opened attachment files
         End Try

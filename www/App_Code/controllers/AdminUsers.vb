@@ -222,9 +222,8 @@ Public Class AdminUsersController
         Dim ps As New Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        model.sendPwdReset(id)
-
-        ps("success") = True
+        ps("success") = model.sendPwdReset(id)
+        ps("err_msg") = fw.last_error_send_email
         ps("_json") = True
         Return ps
     End Function
