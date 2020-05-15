@@ -1004,8 +1004,14 @@ Public Class DevManageController
         Dim fields As ArrayList = entity("fields")
         If fields Is Nothing Then
             'TODO deprecate reading from db, always use entity info
-            Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            Dim db As DB
+            If entity("db_config") > "" Then
+                db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            Else
+                db = New DB(fw)
+            End If
             fields = db.load_table_schema_full(table_name)
+            If Not entity.ContainsKey("is_fw") Then entity("is_fw") = True 'TODO actually detect if there any fields to be normalized
             Dim atables = db.tables()
             For Each tbl As String In atables
                 tables(tbl) = New Hashtable
@@ -1029,6 +1035,10 @@ Public Class DevManageController
         Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
             logger("field name=", fld("name"), fld)
+
+            If fld("fw_name") = "" Then fld("fw_name") = Utils.name2fw(fld("name")) 'name using fw standards
+            If fld("iname") = "" Then fld("iname") = name2human(fld("name")) 'name using fw standards
+
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("iname")
             If Not is_fw Then
@@ -1285,7 +1295,7 @@ Public Class DevManageController
         config("view_list_defaults") = ""
         For i = 0 To fields.Count - 1
             If fields(i)("is_identity") = "1" Then Continue For
-            If fields(i)("fw_type") = "varchar" AndAlso fields(i)("maxlen") <= 0 Then Continue For
+            If fields(i)("fw_type") = "varchar" AndAlso Utils.f2int(fields(i)("maxlen")) <= 0 Then Continue For
             If is_fw Then
                 If fields(i)("name") = "add_time" OrElse fields(i)("name") = "add_users_id" OrElse fields(i)("name") = "upd_time" OrElse fields(i)("name") = "upd_users_id" Then Continue For
                 config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("name")
