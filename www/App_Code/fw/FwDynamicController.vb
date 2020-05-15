@@ -293,7 +293,7 @@ Public Class FwDynamicController
 
 
     '********************* support for autocomlete related items
-    Public Function AutocompleteAction() As Hashtable
+    Public Overridable Function AutocompleteAction() As Hashtable
         If model_related Is Nothing Then Throw New ApplicationException("No model_related defined")
         Dim items As ArrayList = model_related.getAutocompleteList(reqs("q"))
 
@@ -301,7 +301,7 @@ Public Class FwDynamicController
     End Function
 
     '********************* support for customizable list screen
-    Public Sub UserViewsAction(Optional form_id As String = "")
+    Public Overridable Sub UserViewsAction(Optional form_id As String = "")
         Dim ps As New Hashtable
 
         Dim rows = getViewListArr(getViewListUserFields(), True) 'list all fields
@@ -315,7 +315,7 @@ Public Class FwDynamicController
         fw.parser("/common/list/userviews", ps)
     End Sub
 
-    Public Sub SaveUserViewsAction()
+    Public Overridable Sub SaveUserViewsAction()
         Dim fld As Hashtable = reqh("fld")
         Dim success = True
 
@@ -351,7 +351,7 @@ Public Class FwDynamicController
     ''' <param name="item"></param>
     ''' <param name="ps"></param>
     ''' <returns></returns>
-    Public Function prepareShowFields(item As Hashtable, ps As Hashtable) As ArrayList
+    Public Overridable Function prepareShowFields(item As Hashtable, ps As Hashtable) As ArrayList
         Dim id = Utils.f2int(item("id"))
 
         Dim fields As ArrayList = Me.config("show_fields")
@@ -418,7 +418,7 @@ Public Class FwDynamicController
         Return fields
     End Function
 
-    Public Function prepareShowFormFields(item As Hashtable, ps As Hashtable) As ArrayList
+    Public Overridable Function prepareShowFormFields(item As Hashtable, ps As Hashtable) As ArrayList
         Dim id = Utils.f2int(item("id"))
 
         Dim fields As ArrayList = Me.config("showform_fields")
@@ -506,7 +506,7 @@ Public Class FwDynamicController
     End Function
 
     'auto-process fields BEFORE record saved to db
-    Protected Sub processSaveShowFormFields(id As Integer, fields As Hashtable)
+    Protected Overridable Sub processSaveShowFormFields(id As Integer, fields As Hashtable)
         Dim item As Hashtable = reqh("item")
 
         Dim showform_fields = _fieldsToHash(Me.config("showform_fields"))
@@ -542,7 +542,7 @@ Public Class FwDynamicController
     End Sub
 
     'auto-process fields AFTER record saved to db
-    Protected Sub processSaveShowFormFieldsAfter(id As Integer, fields As Hashtable)
+    Protected Overridable Sub processSaveShowFormFieldsAfter(id As Integer, fields As Hashtable)
 
         'for now we just look if we have att_links_edit field and update att links
         For Each def As Hashtable In Me.config("showform_fields")
