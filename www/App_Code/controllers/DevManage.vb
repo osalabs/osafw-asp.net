@@ -836,7 +836,7 @@ Public Class DevManageController
                     fld_iname = fld
                 End If
 
-                If Regex.IsMatch(fld("name"), "\W", RegexOptions.IgnoreCase) Then
+                If Regex.IsMatch(fld("name"), "^[\w_]", RegexOptions.IgnoreCase) Then
                     'normalize names only if at least one field contains non-alphanumeric chars
                     is_normalize_names = True
                 End If
