@@ -10,7 +10,10 @@ Public Class Users
     'ACL constants
     Public Const ACL_VISITOR As Integer = -1
     Public Const ACL_MEMBER As Integer = 0
-    Public Const ACL_ADMIN As Integer = 100
+    Public Const ACL_EMPLOYEE As Integer = 50
+    Public Const ACL_MANAGER As Integer = 80
+    Public Const ACL_ADMIN As Integer = 90
+    Public Const ACL_SITEADMIN As Integer = 100
 
     Private ReadOnly table_menu_items As String = "menu_items"
 

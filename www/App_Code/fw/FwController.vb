@@ -391,7 +391,7 @@ Public MustInherit Class FwController
             If Me.list_filter("status") > "" Then
                 Dim status = Utils.f2int(Me.list_filter("status"))
                 'if want to see trashed and not admin - just show active
-                If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then status = 0
+                If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_SITEADMIN, False) Then status = 0
                 Me.list_where &= " and " & db.q_ident(model0.field_status) & "=" & db.qi(status)
             Else
                 Me.list_where &= " and " & db.q_ident(model0.field_status) & "<>127 " 'by default - show all non-deleted
