@@ -419,7 +419,7 @@ window.fw={
         $.each(errors,function(key, errcode) {
           var $input = $f.find('[name="item['+key+']"],[name="'+key+'"]');
           if ($input.length){
-            $input.closest('.form-group').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
+            $input.closest('.form-group, .form-row').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
             $input.addClass('is-invalid'); //mark input itself
             if (errcode!==true && errcode.length){
               var $p=$input.parent();
