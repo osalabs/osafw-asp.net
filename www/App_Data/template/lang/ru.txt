@@ -1,1 +1,2 @@
+Main Dashboard === Дашборд
 My Profile === Мои Настройки

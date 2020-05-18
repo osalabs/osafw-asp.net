@@ -1,9 +1,9 @@
 <div class="btn-group">
   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    <i class="glyphicon glyphicon-flag"></i> Add to List
+    <i class="glyphicon glyphicon-flag"></i> `Add to List`
   </button>
   <div class="dropdown-menu">
-    <a class="dropdown-item on-create-userlist" href="#">Create New List</a>
+    <a class="dropdown-item on-create-userlist" href="#">`Create New List`</a>
     <div class="dropdown-divider"></div>
     <~mylists repeat inline>
       <a class="dropdown-item on-toggle-userlist" href="<~/my/lists/url>/(ToggleList)/<~id>?item_id=<~item_id>"><i class="glyphicon glyphicon-flag<~/common/hide unless="is_checked">"></i> <~iname></a>
