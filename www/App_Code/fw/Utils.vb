@@ -220,6 +220,51 @@ Public Class Utils
         Return result.ToString()
     End Function
 
+    ''' <summary>
+    ''' helper for importing csv files. Example:
+    '''    Utils.importCSV(fw, AddressOf importer, "c:\import.csv")
+    '''    Sub importer(row as Hashtable)
+    '''       ...your custom import code
+    '''    End Sub
+    ''' </summary>
+    ''' <param name="fw">fw instance</param>
+    ''' <param name="callback">callback to custom code</param>
+    ''' <param name="filepath">.csv file name to import</param>
+    Public Shared Sub importCSV(fw As FW, callback As Action(Of Hashtable), filepath As String)
+        Dim dir = Path.GetDirectoryName(filepath)
+        Dim filename = Path.GetFileName(filepath)
+
+        Dim ConnectionString As String = "Provider=Microsoft.ACE.OLEDB.12.0;" +
+                                "Data Source=" & dir & ";" &
+                                "Extended Properties=""Text;HDR=Yes;FORMAT=Delimited"";"
+
+        Using cn As New Data.OleDb.OleDbConnection(ConnectionString)
+            cn.Open()
+
+            Dim WorkSheetName = filename
+            'quote as table name
+            WorkSheetName = Replace(WorkSheetName, "[", "")
+            WorkSheetName = Replace(WorkSheetName, "]", "")
+
+            Dim sql = "select * from [" & WorkSheetName & "]"
+            Dim dbcomm = New Data.OleDb.OleDbCommand(sql, cn)
+            Dim dbread As Data.Common.DbDataReader = dbcomm.ExecuteReader()
+
+            While dbread.Read()
+                Dim row As New Hashtable
+                For i = 0 To dbread.FieldCount - 1
+                    Dim value As String = dbread(i).ToString()
+                    Dim name As String = dbread.GetName(i).ToString()
+                    row.Add(name, value)
+                Next
+
+                'logger(h)
+                callback(row)
+            End While
+        End Using
+    End Sub
+
+
     Public Shared Function toCSVRow(row As Hashtable, fields As Array) As String
         Dim result As New StringBuilder
         Dim is_first = True
