@@ -20,6 +20,7 @@
       <div class="col">
         <input id="ehack" name="item[ehack]" maxlength="128" value="<~i[email]>" type="text" class="form-control" autocomplete="off">
         <p class="err-EXISTS">`Such email already exists in our database`</p>
+        <p class="err-WRONG">`Invalid email address`</p>
       </div>
     </div>
     <div class="form-row">
@@ -31,7 +32,7 @@
         </~chpwd_block>
       </div>
       <~pwd_block if="i[id]" inline>
-        <div class="col-md-2">
+        <div class="col">
             <button type="button" class="btn btn-default on-send-pwd">`Send reset link`</button>
         </div>
         </~pwd_block>
@@ -39,7 +40,7 @@
 
     <div class="form-row">
       <label class="col-form-label required col-md-3" for="access_level">`Access level`</label>
-      <div class="col-md-5">
+      <div class="col-md-4">
             <select id="access_level" name="item[access_level]" class="form-control" autocomplete="off">
                 <option value=""> - `select` -
                 <~/common/sel/access_level.sel select="i[access_level]">
@@ -52,9 +53,7 @@
       <div class="col">
         <input id="fname" name="item[fname]" maxlength="64" value="<~i[fname]>" type="text" class="form-control" autocomplete="off">
       </div>
-    </div>
-    <div class="form-row">
-      <label class="col-form-label col-md-3" for="lname">`Last Name`</label>
+      <label class="col-form-label col-md-2 col-xl-1" for="lname">`Last Name`</label>
       <div class="col">
         <input id="lname" name="item[lname]" maxlength="64" value="<~i[lname]>" type="text" class="form-control" autocomplete="off">
       </div>
@@ -80,22 +79,18 @@
     </div>
     <div class="form-row">
       <label class="col-form-label col-md-3" for="city">`City`</label>
-      <div class="col-md-5">
+      <div class="col-md-3">
         <input id="city" name="item[city]" maxlength="64" value="<~i[city]>" type="text" class="form-control">
       </div>
-    </div>
-    <div class="form-row">
-      <label class="col-form-label col-md-3" for="state">`State`</label>
-      <div class="col-md-4">
+      <label class="col-form-label col-md-1" for="state">`State`</label>
+      <div class="col-md-2">
         <select id="state" name="item[state]" class="form-control">
           <option value=""></option>
           <~/common/sel/state.sel select="i[state]">
         </select>
       </div>
-    </div>
-    <div class="form-row">
-      <label class="col-form-label col-md-3" for="zip">`Zip`</label>
-      <div class="col-md-3">
+      <label class="col-form-label col-md-1" for="zip">`Zip`</label>
+      <div class="col-md-2">
         <input id="zip" name="item[zip]" maxlength="16" value="<~i[zip]>" type="text" class="form-control">
       </div>
     </div>
@@ -109,17 +104,17 @@
 
     <div class="form-row">
       <label class="col-form-label col-md-3" for="att_id">`Picture`</label>
-      <div class="col-md-3">
+      <div class="col-3">
         <p><button id="att_id" type="button" class="btn btn-default on-select-att" data-att-category="users">`Select/Upload`</button></p>
       </div>
-      <div class="col-lg-4 col-md-6">
+      <div class="col-3 col-md-3 col-lg-2 col-xl-1">
         <div class="card text-center att-info" <~/common/display_none unless="att">>
           <input name="item[att_id]" value="<~i[att_id]>" type="hidden">
           <img class="card-img-top" src="<~/att/url>/<~att[id]>?preview=1&size=s" alt="">
           <div class="card-body text-nooverflow">
             <p class="card-text att-iname"><~att[iname]></p>
-            <a href="<~/att/url>/<~att[id]>" target="_blank" class="btn btn-default"><i class="glyphicon glyphicon-download"></i> `Download`</a>
-            <button type="button" class="btn btn-default on-remove-att"><i class="glyphicon glyphicon-remove"></i> `Remove`</button>
+            <a href="<~/att/url>/<~att[id]>" target="_blank" class="btn btn-default btn-sm" title="`Download`"><i class="glyphicon glyphicon-download"></i></a>
+            <button type="button" class="btn btn-default btn-sm on-remove-att" title="`Remove`"><i class="glyphicon glyphicon-remove text-danger"></i></button>
           </div>
         </div>
       </div>
@@ -127,6 +122,13 @@
 
 
     <~/common/form/status if="id">
+    <div class="form-row">
+      <label class="col-form-label col-md-3" for="status">`Last Login Time`</label>
+      <div class="col-md-3">
+        <p class="form-control-plaintext"><~i[login_time] date="long"></p>
+      </div>
+    </div>
+
     <~/common/form/added if="id">
     <~/common/form/updated if="i[upd_users_id]">
     <~/common/form/actions_std>

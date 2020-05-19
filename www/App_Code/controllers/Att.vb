@@ -16,7 +16,8 @@ Public Class AttController
     End Sub
 
     Public Sub IndexAction()
-        Throw New ApplicationException("No file specified")
+        fw.redirect(fw.config("ASSETS_URL") & "/img/0.gif")
+        'Throw New ApplicationException("No file specified")
     End Sub
 
     Public Sub DownloadAction(Optional ByVal form_id As String = "")

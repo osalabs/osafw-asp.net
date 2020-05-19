@@ -84,7 +84,7 @@ CREATE TABLE users (
   phone                 NVARCHAR(16) NOT NULL DEFAULT '',
   lang                  NVARCHAR(16) NOT NULL DEFAULT 'en', -- user interface language
 
-  notes                 NVARCHAR(MAX),
+  idesc                 NVARCHAR(MAX),
   att_id                INT NULL FOREIGN KEY REFERENCES att(id),                -- avatar
 
   login_time            DATETIME2,
