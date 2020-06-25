@@ -153,6 +153,14 @@ Public Class DB
         If Me.conn IsNot Nothing Then Me.conn.Close()
     End Sub
 
+    ''' <summary>
+    ''' return internal connection object
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function getConnection() As DbConnection
+        Return conn
+    End Function
+
     Public Function createConnection(connstr As String, Optional dbtype As String = "SQL") As DbConnection
         Dim result As DbConnection
 
