@@ -219,7 +219,7 @@ Public MustInherit Class FwController
     ''' <param name="fields">field names required to be non-empty (trim used)</param>
     ''' <returns>true if all required field names non-empty</returns>
     ''' <remarks>also set global fw.ERR[REQUIRED]=true in case of validation error</remarks>
-    Public Overloads Function validateRequired(item As Hashtable, fields As Array) As Boolean
+    Public Overridable Overloads Function validateRequired(item As Hashtable, fields As Array) As Boolean
         Dim result As Boolean = True
         If item IsNot Nothing AndAlso IsArray(fields) AndAlso fields.Length > 0 Then
             For Each fld As String In fields
@@ -235,7 +235,7 @@ Public MustInherit Class FwController
         Return result
     End Function
     'same as above but fields param passed as a qw string
-    Public Overloads Function validateRequired(item As Hashtable, fields As String) As Boolean
+    Public Overridable Overloads Function validateRequired(item As Hashtable, fields As String) As Boolean
         Return validateRequired(item, Utils.qw(fields))
     End Function
 
@@ -246,7 +246,7 @@ Public MustInherit Class FwController
     ''' <remarks>throw ValidationException exception if global ERR non-empty.
     ''' Also set global ERR[INVALID] if ERR non-empty, but ERR[REQUIRED] not true
     ''' </remarks>
-    Public Sub validateCheckResult(Optional result As Boolean = True)
+    Public Overridable Sub validateCheckResult(Optional result As Boolean = True)
         If fw.FERR.ContainsKey("REQUIRED") AndAlso fw.FERR("REQUIRED") Then
             result = False
         End If
@@ -491,7 +491,7 @@ Public MustInherit Class FwController
 
     End Sub
 
-    Public Sub setFormError(ex As Exception)
+    Public Overridable Sub setFormError(ex As Exception)
         'if Validation exception - don't set general error message - specific validation message set in templates
         If Not (TypeOf ex Is ValidationException) Then
             fw.G("err_msg") = ex.Message

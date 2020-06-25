@@ -192,7 +192,7 @@ Public Class FwDynamicController
         Me.validateCheckResult()
     End Sub
 
-    Protected Function validateRequiredDynamic(item As Hashtable) As Boolean
+    Protected Overridable Function validateRequiredDynamic(item As Hashtable) As Boolean
         Dim result = True
         If String.IsNullOrEmpty(Me.required_fields) AndAlso is_dynamic_showform Then
             'if required_fields not defined - fill from showform_fields
@@ -210,7 +210,7 @@ Public Class FwDynamicController
     End Function
 
     'simple validation via showform_fields
-    Protected Function validateSimpleDynamic(id As Integer, item As Hashtable) As Boolean
+    Protected Overridable Function validateSimpleDynamic(id As Integer, item As Hashtable) As Boolean
         Dim result As Boolean = True
         Dim fields As ArrayList = Me.config("showform_fields")
         For Each def As Hashtable In fields
