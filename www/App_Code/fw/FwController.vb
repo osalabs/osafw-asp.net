@@ -302,7 +302,14 @@ Public MustInherit Class FwController
             Next
             orderby = Join(aorderby, ", ")
         Else
-            orderby = db.q_ident(orderby)
+            'quote
+            Dim aorderby As String() = Split(orderby, ",")
+            For i As Integer = 0 To aorderby.Length - 1
+                Dim field As String = Nothing, order As String = Nothing
+                Utils.split2("\s+", Trim(aorderby(i)), field, order)
+                aorderby(i) = db.q_ident(field) & " " & order
+            Next
+            orderby = Join(aorderby, ", ")
         End If
         Me.list_orderby = orderby
     End Sub
@@ -531,7 +538,7 @@ Public MustInherit Class FwController
         Dim is_add_new = reqi("is_add_more")
 
         If id > "" Then
-            If is_add_new = 1 Then
+            If is_add_new > 0 Then
                 'if Submit and Add New - redirect to new
                 url = Me.base_url & "/new"
                 url_q = "&copy_id=" & id
