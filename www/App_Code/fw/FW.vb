@@ -41,6 +41,18 @@ Public Enum LogLevel As Integer
     ALL             'just log everything
 End Enum
 
+Public Class FwRoute
+    Public controller_path As String 'store /Prefix/Controller - to use in parser a default path for templates
+    Public method As String
+    Public controller As String
+    Public action As String
+    Public action_raw As String
+    Public id As String
+    Public action_more As String
+    Public format As String
+    Public params As ArrayList
+End Class
+
 'Main Framework Class
 Public Class FW
     Implements IDisposable
@@ -65,14 +77,7 @@ Public Class FW
     Public resp As HttpResponse
 
     Public request_url As String 'current request url (relative to application url)
-    Public cur_controller_path As String 'store /Prefix/Controller - to use in parser a default path for templates
-    Public cur_method As String
-    Public cur_controller As String
-    Public cur_action As String
-    Public cur_id As String
-    Public cur_action_more As String
-    Public cur_format As String
-    Public cur_params As ArrayList
+    Public route As New FwRoute
 
     Public cache_control As String = "no-cache" 'cache control header to add to pages, controllers can change per request
     Public is_log_events As Boolean = True 'can be set temporarly to false to prevent event logging (for batch process for ex)
@@ -166,9 +171,9 @@ Public Class FW
     ''' <returns>"pjax", "json" or empty (usual html page)</returns>
     Public Function get_response_expected_format() As String
         Dim result As String = ""
-        If Me.cur_format = "json" OrElse Me.req.AcceptTypes IsNot Nothing AndAlso Array.IndexOf(Me.req.AcceptTypes, "application/json") >= Me.req.AcceptTypes.GetLowerBound(0) Then
+        If Me.route.format = "json" OrElse Me.req.AcceptTypes IsNot Nothing AndAlso Array.IndexOf(Me.req.AcceptTypes, "application/json") >= Me.req.AcceptTypes.GetLowerBound(0) Then
             result = "json"
-        ElseIf Me.cur_format = "pjax" OrElse Me.req.Headers("X-Requested-With") > "" Then
+        ElseIf Me.route.format = "pjax" OrElse Me.req.Headers("X-Requested-With") > "" Then
             result = "pjax"
         End If
         Return result
@@ -182,9 +187,7 @@ Public Class FW
         Return get_response_expected_format() = "json"
     End Function
 
-    Public Sub dispatch()
-        Dim start_time As DateTime = DateTime.Now
-
+    Public Sub getRoute()
         Dim url As String = req.Path
         'cut the App path from the begin
         If req.ApplicationPath > "/" Then url = Replace(url, req.ApplicationPath, "")
@@ -194,33 +197,36 @@ Public Class FW
         logger(LogLevel.TRACE, "REQUESTING ", url)
 
         'init defaults
-        cur_controller = "Home"
-        cur_action = "Index"
-        cur_id = ""
-        cur_action_more = ""
-        cur_format = "html"
-        cur_method = req.RequestType
-        cur_params = New ArrayList
+        route = New FwRoute With {
+            .controller = "Home",
+            .action = "Index",
+            .action_raw = "",
+            .id = "",
+            .action_more = "",
+            .format = "html",
+            .method = req.RequestType,
+            .params = New ArrayList
+        }
 
         'check if method override exits
         If FORM.ContainsKey("_method") Then
-            If METHOD_ALLOWED.ContainsKey(FORM("_method")) Then cur_method = FORM("_method")
+            If METHOD_ALLOWED.ContainsKey(FORM("_method")) Then route.method = FORM("_method")
         End If
-        If cur_method = "HEAD" Then cur_method = "GET" 'for website processing HEAD is same as GET, IIS will send just headers
+        If route.method = "HEAD" Then route.method = "GET" 'for website processing HEAD is same as GET, IIS will send just headers
 
-        Dim cur_action_raw As String = ""
+
         Dim controller_prefix As String = ""
 
         'process config special routes (redirects, rewrites)
         Dim routes As Hashtable = Me.config("routes")
         Dim is_routes_found As Boolean = False
-        For Each route As String In routes.Keys
-            If url = route Then
-                Dim rdest As String = routes(route)
+        For Each route_key As String In routes.Keys
+            If url = route_key Then
+                Dim rdest As String = routes(route_key)
                 Dim m1 As Match = Regex.Match(rdest, "^(?:(GET|POST|PUT|DELETE) )?(.+)")
                 If m1.Success Then
                     'override method
-                    If m1.Groups(1).Value > "" Then cur_method = m1.Groups(1).Value
+                    If m1.Groups(1).Value > "" Then route.method = m1.Groups(1).Value
                     If m1.Groups(2).Value.Substring(0, 1) = "/" Then
                         'if started from / - this is redirect url
                         url = m1.Groups(2).Value
@@ -228,8 +234,8 @@ Public Class FW
                         'it's a direct class-method to call, no further REST processing required
                         is_routes_found = True
                         Dim sroute As String() = Split(m1.Groups(2).Value, "::", 2)
-                        cur_controller = Utils.routeFixChars(sroute(0))
-                        If UBound(sroute) > 0 Then cur_action_raw = sroute(1)
+                        route.controller = Utils.routeFixChars(sroute(0))
+                        If UBound(sroute) > 0 Then route.action_raw = sroute(1)
                         Exit For
                     End If
                 Else
@@ -241,12 +247,12 @@ Public Class FW
         If Not is_routes_found Then
             'TODO move prefix cut to separate func
             Dim prefix_rx As String = FwConfig.getRoutePrefixesRX()
-            cur_controller_path = ""
+            route.controller_path = ""
             Dim m_prefix As Match = Regex.Match(url, prefix_rx)
             If m_prefix.Success Then
                 'convert from /Some/Prefix to SomePrefix
                 controller_prefix = Utils.routeFixChars(m_prefix.Groups(1).Value)
-                cur_controller_path = "/" & controller_prefix
+                route.controller_path = "/" & controller_prefix
                 url = m_prefix.Groups(2).Value
             End If
 
@@ -265,94 +271,100 @@ Public Class FW
             ' /controller/(Action)              Action    call for arbitrary action from the controller
             Dim m As Match = Regex.Match(url, "^/([^/]+)(?:/(new|\.\w+)|/([\d\w_-]+)(?:\.(\w+))?(?:/(edit|delete))?)?/?$")
             If m.Success Then
-                cur_controller = Utils.routeFixChars(m.Groups(1).Value)
-                If String.IsNullOrEmpty(cur_controller) Then Throw New Exception("Wrong request")
+                route.controller = Utils.routeFixChars(m.Groups(1).Value)
+                If String.IsNullOrEmpty(route.controller) Then Throw New Exception("Wrong request")
 
                 'capitalize first letter - TODO - URL-case-insensitivity should be an option!
-                cur_controller = cur_controller.Substring(0, 1).ToUpper + cur_controller.Substring(1)
-                cur_id = m.Groups(3).Value
-                cur_format = m.Groups(4).Value
-                cur_action_more = m.Groups(5).Value
+                route.controller = route.controller.Substring(0, 1).ToUpper + route.controller.Substring(1)
+                route.id = m.Groups(3).Value
+                route.format = m.Groups(4).Value
+                route.action_more = m.Groups(5).Value
                 If m.Groups(2).Value > "" Then
                     If m.Groups(2).Value = "new" Then
-                        cur_action_more = "new"
+                        route.action_more = "new"
                     Else
-                        cur_format = m.Groups(2).Value.Substring(1)
+                        route.format = m.Groups(2).Value.Substring(1)
                     End If
                 End If
 
                 'match to method (GET/POST)
-                If cur_method = "GET" Then
-                    If cur_action_more = "new" Then
-                        cur_action_raw = "ShowForm"
-                    ElseIf cur_id > "" And cur_action_more = "edit" Then
-                        cur_action_raw = "ShowForm"
-                    ElseIf cur_id > "" And cur_action_more = "delete" Then
-                        cur_action_raw = "ShowDelete"
-                    ElseIf cur_id > "" Then
-                        cur_action_raw = "Show"
+                If route.method = "GET" Then
+                    If route.action_more = "new" Then
+                        route.action_raw = "ShowForm"
+                    ElseIf route.id > "" And route.action_more = "edit" Then
+                        route.action_raw = "ShowForm"
+                    ElseIf route.id > "" And route.action_more = "delete" Then
+                        route.action_raw = "ShowDelete"
+                    ElseIf route.id > "" Then
+                        route.action_raw = "Show"
                     Else
-                        cur_action_raw = "Index"
+                        route.action_raw = "Index"
                     End If
-                ElseIf cur_method = "POST" Then
-                    If cur_id > "" Then
+                ElseIf route.method = "POST" Then
+                    If route.id > "" Then
                         If req.Form.Count > 0 OrElse req.InputStream.Length > 0 Then 'POST form or body payload
-                            cur_action_raw = "Save"
+                            route.action_raw = "Save"
                         Else
-                            cur_action_raw = "Delete"
+                            route.action_raw = "Delete"
                         End If
                     Else
-                        cur_action_raw = "Save"
+                        route.action_raw = "Save"
                     End If
-                ElseIf cur_method = "PUT" Then
-                    If cur_id > "" Then
-                        cur_action_raw = "Save"
+                ElseIf route.method = "PUT" Then
+                    If route.id > "" Then
+                        route.action_raw = "Save"
                     Else
-                        cur_action_raw = "SaveMulti"
+                        route.action_raw = "SaveMulti"
                     End If
-                ElseIf cur_method = "DELETE" And cur_id > "" Then
-                    cur_action_raw = "Delete"
+                ElseIf route.method = "DELETE" And route.id > "" Then
+                    route.action_raw = "Delete"
                 Else
                     logger(LogLevel.WARN, "Wrong Route Params")
-                    logger(LogLevel.WARN, cur_method)
+                    logger(LogLevel.WARN, route.method)
                     logger(LogLevel.WARN, url)
                     err_msg("Wrong Route Params")
                     Exit Sub
                 End If
 
-                logger(LogLevel.TRACE, "REST controller.action=", cur_controller, ".", cur_action_raw)
+                logger(LogLevel.TRACE, "REST controller.action=", route.controller, ".", route.action_raw)
 
             Else
                 'otherwise detect controller/action/id.format/more_action
                 Dim parts As Array = Split(url, "/")
                 'logger(parts)
                 Dim ub As Integer = UBound(parts)
-                If ub >= 1 Then cur_controller = Utils.routeFixChars(parts(1))
-                If ub >= 2 Then cur_action_raw = parts(2)
-                If ub >= 3 Then cur_id = parts(3)
-                If ub >= 4 Then cur_action_more = parts(4)
+                If ub >= 1 Then route.controller = Utils.routeFixChars(parts(1))
+                If ub >= 2 Then route.action_raw = parts(2)
+                If ub >= 3 Then route.id = parts(3)
+                If ub >= 4 Then route.action_more = parts(4)
             End If
         End If
 
-        cur_controller_path = cur_controller_path & "/" & cur_controller
+        route.controller_path = route.controller_path & "/" & route.controller
         'add controller prefix if any
-        cur_controller = controller_prefix & cur_controller
-        cur_action = Utils.routeFixChars(cur_action_raw)
-        If String.IsNullOrEmpty(cur_action) Then cur_action = "Index"
+        route.controller = controller_prefix & route.controller
+        route.action = Utils.routeFixChars(route.action_raw)
+        If String.IsNullOrEmpty(route.action) Then route.action = "Index"
+    End Sub
 
-        Dim args() As [String] = {cur_id} 'TODO - add rest of possible params from parts
+    Public Sub dispatch()
+        Dim start_time As DateTime = DateTime.Now
+
+        Me.getRoute()
+
+        Dim args() As [String] = {route.id} 'TODO - add rest of possible params from parts
 
         Try
-            Dim auth_check_controller = _auth(cur_controller, cur_action)
+            Dim auth_check_controller = _auth(route.controller, route.action)
 
-            Dim calledType As Type = Type.GetType(cur_controller & "Controller", False, True) 'case ignored
+            Dim calledType As Type = Type.GetType(route.controller & "Controller", False, True) 'case ignored
             If calledType Is Nothing Then
-                logger(LogLevel.DEBUG, "No controller found for controller=[", cur_controller, "], using default Home")
+                logger(LogLevel.DEBUG, "No controller found for controller=[", route.controller, "], using default Home")
                 'no controller found - call default controller with default action
                 calledType = Type.GetType("HomeController", True)
-                cur_controller_path = "/Home"
-                cur_controller = "Home"
-                cur_action = "NotFound"
+                route.controller_path = "/Home"
+                route.controller = "Home"
+                route.action = "NotFound"
             Else
                 'controller found
                 If auth_check_controller = 1 Then
@@ -367,11 +379,11 @@ Public Class FW
                 End If
             End If
 
-            logger(LogLevel.TRACE, "TRY controller.action=", cur_controller, ".", cur_action)
+            logger(LogLevel.TRACE, "TRY controller.action=", route.controller, ".", route.action)
 
-            Dim mInfo As MethodInfo = calledType.GetMethod(cur_action & "Action")
+            Dim mInfo As MethodInfo = calledType.GetMethod(route.action & "Action")
             If IsNothing(mInfo) Then
-                logger(LogLevel.DEBUG, "No method found for controller.action=[", cur_controller, ".", cur_action, "], checking route_default_action")
+                logger(LogLevel.DEBUG, "No method found for controller.action=[", route.controller, ".", route.action, "], checking route_default_action")
                 'no method found - try to get default action
                 Dim what_to_do As Boolean = False
                 Dim pInfo As FieldInfo = calledType.GetField("route_default_action")
@@ -379,19 +391,19 @@ Public Class FW
                     Dim pvalue As String = pInfo.GetValue(Nothing)
                     If pvalue = "index" Then
                         ' = index - use IndexAction for unknown actions
-                        cur_action = "Index"
-                        mInfo = calledType.GetMethod(cur_action & "Action")
+                        route.action = "Index"
+                        mInfo = calledType.GetMethod(route.action & "Action")
                         what_to_do = True
                     ElseIf pvalue = "show" Then
                         ' = show - assume action is id and use ShowAction
-                        If cur_id > "" Then cur_params.Add(cur_id) 'cur_id is a first param in this case. TODO - add all rest of params from split("/") here
-                        If cur_action_more > "" Then cur_params.Add(cur_action_more) 'cur_action_more is a second param in this case
+                        If route.id > "" Then route.params.Add(route.id) 'route.id is a first param in this case. TODO - add all rest of params from split("/") here
+                        If route.action_more > "" Then route.params.Add(route.action_more) 'route.action_more is a second param in this case
 
-                        cur_id = cur_action_raw
-                        args(0) = cur_id
+                        route.id = route.action_raw
+                        args(0) = route.id
 
-                        cur_action = "Show"
-                        mInfo = calledType.GetMethod(cur_action & "Action")
+                        route.action = "Show"
+                        mInfo = calledType.GetMethod(route.action & "Action")
                         what_to_do = True
                     End If
                 End If
@@ -399,22 +411,22 @@ Public Class FW
             End If
 
             'save to globals so it can be used in templates
-            G("controller") = cur_controller
-            G("action") = cur_action
-            G("controller.action") = cur_controller & "." & cur_action
+            G("controller") = route.controller
+            G("action") = route.action
+            G("controller.action") = route.controller & "." & route.action
 
-            logger(LogLevel.TRACE, "FINAL controller.action=", cur_controller, ".", cur_action)
-            'logger(LogLevel.TRACE, "cur_method=" , cur_method)
-            'logger(LogLevel.TRACE, "cur_controller=" , cur_controller)
-            'logger(LogLevel.TRACE, "cur_action=" , cur_action)
-            'logger(LogLevel.TRACE, "cur_format=" , cur_format)
-            'logger(LogLevel.TRACE, "cur_id=" , cur_id)
-            'logger(LogLevel.TRACE, "cur_action_more=" , cur_action_more)
+            logger(LogLevel.TRACE, "FINAL controller.action=", route.controller, ".", route.action)
+            'logger(LogLevel.TRACE, "route.method=" , route.method)
+            'logger(LogLevel.TRACE, "route.controller=" , route.controller)
+            'logger(LogLevel.TRACE, "route.action=" , route.action)
+            'logger(LogLevel.TRACE, "route.format=" , route.format)
+            'logger(LogLevel.TRACE, "route.id=" , route.id)
+            'logger(LogLevel.TRACE, "route.action_more=" , route.action_more)
 
-            logger(LogLevel.INFO, "REQUEST START [", cur_method, " ", url, "] => ", cur_controller, ".", cur_action)
+            logger(LogLevel.INFO, "REQUEST START [", route.method, " ", request_url, "] => ", route.controller, ".", route.action)
 
             If mInfo Is Nothing Then
-                'if no method - just call FW.parser(hf) - show template from /cur_controller/cur_action dir
+                'if no method - just call FW.parser(hf) - show template from /route.controller/route.action dir
                 logger(LogLevel.DEBUG, "DEFAULT PARSER")
                 parser(New Hashtable)
             Else
@@ -489,7 +501,7 @@ Public Class FW
         End Try
 
         Dim end_timespan As TimeSpan = DateTime.Now - start_time
-        logger(LogLevel.INFO, "REQUEST END   [", cur_method, " ", url, "] in ", end_timespan.TotalSeconds, "s, ", String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds), "/s, ", DB.SQL_QUERY_CTR, " SQL")
+        logger(LogLevel.INFO, "REQUEST END   [", route.method, " ", request_url, "] in ", end_timespan.TotalSeconds, "s, ", String.Format("{0:0.000}", 1 / end_timespan.TotalSeconds), "/s, ", DB.SQL_QUERY_CTR, " SQL")
     End Sub
 
     'simple auth check based on /controller/action - and rules filled in in Config class
@@ -502,7 +514,7 @@ Public Class FW
         Dim result As Integer = 0
 
         'integrated XSS check - only for POST/PUT/DELETE requests or if it contains XSS param
-        If (FORM.ContainsKey("XSS") OrElse cur_method = "POST" OrElse cur_method = "PUT" OrElse cur_method = "DELETE") _
+        If (FORM.ContainsKey("XSS") OrElse route.method = "POST" OrElse route.method = "PUT" OrElse route.method = "DELETE") _
             AndAlso SESSION("XSS") > "" AndAlso SESSION("XSS") <> FORM("XSS") Then
             'XSS validation failed - check if we are under xss-excluded controller
             Dim no_xss As Hashtable = Me.config("no_xss")
@@ -747,9 +759,9 @@ Public Class FW
         End Using
     End Sub
 
-    'show page from template  /cur_controller/cur_action = parser('/cur_controller/cur_action/', $ps)
+    'show page from template  /route.controller/route.action = parser('/route.controller/route.action/', $ps)
     Public Overloads Sub parser(hf As Hashtable)
-        Me.parser(LCase(cur_controller_path & "/" & cur_action), hf)
+        Me.parser(LCase(route.controller_path & "/" & route.action), hf)
     End Sub
 
     'same as parsert(hf), but with base dir param
@@ -835,18 +847,18 @@ Public Class FW
     End Sub
 
     Public Overloads Sub routeRedirect(ByVal action As String, ByVal controller As String, Optional ByVal args As Object = Nothing)
-        setController(IIf(controller > "", controller, cur_controller), action)
+        setController(IIf(controller > "", controller, route.controller), action)
 
-        Dim calledType As Type = Type.GetType(cur_controller & "Controller", True)
-        Dim mInfo As MethodInfo = calledType.GetMethod(cur_action & "Action")
+        Dim calledType As Type = Type.GetType(route.controller & "Controller", True)
+        Dim mInfo As MethodInfo = calledType.GetMethod(route.action & "Action")
         If IsNothing(mInfo) Then
-            logger(LogLevel.INFO, "No method found for controller.action=[", cur_controller, ".", cur_action, "], displaying static page from related templates")
+            logger(LogLevel.INFO, "No method found for controller.action=[", route.controller, ".", route.action, "], displaying static page from related templates")
             'no method found - set to default Index method
-            'cur_action = "Index"
-            'mInfo = calledType.GetMethod(cur_action & "Action")
+            'route.action = "Index"
+            'mInfo = calledType.GetMethod(route.action & "Action")
 
-            'if no method - show template from /cur_controller/cur_action dir
-            parser("/" & LCase(cur_controller) & "/" & LCase(cur_action), New Hashtable)
+            'if no method - show template from /route.controller/route.action dir
+            parser("/" & LCase(route.controller) & "/" & LCase(route.action), New Hashtable)
         End If
 
         If mInfo IsNot Nothing Then
@@ -856,22 +868,22 @@ Public Class FW
     End Sub
     'same as above just with default controller
     Public Overloads Sub routeRedirect(ByVal action As String, Optional ByVal args As Object = Nothing)
-        routeRedirect(action, cur_controller, args)
+        routeRedirect(action, route.controller, args)
     End Sub
 
     ''' <summary>
-    ''' set cur_controller and optionally cur_action, updates G too
+    ''' set route.controller and optionally route.action, updates G too
     ''' </summary>
     ''' <param name="controller"></param>
     ''' <param name="action"></param>
     Public Sub setController(controller As String, Optional action As String = "")
-        cur_controller = controller
-        If action > "" Then cur_action = action
+        route.controller = controller
+        If action > "" Then route.action = action
 
-        G("controller") = cur_controller
-        G("action") = cur_action
-        G("controller.action") = cur_controller & "." & cur_action
-        'TODO set cur_controller_path too?
+        G("controller") = route.controller
+        G("action") = route.action
+        G("controller.action") = route.controller & "." & route.action
+        'TODO set route.controller_path too?
     End Sub
 
     'Call controller
