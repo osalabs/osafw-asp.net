@@ -80,7 +80,7 @@ Public Class AdminSettingsController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new, "ShowForm", location)
+        Return Me.afterSave(success, id, is_new, "ShowForm", location)
     End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)

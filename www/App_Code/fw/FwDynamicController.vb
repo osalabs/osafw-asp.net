@@ -168,7 +168,7 @@ Public Class FwDynamicController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     ''' <summary>
@@ -260,7 +260,7 @@ Public Class FwDynamicController
 
         model0.delete(id)
         fw.FLASH("onedelete", 1)
-        Return Me.saveCheckResult(True, id)
+        Return Me.afterSave(True, id)
     End Function
 
     Public Overridable Function SaveMultiAction() As Hashtable
@@ -291,7 +291,7 @@ Public Class FwDynamicController
         If is_delete Then fw.FLASH("multidelete", ctr)
         If user_lists_id > 0 Then fw.FLASH("success", ctr & " records added to the list")
 
-        Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
+        Return Me.afterSave(True, New Hashtable From {{"ctr", ctr}})
     End Function
 
 

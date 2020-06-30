@@ -89,7 +89,7 @@ Public Class MyListsController
             fw.redirect(return_url)
         End If
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     Public Function ToggleListAction(form_id As String) As Hashtable

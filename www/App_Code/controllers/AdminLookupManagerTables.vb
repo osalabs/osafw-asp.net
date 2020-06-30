@@ -101,6 +101,6 @@ Public Class AdminLookupManagerTablesController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 End Class

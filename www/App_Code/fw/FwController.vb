@@ -581,20 +581,22 @@ Public MustInherit Class FwController
     ''' <param name="location">redirect to this location if success</param>
     ''' <param name="more_json">added to json response</param>
     ''' <returns></returns>
-    Public Overridable Overloads Function saveCheckResult(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
+    Public Overridable Overloads Function afterSave(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
         If String.IsNullOrEmpty(location) Then location = Me.getReturnLocation(id)
 
         If fw.isJsonExpected() Then
-            Dim ps = New Hashtable From {
-                {"_json", True},
+            Dim ps = New Hashtable
+            ps("_json") = New Hashtable From {
                 {"success", success},
                 {"id", id},
                 {"is_new", is_new},
                 {"location", location},
                 {"err_msg", fw.G("err_msg")}
             }
-            'TODO add ERR field errors to response if any
-            If Not IsNothing(more_json) Then Utils.mergeHash(ps, more_json)
+            'add ERR field errors to response if any
+            If fw.FERR.Count > 0 Then ps("_json")("ERR") = fw.FERR
+
+            If Not IsNothing(more_json) Then Utils.mergeHash(ps("_json"), more_json)
 
             Return ps
         Else
@@ -609,8 +611,8 @@ Public MustInherit Class FwController
         Return Nothing
     End Function
 
-    Public Overridable Overloads Function saveCheckResult(success As Boolean, more_json As Hashtable) As Hashtable
-        Return saveCheckResult(success, "", False, "no_action", "", more_json)
+    Public Overridable Overloads Function afterSave(success As Boolean, more_json As Hashtable) As Hashtable
+        Return afterSave(success, "", False, "no_action", "", more_json)
     End Function
 
     Public Overridable Function setPS(Optional ps As Hashtable = Nothing) As Hashtable

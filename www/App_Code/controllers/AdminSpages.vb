@@ -153,7 +153,7 @@ Public Class AdminSpagesController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)

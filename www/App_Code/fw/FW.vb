@@ -760,8 +760,6 @@ Public Class FW
     '(not for json) to perform redirect - set hf("_redirect")="url"
     'TODO - create another func and call it from call_controller for processing _redirect, ... (non-parsepage) instead of calling parser?
     Public Overloads Sub parser(ByVal bdir As String, hf As Hashtable)
-        If Me.FERR.Count > 0 Then hf("ERR") = Me.FERR 'add errors if any
-
         Dim format As String = Me.get_response_expected_format()
         If format = "json" Then
             If hf.ContainsKey("_json") Then
@@ -793,6 +791,9 @@ Public Class FW
         End If
 
         Me.resp.CacheControl = cache_control
+
+        If Me.FERR.Count > 0 AndAlso Not hf.ContainsKey("ERR") Then hf("ERR") = Me.FERR 'add errors if any
+
         Dim layout As String
         If format = "pjax" Then
             layout = G("PAGE_LAYOUT_PJAX")
