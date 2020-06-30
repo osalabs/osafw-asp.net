@@ -1047,8 +1047,8 @@ Public Class DevManageController
                 hFieldsMapFW(fld("fw_name")) = fld("name")
             End If
 
-            Dim sf As New Hashtable
-            Dim sff As New Hashtable
+            Dim sf As New Hashtable  'show fields
+            Dim sff As New Hashtable 'showform fields
             Dim is_skip = False
             sf("field") = fld("name")
             sf("label") = fld("iname")
@@ -1058,8 +1058,11 @@ Public Class DevManageController
             sff("label") = fld("iname")
 
             If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then
-                sff("required") = True 'if not nullable - required
-                saveFieldsNullable.add(fld("name"))
+                sff("required") = True 'if not nullable and no default - required
+            End If
+
+            If fld("is_nullable") = "1" Then
+                saveFieldsNullable.Add(fld("name"))
             End If
 
             Dim maxlen = Utils.f2int(fld("maxlen"))
