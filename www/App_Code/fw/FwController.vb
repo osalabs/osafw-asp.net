@@ -189,6 +189,10 @@ Public MustInherit Class FwController
         fw._logger(level, args)
     End Sub
 
+    Public Overridable Sub checkXSS()
+        If fw.SESSION("XSS") <> fw.FORM("XSS") Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
+    End Sub
+
     'return hashtable of filter values
     'NOTE: automatically set to defaults - pagenum=0 and pagesize=MAX_PAGE_ITEMS
     'NOTE: if request param 'dofilter' passed - session filters cleaned

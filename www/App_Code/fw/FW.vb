@@ -513,8 +513,11 @@ Public Class FW
     Public Function _auth(ByVal controller As String, ByVal action As String, Optional is_die As Boolean = True) As Integer
         Dim result As Integer = 0
 
-        'integrated XSS check - only for POST/PUT/DELETE requests or if it contains XSS param
-        If (FORM.ContainsKey("XSS") OrElse route.method = "POST" OrElse route.method = "PUT" OrElse route.method = "DELETE") _
+        'integrated XSS check - only for POST/PUT/DELETE requests 
+        ' OR for standard actions: Save, Delete, SaveMulti
+        ' OR if it contains XSS param
+        If (FORM.ContainsKey("XSS") OrElse route.method = "POST" OrElse route.method = "PUT" OrElse route.method = "DELETE" _
+            OrElse action = "Save" OrElse action = "Delete" OrElse action = "SaveMulti") _
             AndAlso SESSION("XSS") > "" AndAlso SESSION("XSS") <> FORM("XSS") Then
             'XSS validation failed - check if we are under xss-excluded controller
             Dim no_xss As Hashtable = Me.config("no_xss")

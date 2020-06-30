@@ -120,6 +120,7 @@ Public Class FwAdminController
     End Function
 
     Public Overridable Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
+        'checkXSS() 'no need to check in standard SaveAction, but add to your custom actions that modifies data
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in Controller.save_fields")
 
         If reqi("refresh") = 1 Then
