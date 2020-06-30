@@ -29,7 +29,7 @@ Public Class AdminLookupManagerTablesController
         Dim item As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model0.one(id)
                 'convert comma separated to newline separated

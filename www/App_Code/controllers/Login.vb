@@ -19,7 +19,7 @@ Public Class LoginController
         If fw.SESSION("is_logged") Then fw.redirect(fw.config("LOGGED_DEFAULT_URL"))
 
         Dim item As Hashtable = reqh("item")
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             'set defaults here
             item = New Hashtable
             'item("chpwd") = 1

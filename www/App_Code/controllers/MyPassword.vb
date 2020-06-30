@@ -28,7 +28,7 @@ Public Class MyPasswordController
         Dim item As Hashtable
         Dim id As Integer = fw.model(Of Users).meId()
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model.one(id)
             Else

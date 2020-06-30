@@ -143,6 +143,14 @@ Public MustInherit Class FwController
 
     End Sub
 
+    ''' <summary>
+    ''' return true if current request is GET request
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function isGet() As Boolean
+        Return (fw.cur_method = "GET")
+    End Function
+
     'set of helper functions to return string, integer, date values from request (fw.FORM)
     Public Function req(iname As String) As Object
         Return fw.FORM(iname)

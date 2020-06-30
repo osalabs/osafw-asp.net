@@ -85,26 +85,25 @@ Public Class FwAdminController
     ''' <remarks></remarks>
     Public Overridable Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
         Dim ps As New Hashtable
-        Dim item As Hashtable
-        Dim id As Integer = Utils.f2int(form_id)
+        Dim item = reqh("item") 'set defaults from request params
+        Dim id = Utils.f2int(form_id) 'primary key is integer by default
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model0.one(id)
                 'item("ftime_str") = FormUtils.int2timestr(item("ftime")) 'TODO - refactor this
             Else
-                'set defaults here
-                item = New Hashtable
-                'item = reqh("item") 'optionally set defaults from request params
+                'override any defaults here
                 If Me.form_new_defaults IsNot Nothing Then
                     Utils.mergeHash(item, Me.form_new_defaults)
                 End If
             End If
         Else
             'read from db
-            item = model0.one(id)
+            Dim itemdb = model0.one(id)
             'and merge new values from the form
-            Utils.mergeHash(item, reqh("item"))
+            Utils.mergeHash(itemdb, item)
+            item = itemdb
             'here make additional changes if necessary
         End If
 

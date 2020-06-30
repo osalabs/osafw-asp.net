@@ -251,7 +251,7 @@ Public Class AdminLookupManagerController
         End If
 
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model.oneByTname(dict, id)
             Else
