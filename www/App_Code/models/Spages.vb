@@ -106,7 +106,7 @@ Public Class Spages
 
     'return parsepage array list of rows with hierarcy (children rows added to parents as "children" key)
     'RECURSIVE!
-    Public Function getPagesTree(rows As ArrayList, parent_id As Integer, Optional level As Integer = 0) As ArrayList
+    Public Function getPagesTree(rows As ArrayList, parent_id As Integer, Optional level As Integer = 0, Optional parent_url As String = "") As ArrayList
         Dim result As New ArrayList
 
         For Each row As Hashtable In rows
@@ -114,7 +114,8 @@ Public Class Spages
                 Dim row2 As Hashtable = row.Clone()
                 row2("_level") = level
                 'row2("_level1") = level + 1 'to easier use in templates
-                row2("children") = getPagesTree(rows, row("id"), level + 1)
+                row2("full_url") = parent_url & "/" & row("url")
+                row2("children") = getPagesTree(rows, row("id"), level + 1, row("url"))
                 result.Add(row2)
             End If
         Next
