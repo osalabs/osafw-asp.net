@@ -46,6 +46,7 @@ Public Class FwConfig
         settings("log") = settings("site_root") & "\App_Data\logs\main.log"
         settings("log_max_size") = 100 * 1024 * 1024 '100 MB is max log size
         settings("tmp") = Path.GetTempPath
+        settings("request_url") = req.RawUrl
 
         Dim http As String = "http://"
         If req.ServerVariables("HTTPS") = "on" Then http = "https://"

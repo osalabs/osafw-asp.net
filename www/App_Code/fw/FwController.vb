@@ -606,7 +606,6 @@ Public MustInherit Class FwController
         ps("pager") = Me.list_pager
         ps("f") = Me.list_filter
         ps("related_id") = Me.related_id
-        ps("request_url") = fw.req.RawUrl
 
         If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
 

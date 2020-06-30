@@ -80,7 +80,6 @@ Public Class FwDynamicController
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
-        ps("request_url") = fw.req.RawUrl
 
         Return ps
     End Function
@@ -127,7 +126,6 @@ Public Class FwDynamicController
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
-        ps("request_url") = fw.req.RawUrl
         If fw.FERR.Count > 0 Then logger(fw.FERR)
 
         Return ps
@@ -252,7 +250,6 @@ Public Class FwDynamicController
             {"i", model0.one(id)},
             {"related_id", Me.related_id},
             {"return_url", Me.return_url},
-            {"request_url", fw.req.RawUrl},
             {"base_url", Me.base_url}
         }
 
