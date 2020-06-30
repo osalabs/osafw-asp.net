@@ -710,7 +710,7 @@ Public MustInherit Class FwController
     End Function
 
     Public Overridable Function getViewListUserFields() As String
-        Dim item = fw.model(Of UserViews).oneByScreen(base_url) 'base_url is screen identifier
+        Dim item = fw.model(Of UserViews).oneByIcode(base_url) 'base_url is screen identifier
         Return IIf(item("fields") > "", item("fields"), view_list_defaults)
     End Function
 

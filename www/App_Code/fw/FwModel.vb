@@ -20,6 +20,7 @@ Public MustInherit Class FwModel : Implements IDisposable
 
     Public field_id As String = "id" 'default primary key name
     Public field_iname As String = "iname"
+    Public field_icode As String = "icode"
 
     'default field names. If you override it and make empty - automatic processing disabled
     Public field_status As String = "status"
@@ -124,6 +125,14 @@ Public MustInherit Class FwModel : Implements IDisposable
 
         Dim where As Hashtable = New Hashtable
         where(field_iname) = iname
+        Return db.row(table_name, where)
+    End Function
+
+    Public Overridable Function oneByIcode(icode As String) As Hashtable
+        If field_icode = "" Then Return New Hashtable
+
+        Dim where As Hashtable = New Hashtable
+        where(field_icode) = icode
         Return db.row(table_name, where)
     End Function
 

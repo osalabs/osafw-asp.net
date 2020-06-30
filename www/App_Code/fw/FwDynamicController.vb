@@ -324,7 +324,7 @@ Public Class FwDynamicController
 
         Try
             If reqi("is_reset") = 1 Then
-                fw.model(Of UserViews).updateByScreen(base_url, view_list_defaults)
+                fw.model(Of UserViews).updateByIcode(base_url, view_list_defaults)
             Else
                 'save fields
                 'order by value
@@ -335,7 +335,7 @@ Public Class FwDynamicController
                     anames.Add(el.Key)
                 Next
 
-                fw.model(Of UserViews).updateByScreen(base_url, Join(anames.ToArray(), " "))
+                fw.model(Of UserViews).updateByIcode(base_url, Join(anames.ToArray(), " "))
             End If
 
         Catch ex As ApplicationException

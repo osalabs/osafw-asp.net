@@ -253,7 +253,7 @@ GO
 DROP TABLE IF EXISTS user_views;
 CREATE TABLE user_views (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-  screen                NVARCHAR(128) NOT NULL, --related screen, ex: "Demos"
+  icode                 NVARCHAR(128) NOT NULL, --related screen code, ex: "Demos"
   fields                NVARCHAR(MAX), -- comma-separated list of fields to display, order kept
 
   status                TINYINT DEFAULT 0,
@@ -262,7 +262,7 @@ CREATE TABLE user_views (
   upd_time              DATETIME2,
   upd_users_id          INT DEFAULT 0
 );
-CREATE UNIQUE INDEX user_views_UK ON user_views (add_users_id, screen);
+CREATE UNIQUE INDEX user_views_UK ON user_views (add_users_id, icode);
 
 /*user lists*/
 DROP TABLE IF EXISTS user_lists;

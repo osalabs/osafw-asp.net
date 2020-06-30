@@ -12,25 +12,25 @@ Public Class UserViews
     End Sub
 
     'return screen record for logged user
-    Public Function oneByScreen(screen As String) As Hashtable
-        Return db.row(table_name, New Hashtable From {{"add_users_id", fw.model(Of Users).meId}, {"screen", screen}})
+    Public Overrides Function oneByIcode(screen As String) As Hashtable
+        Return db.row(table_name, New Hashtable From {{field_add_users_id, fw.model(Of Users).meId}, {field_icode, screen}})
     End Function
 
     'update screen fields for logged user
     'return user_views.id
-    Public Function updateByScreen(screen As String, fields As String) As Integer
+    Public Function updateByIcode(screen As String, fields As String) As Integer
         Dim result = 0
-        Dim item = oneByScreen(screen)
+        Dim item = oneByIcode(screen)
         If item.Count > 0 Then
             'exists
-            result = item("id")
-            update(item("id"), New Hashtable From {{"fields", fields}})
+            result = item(field_id)
+            update(item(field_id), New Hashtable From {{"fields", fields}})
         Else
             'new
             result = add(New Hashtable From {
-                    {"screen", screen},
+                    {field_icode, screen},
                     {"fields", fields},
-                    {"add_users_id", fw.model(Of Users).meId}
+                    {field_add_users_id, fw.model(Of Users).meId}
                 })
         End If
         Return result
