@@ -57,8 +57,10 @@ Public Class AdminUsersController
             itemdb("pwd") = Trim(itemdb("pwd") & "")
             If Not itemdb("pwd") > "" Then itemdb.Remove("pwd")
 
-
             id = Me.modelAddOrUpdate(id, itemdb)
+
+            If model.meId() = id Then model.reloadSession(id)
+
         Catch ex As ApplicationException
             success = False
             Me.setFormError(ex)

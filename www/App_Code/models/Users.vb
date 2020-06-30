@@ -153,7 +153,17 @@ Public Class Users
         'fw.SESSION("user", hU)
         Dim fname = Trim(hU("fname"))
         Dim lname = Trim(hU("lname"))
-        fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname) 'will be empty If no user name Set
+        If fname > "" OrElse lname > "" Then
+            fw.SESSION("user_name", fname & IIf(fname > "", " ", "") & lname)
+        Else
+            fw.SESSION("user_name", hU("email"))
+        End If
+
+        Dim avatar_link = ""
+        If Utils.f2int(hU("att_id")) > 0 Then
+            avatar_link = fw.model(Of Att).getUrl(Utils.f2int(hU("att_id")), "s")
+        End If
+        fw.SESSION("user_avatar_link", avatar_link)
 
         Return True
     End Function
