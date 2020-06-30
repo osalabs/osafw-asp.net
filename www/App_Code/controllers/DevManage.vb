@@ -1027,6 +1027,7 @@ Public Class DevManageController
         Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
 
         Dim saveFields As New ArrayList
+        Dim saveFieldsNullable As New ArrayList
         Dim hFieldsMap As New Hashtable   'name => iname
         Dim hFieldsMapFW As New Hashtable 'fw_name => name
         Dim showFields As New ArrayList
@@ -1036,8 +1037,8 @@ Public Class DevManageController
         For Each fld In fields
             logger("field name=", fld("name"), fld)
 
-            If fld("fw_name") = "" Then fld("fw_name") = Utils.name2fw(fld("name")) 'name using fw standards
-            If fld("iname") = "" Then fld("iname") = name2human(fld("name")) 'name using fw standards
+            If fld("fw_name") = "" Then fld("fw_name") = Utils.name2fw(fld("name")) 'system name using fw standards
+            If fld("iname") = "" Then fld("iname") = name2human(fld("name")) 'human name using fw standards
 
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("iname")
@@ -1056,7 +1057,10 @@ Public Class DevManageController
             sff("field") = fld("name")
             sff("label") = fld("iname")
 
-            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then sff("required") = True 'if not nullable - required
+            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then
+                sff("required") = True 'if not nullable - required
+                saveFieldsNullable.add(fld("name"))
+            End If
 
             Dim maxlen = Utils.f2int(fld("maxlen"))
             If maxlen > 0 Then sff("maxlength") = maxlen
@@ -1268,6 +1272,7 @@ Public Class DevManageController
 
         config("model") = model_name
         config("is_dynamic_index") = True
+        config("save_fields_nullable") = saveFieldsNullable
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
