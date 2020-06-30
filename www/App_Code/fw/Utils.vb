@@ -236,7 +236,7 @@ Public Class Utils
 
         Dim ConnectionString As String = "Provider=Microsoft.ACE.OLEDB.12.0;" +
                                 "Data Source=" & dir & ";" &
-                                "Extended Properties=""Text;HDR=Yes;FORMAT=Delimited"";"
+                                "Extended Properties=""Text;HDR=Yes;IMEX=1;FORMAT=Delimited"";"
 
         Using cn As New Data.OleDb.OleDbConnection(ConnectionString)
             cn.Open()
