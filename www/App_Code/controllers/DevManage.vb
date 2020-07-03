@@ -569,7 +569,13 @@ Public Class DevManageController
         result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
         result = Regex.Replace(result, " +", " ") 'deduplicate spaces
         result = Utils.capitalize(result, "all") 'Title Case
-        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
+
+        If Regex.IsMatch(result, "\bid\b", RegexOptions.IgnoreCase) Then
+            'if contains id/ID - remove it and make singular
+            result = Regex.Replace(result, "\bid\b", "", RegexOptions.IgnoreCase)
+            result = Regex.Replace(result, "(?:es|s)\s*$", "", RegexOptions.IgnoreCase) 'remove -es or -s at the end
+        End If
+
         result = result.Trim()
         Return result
     End Function
@@ -1114,16 +1120,17 @@ Public Class DevManageController
 
         Dim is_fw = Utils.f2bool(entity("is_fw"))
         Dim hfields As New Hashtable
-        Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
+        Dim sys_fields = Utils.qh("id status add_time add_users_id upd_time upd_users_id")
 
         Dim saveFields As New ArrayList
         Dim saveFieldsNullable As New ArrayList
         Dim hFieldsMap As New Hashtable   'name => iname
         Dim hFieldsMapFW As New Hashtable 'fw_name => name
-        Dim showFields As New ArrayList
-        Dim showFormFields As New ArrayList
+        Dim showFieldsLeft As New ArrayList
+        Dim showFieldsRight As New ArrayList
+        Dim showFormFieldsLeft As New ArrayList
+        Dim showFormFieldsRight As New ArrayList 'system fields - to the right
 
-        Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
             logger("field name=", fld("name"), fld)
 
@@ -1244,6 +1251,7 @@ Public Class DevManageController
 
             If fld("is_identity") = "1" Then
                 sff("type") = "group_id"
+                sff.Remove("class_contents")
                 sff.Remove("required")
             End If
 
@@ -1278,12 +1286,14 @@ Public Class DevManageController
 
                     sff("label") = "Added on"
                     sff("type") = "added"
+                    sff.Remove("class_contents")
                 Case "upd_time"
                     sf("label") = "Updated on"
                     sf("type") = "updated"
 
                     sff("label") = "Updated on"
                     sff("type") = "updated"
+                    sff.Remove("class_contents")
                 Case "add_users_id", "upd_users_id"
                     is_skip = True
                 Case Else
@@ -1299,17 +1309,23 @@ Public Class DevManageController
                     End If
             End Select
 
-            If Not is_skip Then
-                Dim sf_index = showFields.Add(sf)
-                Dim sff_index = showFormFields.Add(sff)
-                If fld("name") = "status" Then
-                    isf_status = sf_index
-                    isff_status = sff_index
-                End If
+            If is_skip Then Continue For
+
+            Dim is_sys = False
+            If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then
+                'add to system fields
+                showFieldsRight.Add(sf)
+                showFormFieldsRight.Add(sff)
+                is_sys = True
+            Else
+                showFieldsLeft.Add(sf)
+                showFormFieldsLeft.Add(sff)
             End If
 
-            If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then Continue For
-            saveFields.Add(fld("name"))
+            If Not is_sys OrElse fld("name") = "status" Then
+                'add to save fields only if not system (except status)
+                saveFields.Add(fld("name"))
+            End If
         Next
 
         'special case - "Lookup via Link Table" - could be multiple tables
@@ -1343,20 +1359,8 @@ Public Class DevManageController
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
 
-                    'add linked table before Status 
-                    If isf_status > 0 Then
-                        showFields.Insert(isf_status, sflink)
-                        isf_status += 1
-                    Else
-                        showFields.Add(sflink)
-                    End If
-
-                    If isff_status > 0 Then
-                        showFormFields.Insert(isff_status, sfflink)
-                        isff_status += 1
-                    Else
-                        showFormFields.Add(sfflink)
-                    End If
+                    showFieldsLeft.Add(sflink)
+                    showFormFieldsLeft.Add(sfflink)
                 End If
 
             End If
@@ -1416,9 +1420,24 @@ Public Class DevManageController
         config("view_list_custom") = "status"
 
         config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
-        If config("is_dynamic_show") Then config("show_fields") = showFields
+        If config("is_dynamic_show") Then
+            'TODO TDB? make 2 separate columns for view
+            showFieldsLeft.AddRange(showFieldsRight)
+            config("show_fields") = showFieldsLeft
+        End If
         config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
-        If config("is_dynamic_showform") Then config("showform_fields") = showFormFields
+        If config("is_dynamic_showform") Then
+            Dim showFormFields = New ArrayList
+            showFormFields.Add(Utils.qh("type|row"))
+            showFormFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFormFields.AddRange(showFormFieldsLeft)
+            showFormFields.Add(Utils.qh("type|col_end"))
+            showFormFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFormFields.AddRange(showFormFieldsRight)
+            showFormFields.Add(Utils.qh("type|col_end"))
+            showFormFields.Add(Utils.qh("type|row_end"))
+            config("showform_fields") = showFormFields
+        End If
 
         'remove all commented items - name start with "#"
         For Each key In config.Keys.Cast(Of String).ToArray()
