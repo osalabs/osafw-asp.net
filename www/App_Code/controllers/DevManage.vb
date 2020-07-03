@@ -3,7 +3,11 @@
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
 ' (c) 2009-2018  Oleg Savchuk www.osalabs.com
 
+Imports System.Activities.Statements
+Imports System.CodeDom
 Imports System.IO
+Imports System.Runtime.CompilerServices
+Imports System.Runtime.InteropServices.WindowsRuntime
 
 Public Class DevManageController
     Inherits FwController
@@ -88,6 +92,89 @@ Public Class DevManageController
 
         fw.redirect(base_url)
     End Sub
+
+    Public Function ShowDBUpdatesAction() As Hashtable
+        Dim ps As New Hashtable
+
+        'show list of available db updates
+        Dim updates_root = fw.config("site_root") & "\App_Data\sql\updates"
+        Dim files() As String = IO.Directory.GetFiles(updates_root)
+
+        Dim rows As New ArrayList
+        For Each file As String In files
+            rows.Add(New Hashtable From {{"filename", IO.Path.GetFileName(file)}})
+        Next
+        ps("rows") = rows
+
+        Return ps
+    End Function
+
+    Public Sub SaveDBUpdatesAction()
+        checkXSS()
+
+        Dim is_view_only = (reqi("ViewsOnly") = 1)
+        Dim ctr = 0
+
+        Try
+            If Not is_view_only Then
+                'apply selected updates
+                Dim updates_root = fw.config("site_root") & "\App_Data\sql\updates"
+                Dim item = reqh("item")
+                For Each filename As String In item.Keys
+                    Dim filepath = updates_root & "\" & filename
+                    rw("applying: " & filepath)
+                    ctr += exec_multi_sql(FW.get_file_content(filepath))
+                Next
+                rw("Done, " & ctr & " statements executed")
+            End If
+
+            'refresh views
+            ctr = 0
+            Dim views_file = fw.config("site_root") & "\App_Data\sql\views.sql"
+            rw("Applying views file: " & views_file)
+            'for views - ignore errors
+            ctr = exec_multi_sql(FW.get_file_content(views_file), True)
+            rw("Done, " & ctr & " statements executed")
+
+            rw("<b>All Done</b>")
+
+        Catch ex As Exception
+            rw("got an error")
+            rw("<span style='color:red'>" & ex.Message & "</span>")
+        End Try
+
+    End Sub
+    'TODO move these functions to DB?
+    Private Function exec_multi_sql(sql As String, Optional is_ignore_errors As Boolean = False) As Integer
+        Dim result = 0
+        'launch the query
+        Dim sql1 As String = strip_comments_sql(sql)
+        Dim asql() As [String] = split_multi_sql(sql)
+        For Each sqlone As String In asql
+            sqlone = Trim(sqlone)
+            If sqlone > "" Then
+                If is_ignore_errors Then
+                    Try
+                        db.exec(sqlone)
+                        result += 1
+                    Catch ex As Exception
+                        rw("<span style='color:red'>" & ex.Message & "</span>")
+                    End Try
+                Else
+                    db.exec(sqlone)
+                    result += 1
+                End If
+            End If
+        Next
+        Return result
+    End Function
+    Private Function strip_comments_sql(ByVal sql As String) As String
+        Return Regex.Replace(sql, "/\*.+?\*/", " ", RegexOptions.Singleline)
+    End Function
+    Private Function split_multi_sql(ByVal sql As String) As String()
+        Return Regex.Split(sql, ";[\n\r](?:GO[\n\r]+)[\n\r]*|[\n\r]+GO[\n\r]+")
+    End Function
+
 
 
     Public Sub CreateModelAction()
