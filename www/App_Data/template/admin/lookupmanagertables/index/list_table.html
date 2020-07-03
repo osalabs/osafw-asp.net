@@ -18,10 +18,10 @@
             <td><~tname></td>
             <td><~iname></td>
             <td><~idesc truncate></td>
-            <td nowrap="nowrap">
+            <td class="text-nowrap text-right">
                 <a href="<~/admin/lookupmanager/url>?d=<~tname urlescape>">`Browse`</a>
                 <~/common/dot><a href="<~row_click_url>">`Edit`</a>
-                <~/common/dot><a href="<~../url>/<~id>/delete" onclick="return delete_btn(this)">`Del`</a>
+                <~/common/list/btn_del>
             </td>
         </tr>
 </~list_rows>

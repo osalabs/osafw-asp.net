@@ -30,7 +30,7 @@
 <~list_rows repeat inline>
         <tr data-id="<~id>">
             <input type="hidden" name="row[<~id>]" value="<~row_md5>" class="rowid">
-            <td nowrap="nowrap" class="pad">
+            <td class="text-nowrap pad">
                 <a href="#" class="on-row-del"><i class="glyphicon glyphicon-remove text-danger"></i></a>
             </td>
             <~fields_values repeat inline>
@@ -51,7 +51,7 @@
 </~list_rows>
         <tr data-id="0" class="tpl hide">
             <input type="hidden" name="new[0]" value="" class="rowid">
-            <td nowrap="nowrap" class="pad">
+            <td class="text-nowrap pad">
                 <a href="#" class="on-row-del"><i class="glyphicon glyphicon-remove text-danger"></i></a>
             </td>
             <~fields_headers repeat inline xxx>

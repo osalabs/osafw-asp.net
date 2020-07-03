@@ -3,6 +3,8 @@
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
 ' (c) 2009-2018 Oleg Savchuk www.osalabs.com
 
+Imports System.Web.Management
+
 Public Class FwDynamicController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 100
@@ -258,8 +260,24 @@ Public Class FwDynamicController
     Public Overridable Function DeleteAction(ByVal form_id As String) As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        model0.delete(id)
+        Dim item = model0.one(id)
+        'if record already deleted and we are admin - perform permanent delete
+        If Not String.IsNullOrEmpty(model0.field_status) AndAlso Utils.f2int(item(model0.field_status)) = FwModel.STATUS_DELETED AndAlso fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then
+            model0.delete(id, True)
+        Else
+            model0.delete(id)
+        End If
+
         fw.FLASH("onedelete", 1)
+        Return Me.afterSave(True)
+    End Function
+
+    Public Overridable Function RestoreDeletedAction(ByVal form_id As String) As Hashtable
+        Dim id As Integer = Utils.f2int(form_id)
+
+        model0.update(id, New Hashtable From {{model0.field_status, FwModel.STATUS_ACTIVE}})
+
+        fw.FLASH("record_updated", 1)
         Return Me.afterSave(True, id)
     End Function
 

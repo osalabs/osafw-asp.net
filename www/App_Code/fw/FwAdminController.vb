@@ -182,7 +182,7 @@ Public Class FwAdminController
 
         model0.delete(id)
         fw.FLASH("onedelete", 1)
-        Return Me.afterSave(True, id)
+        Return Me.afterSave(True)
     End Function
 
     Public Overridable Function SaveMultiAction() As Hashtable

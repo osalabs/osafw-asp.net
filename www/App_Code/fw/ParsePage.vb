@@ -8,7 +8,8 @@
 ' - <~tag if="var"> - var tested for true value (1, true, >"", but not "0")
 ' - CSRF shield - all vars escaped, if var shouldn't be escaped use "noescape" attr: <~raw_variable noescape>
 ' - 'attrs("select") can contain strings with separator ","(or custom defined) for multiple select
-'
+' - <~#commented_tag> - comment tags that doesn't need to be parsed (quickly replaced by empty string)
+
 '# Supported attributes:
 
 'var - tag is variable, no fileseek necessary
@@ -220,7 +221,8 @@ Public Class ParsePage
                     attrs = New Hashtable
                     get_tag_attrs(tag, attrs)
 
-                    If _attr_if(attrs, hf) Then
+                    'skip # commented tags and tags that not pass if
+                    If tag(0) <> "#" AndAlso _attr_if(attrs, hf) Then
                         Dim inline_tpl As String = ""
 
                         If attrs.Count > 0 Then 'optimization, no need to check attrs if none passed
