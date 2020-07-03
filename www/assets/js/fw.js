@@ -487,7 +487,7 @@ window.fw={
     var sortdir=$sh.data('sortdir');
 
     var sort_img= (sortdir=='desc') ? 'glyphicon-arrow-up' : 'glyphicon-arrow-down';
-    $sh.find('th[data-sort="'+sortby+'"]').addClass('active-sort').prepend('<span class="glyphicon '+sort_img+' float-right"></span>');
+    $sh.find('th[data-sort="'+sortby+'"]').addClass('active-sort').append('<span class="ml-1 glyphicon '+sort_img+'"></span>');
 
     $sh.on('click', 'th[data-sort]', function() {
       var $td=$(this);
