@@ -143,6 +143,9 @@ Public Class DevManageController
             rw("<span style='color:red'>" & ex.Message & "</span>")
         End Try
 
+        'and last - reset db schema cache
+        FwCache.clear()
+        db.clear_schema_cache()
     End Sub
     'TODO move these functions to DB?
     Private Function exec_multi_sql(sql As String, Optional is_ignore_errors As Boolean = False) As Integer
