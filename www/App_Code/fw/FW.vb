@@ -106,6 +106,9 @@ Public Class FW
 
         G = config().Clone() 'by default G contains conf
 
+        'per request settings
+        G("request_url") = req.RawUrl
+
         'override default lang with user's lang
         If SESSION("lang") > "" Then
             G("lang") = SESSION("lang")
