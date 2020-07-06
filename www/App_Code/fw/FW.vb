@@ -891,7 +891,7 @@ Public Class FW
 
     'Call controller
     Public Sub call_controller(calledType As Type, mInfo As MethodInfo, Optional ByVal args As Object = Nothing)
-        'check if method assept agrs and not pass it if no args expected
+        'check if method accept agrs and don't pass args if no args expected
         Dim params() As System.Reflection.ParameterInfo = mInfo.GetParameters()
         If params.Length = 0 Then args = Nothing
 
