@@ -95,7 +95,7 @@ Public Class MyPasswordController
 
         If result Then
             Dim itemdb As Hashtable = model.one(id)
-            If itemdb("pwd") <> item("old_pwd") Then
+            If Not fw.model(Of Users).checkPwd(item("old_pwd"), itemdb("pwd")) Then
                 result = False
                 fw.FERR("old_pwd") = "WRONG"
             End If
