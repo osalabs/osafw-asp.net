@@ -1,5 +1,5 @@
 <div class="d-none d-md-block" style="padding-left: 1em">
-<h3><a href="<~ROOT_URL>/" class="text-dark"><~/site_name></a></h3>
+<h3><a href="<~ROOT_URL>/" class="text-dark"><~/site_name></a><~./beta if="GLOBAL[is_test]"></h3>
 </div>
 <ul class="nav flex-column">
   <~logged_menu if="SESSION[is_logged]" inline>
@@ -20,16 +20,19 @@
         <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminLookupManager">" ><a class="nav-link" href="<~/admin/lookupmanager/url>"><i class="glyphicon glyphicon-search"></i> `Lookup Manager`</a></li>
      </~admin80_menu>
 
-     <~admin100_menu ifeq="SESSION[access_level]" value="100" inline>
+     <~admin90_menu ifge="SESSION[access_level]" value="90" inline>
         <li class="nav-header">`Admin Menu`</li>
-      <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminUsers">" ><a class="nav-link" href="<~/admin/users/url>"><i class="glyphicon glyphicon-user"></i> `Manage Members`</a></li>
-      <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminSettings">" ><a class="nav-link" href="<~/admin/settings/url>"><i class="glyphicon glyphicon-cog"></i> `Site Settings`</a></li>
-      <!--li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="SysBackup">" ><a class="nav-link" href="<~/sys/backup/url>"><i class="glyphicon glyphicon-cd"></i> Site Backup</a></li-->
-      <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminDB">" ><a class="nav-link" href="<~/admin/db/url>" target="_blank"><i class="glyphicon glyphicon-wrench"></i> `Direct DB Access`</a></li>
-      <~dev_menu if="GLOBAL[IS_DEV]" inline>
-      <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="DevManage">" ><a class="nav-link" href="<~/dev/url>/Manage"><i class="glyphicon glyphicon-wrench"></i> `Developer Tools`</a></li>
-      </~dev_menu>
-     </~admin100_menu>
+        <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminUsers">" ><a class="nav-link" href="<~/admin/users/url>"><i class="glyphicon glyphicon-user"></i> `Manage Members`</a></li>
+        <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminSettings">" ><a class="nav-link" href="<~/admin/settings/url>"><i class="glyphicon glyphicon-cog"></i> `Site Settings`</a></li>
+     </~admin90_menu>
+
+      <~admin100_menu ifeq="SESSION[access_level]" value="100" inline>
+        <!--li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="SysBackup">" ><a class="nav-link" href="<~/sys/backup/url>"><i class="glyphicon glyphicon-cd"></i> Site Backup</a></li-->
+        <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="AdminDB">" ><a class="nav-link" href="<~/admin/db/url>" target="_blank"><i class="glyphicon glyphicon-wrench"></i> `Direct DB Access`</a></li>
+        <~dev_menu if="GLOBAL[IS_DEV]" inline>
+        <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="DevManage">" ><a class="nav-link" href="<~/dev/url>/Manage"><i class="glyphicon glyphicon-wrench"></i> `Developer Tools`</a></li>
+        </~dev_menu>
+      </~admin100_menu>
 
   <li class="nav-header"><~/layout/user_avatar if="SESSION[user_avatar_link]"><~SESSION[user_name]></li>
   <li class="nav-item <~/common/active ifeq="GLOBAL[controller]" value="MySettings">" ><a class="nav-link" href="<~/my/settings/url>"><i class="glyphicon glyphicon-user"></i> `My Profile`</a></li>

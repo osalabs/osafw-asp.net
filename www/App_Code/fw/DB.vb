@@ -852,6 +852,22 @@ Public Class DB
         Return result
     End Function
 
+    'return array of view names in current db
+    Public Function views() As ArrayList
+        Dim result As New ArrayList
+
+        Dim conn As DbConnection = Me.connect()
+        Dim dataTable As DataTable = conn.GetSchema("Tables")
+        For Each row As DataRow In dataTable.Rows
+            'skip non-views
+            If row("TABLE_TYPE") <> "VIEW" Then Continue For
+            Dim tblname As String = row("TABLE_NAME").ToString()
+            result.Add(tblname)
+        Next
+
+        Return result
+    End Function
+
     Public Function load_table_schema_full(table As String) As ArrayList
         'check if full schema already there
         If IsNothing(schemafull_cache) Then schemafull_cache = New Hashtable

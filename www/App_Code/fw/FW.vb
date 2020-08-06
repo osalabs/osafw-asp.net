@@ -84,6 +84,9 @@ Public Class FW
 
     Public last_error_send_email As String = ""
 
+#Const isSentry = False 'if you use Sentry set to True here, install SentrySDK, in web.config fill endpoint URL to "log_sentry" 
+    Private sentryClient As IDisposable
+
     'begin processing one request
     Public Shared Sub run(Optional context As HttpContext = Nothing)
         If context Is Nothing Then context = HttpContext.Current
@@ -99,7 +102,14 @@ Public Class FW
         Me.context = context
         req = context.Request
         resp = context.Response
+
         FwConfig.init(req)
+
+#If isSentry Then
+        'Sentry Raven processing
+        sentryClient = Sentry.SentrySdk.Init(config("log_sentry"))
+        Sentry.SentrySdk.ConfigureScope(Sub(scope) scope.User = New Sentry.Protocol.User With {.Email = SESSION("login")})
+#End If
 
         db = New DB(Me)
         DB.SQL_QUERY_CTR = 0 'reset query counter
@@ -671,6 +681,18 @@ Public Class FW
             Diagnostics.Debug.WriteLine("WARN logger can't write to log file. Reason:" & ex.Message)
         End Try
 
+#If isSentry Then
+        'Sentry - if INFO, WARN, ERROR, FATAL - add trail
+        If level <= LogLevel.INFO Then
+            'raven error level is -1 from fw level
+            'SharpRaven.Data.BreadcrumbLevel.Info
+            'SharpRaven.Data.BreadcrumbLevel.Warning
+            'SharpRaven.Data.BreadcrumbLevel.Error
+            'SharpRaven.Data.BreadcrumbLevel.Critical
+            Sentry.SentrySdk.AddBreadcrumb(str.ToString, Nothing, Nothing, Nothing, level - 1)
+        End If
+#End If
+
     End Sub
 
     Public Shared Function dumper(ByVal dmp_obj As Object, Optional ByVal level As Integer = 0) As String 'TODO better type detection(suitable for all collection types)
@@ -1070,6 +1092,11 @@ Public Class FW
             tpl_dir &= "/client"
         End If
 
+#If isSentry Then
+        'Sentry logging
+        Sentry.SentrySdk.CaptureException(Ex)
+#End If
+
         hf("err_time") = Now()
         hf("err_msg") = msg
         If Utils.f2bool(Me.config("IS_DEV")) Then
@@ -1134,6 +1161,7 @@ Public Class FW
         If Not disposedValue Then
             If disposing Then
                 'dispose managed state (managed objects).
+                If sentryClient IsNot Nothing Then sentryClient.Dispose()
             End If
 
             'free unmanaged resources (unmanaged objects) and override Finalize() below.

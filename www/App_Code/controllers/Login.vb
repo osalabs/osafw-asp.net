@@ -52,6 +52,11 @@ Public Class LoginController
                 Dim dev = db.row("select TOP 1 email, pwd from users where status=0 and access_level=100 order by id")
                 login = dev("email")
                 is_dev_login = True
+            Else
+                'for normal logins - have a delay up to 2s to slow down any brute force attempts
+                Dim ran = New Random
+                Dim delay As Integer = (ran.NextDouble() * 2 + 0.5) * 1000
+                Threading.Thread.Sleep(delay)
             End If
 
             If login.Length = 0 Or pwd.Length = 0 Then
@@ -61,7 +66,10 @@ Public Class LoginController
 
             Dim hU = model.oneByEmail(login)
             If Not is_dev_login Then
-                If hU.Count = 0 OrElse hU("status") <> "0" OrElse Not model.checkPwd(pwd, hU("pwd")) Then Throw New ApplicationException("User Authentication Error")
+                If hU.Count = 0 OrElse hU("status") <> "0" OrElse Not model.checkPwd(pwd, hU("pwd")) Then
+                    fw.logEvent("login_fail", 0, 0, login)
+                    Throw New ApplicationException("User Authentication Error")
+                End If
             End If
 
             model.doLogin(hU("id"))
@@ -73,7 +81,7 @@ Public Class LoginController
             End If
 
         Catch ex As ApplicationException
-            logger("ERROR", ex.Message)
+            logger(LogLevel.WARN, ex.Message)
             fw.G("err_ctr") = reqi("err_ctr") + 1
             fw.G("err_msg") = ex.Message
             fw.routeRedirect("Index")
@@ -82,6 +90,8 @@ Public Class LoginController
     End Sub
 
     Public Sub DeleteAction()
+        fw.logEvent("logoff", fw.model(Of Users).meId)
+
         fw.SESSION.Clear()
         fw.SESSION.Abandon()
         fw.redirect(fw.config("UNLOGGED_DEFAULT_URL"))

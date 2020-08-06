@@ -125,6 +125,41 @@ Public Class Users
         Return fw.send_email_tpl(user("email"), "email_pwd.txt", user)
     End Function
 
+    ''' <summary>
+    ''' evaluate password's stength and return a score (>60 good, >80 strong)
+    ''' </summary>
+    ''' <param name="pwd"></param>
+    ''' <returns></returns>
+    Public Function scorePwd(pwd As String) As Double
+        Dim result = 0
+        If String.IsNullOrEmpty(pwd) Then Return result
+
+        'award every unique letter until 5 repetitions
+        Dim chars As New Hashtable
+        For i = 0 To pwd.Length - 1
+            chars(pwd(i)) = Utils.f2int(chars(pwd(i))) + 1
+            result += 5.0 / chars(pwd(i))
+        Next
+
+        'bonus points for mixing it up
+        Dim vars As New Hashtable From {
+          {"digits", Regex.IsMatch(pwd, "\d")},
+          {"lower", Regex.IsMatch(pwd, "[a-z]")},
+          {"upper", Regex.IsMatch(pwd, "[A-Z]")},
+          {"other", Regex.IsMatch(pwd, "\W")}
+        }
+        Dim ctr = 0
+        For Each value As Boolean In vars.Values
+            ctr += IIf(value, 1, 0)
+        Next
+        result += (ctr - 1) * 10
+
+        'adjust for length
+        result = (Math.Log(pwd.Length) / Math.Log(8)) * result
+
+        Return result
+    End Function
+
     'fill the session and do all necessary things just user authenticated (and before redirect
     Public Function doLogin(id As Integer) As Boolean
         fw.SESSION.Clear()
@@ -173,7 +208,7 @@ Public Class Users
         Dim sql As String = "select id, fname+' '+lname as iname from " & table_name & " where status=0 order by fname, lname"
         Return db.array(sql)
     End Function
-    Public Overrides Function listSelectOptions(Optional params As Object = Nothing) As ArrayList
+    Public Overrides Function listSelectOptions(Optional params As Object = Nothing, Optional def As Hashtable = Nothing) As ArrayList
         Dim sql As String = "select id, fname+' '+lname as iname from " & table_name & " where status=0 order by fname, lname"
         Return db.array(sql)
     End Function

@@ -414,12 +414,14 @@ Public Class FwDynamicController
 
                 ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
                     Dim lookup_model = fw.model(def("lookup_model"))
-                    def("lookup_row") = lookup_model.one(Utils.f2int(item(field)))
+                    def("lookup_id") = Utils.f2int(item(field))
+                    def("lookup_row") = lookup_model.one(def("lookup_id"))
 
                     Dim lookup_field = def("lookup_field")
                     If lookup_field = "" Then lookup_field = lookup_model.field_iname
 
                     def("value") = def("lookup_row")(lookup_field)
+                    If Not def.ContainsKey("admin_url") Then def("admin_url") = "/Admin/" & def("lookup_model") 'default admin url from model name
 
                 ElseIf def.ContainsKey("lookup_tpl") Then
                     def("value") = FormUtils.selectTplName(def("lookup_tpl"), item(field))
@@ -498,7 +500,7 @@ Public Class FwDynamicController
                         def("value") = def("lookup_row")(def("lookup_field"))
                     Else
                         'lookup select
-                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def("lookup_params"))
+                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def("lookup_params"), def)
                         def("value") = item(field)
                     End If
 

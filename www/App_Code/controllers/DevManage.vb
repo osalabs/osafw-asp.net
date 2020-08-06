@@ -26,8 +26,10 @@ Public Class DevManageController
     Public Function IndexAction() As Hashtable
         Dim ps As New Hashtable
 
-        'table list
+        'table and views list
         Dim tables = db.tables()
+        Dim views = db.views()
+        tables.AddRange(views)
         tables.Sort()
         ps("select_tables") = New ArrayList
         For Each table As String In tables
@@ -98,13 +100,18 @@ Public Class DevManageController
 
         'show list of available db updates
         Dim updates_root = fw.config("site_root") & "\App_Data\sql\updates"
-        Dim files() As String = IO.Directory.GetFiles(updates_root)
+        If IO.Directory.Exists(updates_root) Then
+            Dim files() As String = IO.Directory.GetFiles(updates_root)
 
-        Dim rows As New ArrayList
-        For Each file As String In files
-            rows.Add(New Hashtable From {{"filename", IO.Path.GetFileName(file)}})
-        Next
-        ps("rows") = rows
+            Dim rows As New ArrayList
+            For Each file As String In files
+                rows.Add(New Hashtable From {{"filename", IO.Path.GetFileName(file)}})
+            Next
+            ps("rows") = rows
+        Else
+            ps("is_nodir") = True
+            ps("updates_root") = updates_root
+        End If
 
         Return ps
     End Function
@@ -207,8 +214,10 @@ Public Class DevManageController
                     {"model_name", model_name},
                     {"controller_url", controller_url},
                     {"controller_title", controller_title},
-                    {"table", Utils.name2fw(model_name)}
+                    {"table", fw.model(model_name).table_name}
                 }
+        'table = Utils.name2fw(model_name) - this is not always ok
+
         createController(entity, Nothing)
         Dim controller_name = Replace(entity("controller_url"), "/", "")
 
@@ -563,6 +572,16 @@ Public Class DevManageController
     'convert some system name to human-friendly name'
     '"system_name_id" => "System Name ID"
     Private Function name2human(str As String) As String
+        'first - check predefined
+        Dim str_lc = str.ToLower()
+        If str_lc = "icode" Then Return "Code"
+        If str_lc = "iname" Then Return "Name"
+        If str_lc = "idesc" Then Return "Description"
+        If str_lc = "id" Then Return "ID"
+        If str_lc = "fname" Then Return "First Name"
+        If str_lc = "lname" Then Return "Last Name"
+        If str_lc = "midname" Then Return "Middle Name"
+
         Dim result = str
         result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
         result = Regex.Replace(result, "_+", " ") 'underscores to spaces
@@ -1165,7 +1184,7 @@ Public Class DevManageController
             Dim maxlen = Utils.f2int(fld("maxlen"))
             If maxlen > 0 Then sff("maxlength") = maxlen
             If fld("fw_type") = "varchar" Then
-                If maxlen <= 0 Then 'large text
+                If maxlen <= 0 OrElse fld("name") = "idesc" Then 'large text if no maxlen or standard idesc
                     sf("type") = "markdown"
                     sff("type") = "textarea"
                     sff("rows") = 5
@@ -1174,8 +1193,8 @@ Public Class DevManageController
                     'normal text input
                     sff("type") = "input"
                     If maxlen < 255 Then
-                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 2)
-                        If col < 1 Then col = 1
+                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 4)
+                        If col < 2 Then col = 2 'minimum - 2
                         If col > 9 Then col = 9
                         sff("class_contents") = "col-md-" & col
                     End If
@@ -1203,6 +1222,7 @@ Public Class DevManageController
                             Else
                                 sff("is_option_empty") = True
                             End If
+                            sff("option0_title") = "- select -"
 
                             sff("class_contents") = "col-md-3"
                             Exit For
@@ -1303,6 +1323,8 @@ Public Class DevManageController
 
                         sff("type") = "select"
                         sff("lookup_tpl") = "/common/sel/state.sel"
+                        sff("is_option_empty") = True
+                        sff("option0_title") = "- select -"
                         sff("class_contents") = "col-md-3"
                     Else
                         'nothing else
@@ -1380,7 +1402,9 @@ Public Class DevManageController
             config("list_sortdef") = "iname asc"
         Else
             'just get first field
-            config("list_sortdef") = fields(0)("fw_name")
+            If fields.Count > 0 Then
+                config("list_sortdef") = fields(0)("fw_name")
+            End If
         End If
 
         config.Remove("list_sortmap") 'N/A in dynamic controller

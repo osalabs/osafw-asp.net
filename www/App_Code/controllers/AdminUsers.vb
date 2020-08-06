@@ -5,7 +5,7 @@
 
 Public Class AdminUsersController
     Inherits FwDynamicController
-    Public Shared Shadows access_level As Integer = 80
+    Public Shared Shadows access_level As Integer = 90
 
     Protected model As Users
 
@@ -82,6 +82,12 @@ Public Class AdminUsersController
             result = False
             fw.FERR("ehack") = "WRONG"
         End If
+
+        'uncomment if project requires good password strength
+        'If result AndAlso item.ContainsKey("pwd") AndAlso model.scorePwd(item("pwd")) <= 60 Then
+        '    result = False
+        '    fw.FERR("pwd") = "BAD"
+        'End If
 
         'If result AndAlso Not SomeOtherValidation() Then
         '    result = False

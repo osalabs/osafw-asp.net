@@ -5,7 +5,7 @@
 
 Public Class AdminLookupManagerController
     Inherits FwController
-    Public Shared Shadows access_level As Integer = 100
+    Public Shared Shadows access_level As Integer = 80
 
     Protected model As New LookupManager
     Protected model_tables As New LookupManagerTables

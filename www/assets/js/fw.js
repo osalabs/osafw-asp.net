@@ -704,6 +704,71 @@ window.fw={
       e.preventDefault();
       onclick(this);
     });
+  },
+
+  // password stength indicator
+  // usage: $('#pwd').on('blur change keyup', fw.renderPwdBar);
+  renderPwdBar: function(e) {
+      var $this = $(this);
+      var pwd = $this.val();
+      var score = fw.scorePwd(pwd);
+      var wbar = parseInt(score*100/120); //over 120 is max
+      if (pwd.length>0 && wbar<10) wbar=10; //to show "bad"
+      if (wbar>100) wbar=100;
+
+      var $pr = $this.parent().find('.progress');
+      if (!$pr.length){
+          $pr = $('<div class="progress mt-1"><div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>').appendTo($this.parent());
+      }
+      var $bar = $pr.find('.progress-bar');
+      $bar.css('width', wbar+'%');
+      $bar.removeClass('bg-danger bg-warning bg-success bg-dark').addClass(fw.scorePwdClass(score))
+      $bar.text(fw.scorePwdText(score))
+      //console.log(pwd, score,'  ', wbar+'%');
+  },
+
+  scorePwd: function(pwd) {
+      var result = 0;
+      if (!pwd) return result;
+
+      // award every unique letter until 5 repetitions
+      var chars = {};
+      for (var i=0; i<pwd.length; i++) {
+          chars[pwd[i]] = (chars[pwd[i]] || 0) + 1;
+          result += 5.0 / chars[pwd[i]];
+      }
+
+      // bonus points for mixing it up
+      var vars = {
+          digits: /\d/.test(pwd),
+          lower: /[a-z]/.test(pwd),
+          upper: /[A-Z]/.test(pwd),
+          other: /\W/.test(pwd),
+      }
+      var ctr = 0;
+      for (var k in vars) {
+          ctr += (vars[k] == true) ? 1 : 0;
+      }
+      result += (ctr - 1) * 10;
+
+      //adjust for length
+      result = (Math.log(pwd.length) / Math.log(8))*result
+
+      return result;
+  },
+
+  scorePwdClass: function(score) {
+      if (score > 100) return "bg-dark";
+      if (score > 60) return "bg-success";
+      if (score >= 30) return "bg-warning";
+      return "bg-danger";
+  },
+
+  scorePwdText: function(score) {
+      if (score > 100) return "strong";
+      if (score > 60) return "good";
+      if (score >= 30) return "weak";
+      return "bad";
   }
 
 };

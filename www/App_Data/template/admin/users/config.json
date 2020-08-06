@@ -11,8 +11,8 @@
     "id": "ID",
     "email": "Email",
     "access_level": "Access Level",
-    "fname": "Fname",
-    "lname": "Lname",
+    "fname": "Fist Name",
+    "lname": "Last Name",
     "title": "Title",
     "address1": "Address1",
     "address2": "Address2",
@@ -48,12 +48,12 @@
     {
       "type": "plaintext",
       "field": "fname",
-      "label": "Fname"
+      "label": "First Name"
     },
     {
       "type": "plaintext",
       "field": "lname",
-      "label": "Lname"
+      "label": "Last Name"
     },
     {
       "type": "plaintext",

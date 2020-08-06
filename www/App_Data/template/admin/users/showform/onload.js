@@ -27,3 +27,5 @@ function on_change_pwd (e) {
     $(this).hide();
     $('#pwd').removeClass('d-none').focus();
 }
+
+$('#pwd').on('blur change keyup', fw.renderPwdBar);

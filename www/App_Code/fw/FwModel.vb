@@ -101,7 +101,8 @@ Public MustInherit Class FwModel : Implements IDisposable
 
     'override if id/iname differs in table
     'params - to use - override in your model
-    Public Overridable Function listSelectOptions(Optional params As Object = Nothing) As ArrayList
+    'def - in dynamic controller - field definition (also contains "i" and "ps")
+    Public Overridable Function listSelectOptions(Optional params As Object = Nothing, Optional def As Hashtable = Nothing) As ArrayList
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
