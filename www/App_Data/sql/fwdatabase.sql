@@ -44,9 +44,10 @@ CREATE TABLE att (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX IX_att_table_name_item_id (table_name, item_id)
 );
-CREATE INDEX att_table_name ON att (table_name, item_id);
 
 /* link att files to table items*/
 DROP TABLE IF EXISTS att_table_link;
@@ -60,8 +61,9 @@ CREATE TABLE att_table_link (
   status                TINYINT DEFAULT 0,        /*0-ok, 1-under update*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
+
+  INDEX UX_att_table_link UNIQUE (table_name, item_id, att_id)
 );
-CREATE UNIQUE INDEX att_table_link_UX ON att_table_link (table_name, item_id, att_id);
 
 
 DROP TABLE IF EXISTS users;
@@ -95,9 +97,10 @@ CREATE TABLE users (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-)
-CREATE UNIQUE INDEX users_email ON users (email);
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX UX_users_email UNIQUE (email)
+);
 INSERT INTO users (fname, lname, email, pwd, access_level)
 VALUES ('Website','Admin','admin@admin.com','CHANGE_ME',100);
 
@@ -120,10 +123,11 @@ CREATE TABLE settings (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX UX_settings_icode UNIQUE (icode),
+  INDEX IX_settings_icat (icat)
 );
-CREATE UNIQUE INDEX settings_icode ON settings (icode);
-CREATE INDEX settings_icat ON settings (icat);
 INSERT INTO settings (is_user_edit, input, icat, icode, ivalue, iname, idesc) VALUES
 (1, 10, '', 'test', 'novalue', 'test settings', 'description');
 
@@ -155,12 +159,11 @@ CREATE TABLE spages (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-);
-CREATE INDEX spages_parent_id ON spages (parent_id, prio);
-CREATE INDEX spages_url ON spages (url);
-GO
+  upd_users_id          INT DEFAULT 0,
 
+  INDEX IX_spages_parent_id (parent_id, prio),
+  INDEX IX_spages_url (url)
+);
 --TRUNCATE TABLE spages;
 INSERT INTO spages (parent_id, url, iname) VALUES
 (0,'','Home') --1
@@ -209,10 +212,11 @@ CREATE TABLE event_log (
 
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_users_id          INT DEFAULT 0,                        /*user added record, 0 if sent by cron module*/
+
+  INDEX IX_event_log_events_id (events_id),
+  INDEX IX_event_log_add_users_id (add_users_id),
+  INDEX IX_event_log_add_time (add_time)
 );
-CREATE INDEX event_log_events_id_idx ON event_log (events_id);
-CREATE INDEX event_log_add_users_id_dx ON event_log (add_users_id)
-CREATE INDEX event_log_add_time_idx ON event_log (add_time);
 
 /*Lookup Manager Tables*/
 DROP TABLE IF EXISTS lookup_manager_tables;
@@ -239,15 +243,13 @@ CREATE TABLE lookup_manager_tables (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
-);
-CREATE UNIQUE INDEX lookup_manager_tables_tname ON lookup_manager_tables (tname);
-GO
+  upd_users_id          INT DEFAULT 0,
 
+  INDEX UX_lookup_manager_tables_tname (tname)
+);
 insert into lookup_manager_tables (tname, iname) VALUES
 ('events','Events')
 ;
-GO
 
 /*user custom views*/
 DROP TABLE IF EXISTS user_views;
@@ -260,9 +262,10 @@ CREATE TABLE user_views (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related user
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX UX_user_views (add_users_id, icode)
 );
-CREATE UNIQUE INDEX user_views_UK ON user_views (add_users_id, icode);
 
 /*user lists*/
 DROP TABLE IF EXISTS user_lists;
@@ -277,7 +280,9 @@ CREATE TABLE user_lists (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related owner user
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX IX_user_lists (add_users_id, entity)
 );
 
 /*items linked to user lists */
@@ -291,9 +296,10 @@ CREATE TABLE user_lists_items (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related owner user
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX UX_user_lists_items (user_lists_id, item_id)
 );
-CREATE UNIQUE INDEX user_lists_items_UK ON user_lists_items (user_lists_id, item_id);
 
 /*Custom menu items for sidebar*/
 DROP TABLE IF EXISTS menu_items;

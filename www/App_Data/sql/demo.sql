@@ -52,9 +52,12 @@ CREATE TABLE demos (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX UX_demos_email UNIQUE (email),
+  INDEX IX_demos_demo_dicts_id (demo_dicts_id),
+  INDEX IX_demos_dict_link_auto_id (dict_link_auto_id)
 );
-CREATE UNIQUE INDEX demos_email ON demos (email);
 
 /*multi link table*/
 DROP TABLE IF EXISTS demos_demo_dicts_link;
@@ -66,5 +69,8 @@ CREATE TABLE demos_demo_dicts_link (
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
-  upd_users_id          INT DEFAULT 0
+  upd_users_id          INT DEFAULT 0,
+
+  INDEX IX_demos_demos_id (demos_id),
+  INDEX IX_demos_demo_dicts_id (demo_dicts_id)
 );
