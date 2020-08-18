@@ -29,6 +29,7 @@ http://demo.engineeredit.com/ - this is how it looks in action right after insta
 
 ### Development
 1. in Visual Studio do `File -> Open -> Web Site...` (Shift+Alt+O) and open `/www` folder
+2. open `Tools -> NuGet Package Manager -> Package Manager Console` and run command `Update-Package -reinstall`
 2. press Ctrl+F5 to run (or F5 if you really need debugger)
 3. review debug log in `/www/App_Data/logs/main.log`
 4. edit or create new controllers and models in `/www/App_Code/controllers` and `/www/App_Code/models`
