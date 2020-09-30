@@ -238,6 +238,7 @@ CREATE TABLE lookup_manager_tables (
   column_names          NVARCHAR(MAX),                     /*comma-separated column list of column names, if empty - use field name*/
   column_types          NVARCHAR(MAX),                     /*comma-separated column list of column types/lookups (" "-string(default),textarea,checkbox,tname.field-lookup table), if empty - use standard input[text]*/
   column_groups         NVARCHAR(MAX),                     /*comma-separated column list of groups column related to, if empty - don't include column in group*/
+  url                   NVARCHAR(255) NOT NULL DEFAULT '', /*if defined - redirected to this URL instead of LookupManager forms*/
 
   status                TINYINT DEFAULT 0,                /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
