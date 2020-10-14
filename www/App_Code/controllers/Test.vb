@@ -59,5 +59,9 @@ Public Class TestController
         rw("hello world")
     End Sub
 
+    Public Sub ExceptionAction()
+        Throw New ApplicationException("test")
+    End Sub
+
 End Class
 

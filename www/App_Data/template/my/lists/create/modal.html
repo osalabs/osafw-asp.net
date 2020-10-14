@@ -56,10 +56,12 @@
       .done(function (data, textStatus, jqXHR) {
         if (data.success){
           if (data.action=='added'){
-            $this.find('.glyphicon').removeClass('d-none');
+            $this.find('.flag-yes').removeClass('d-none');
+            $this.find('.flag-no').addClass('d-none');
             fw.ok('Record added to list "'+data.iname+'"');
           }else if (data.action=='removed'){
-            $this.find('.glyphicon').addClass('d-none');
+            $this.find('.flag-yes').addClass('d-none');
+            $this.find('.flag-no').removeClass('d-none');
             fw.ok('Record removed from list "'+data.iname+'"');
           }
         }else{

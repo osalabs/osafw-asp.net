@@ -7,7 +7,7 @@
     <div class="col">
       <div class="input-group date">
         <input id="pub_time" name="item[pub_time]" maxlength="10" value="<~i[pub_time] date>" type="text" class="form-control">
-        <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+        <div class="input-group-append"><button class="btn btn-default" type="button"><~/common/icons/calendar3></button></div>
       </div>
     </div>
   </div>
@@ -92,7 +92,7 @@
  <~sub_block2 unless="i[is_home]" inline>
  <fieldset>
   <legend>`Sub-Pages`
-    <a class="btn btn-default btn-sm" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add Sub-Page`</a>
+    <a class="btn btn-default btn-sm" href="<~../url>/new?parent_id=<~id>"><~/common/icons/file-earmark-plus> `Add Sub-Page`</a>
   </legend>
 
   <ul>

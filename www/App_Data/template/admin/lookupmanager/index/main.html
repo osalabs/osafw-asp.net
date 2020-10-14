@@ -7,16 +7,16 @@
 <~mode_switch if="is_two_modes" inline>
 <div class="btn-group btn-group-toggle pull-right on-mode-switch" data-toggle="buttons">
   <label class="btn btn-default <~/common/active unless="f[mode]">">
-    <input type="radio" name="f[mode]" value="" id="option1" autocomplete="off" <~/common/checked unless="f[mode]">> <i class="glyphicon glyphicon-th-list"></i> Browse
+    <input type="radio" name="f[mode]" value="" id="option1" autocomplete="off" <~/common/checked unless="f[mode]">> <~/common/icons/card-list> Browse
   </label>
   <label class="btn btn-default <~/common/active if="f[mode]">">
-    <input type="radio" name="f[mode]" value="edit" id="option2" autocomplete="off" <~/common/checked if="f[mode]">> <i class="glyphicon glyphicon-edit"></i> Table Edit
+    <input type="radio" name="f[mode]" value="edit" id="option2" autocomplete="off" <~/common/checked if="f[mode]">> <~/common/icons/pencil-square> Table Edit
   </label>
 </div>
 </~mode_switch>
 
 <div class="btn-group">
-    <a class="btn btn-default on-add-new" href="<~../url>/new?d=<~d>"><i class="glyphicon glyphicon-plus"></i> `Add New`</a>
+    <a class="btn btn-default on-add-new" href="<~../url>/new?d=<~d>"><~/common/icons/plus-circle> `Add New`</a>
 </div>
 </div>
 

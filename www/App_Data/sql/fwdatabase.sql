@@ -319,4 +319,4 @@ CREATE TABLE menu_items (
   upd_time              DATETIME2,
   upd_users_id          INT DEFAULT 0
 );
--- INSERT INTO menu_items (iname, url, icon, controller) VALUES ('Test Menu Item', '/Admin/Demos', 'glyphicon glyphicon-dashboard', 'AdminDemos');
+-- INSERT INTO menu_items (iname, url, icon, controller) VALUES ('Test Menu Item', '/Admin/Demos', 'list-ul', 'AdminDemos');
