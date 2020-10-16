@@ -426,7 +426,7 @@
                 {
                     "field": "id",
                     "label": "ID",
-                    "type": "group_id"
+                    "type": "group_id_addnew"
                 },
                 {
                     "field": "status",
