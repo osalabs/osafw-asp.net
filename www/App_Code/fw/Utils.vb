@@ -12,6 +12,8 @@ Imports System.Security.Cryptography
 Imports System.Net
 
 Public Class Utils
+    Public Shared OLEDB_PROVIDER As String = "Microsoft.ACE.OLEDB.12.0" 'used for import from CSV/Excel, change it to your provider if necessary
+
     'convert "space" delimited string to an array
     'WARN! replaces all "&nbsp;" to spaces (after convert)
     Public Shared Function qw(ByVal str As String) As String()
@@ -228,15 +230,15 @@ Public Class Utils
     '''    End Sub
     ''' </summary>
     ''' <param name="fw">fw instance</param>
-    ''' <param name="callback">callback to custom code</param>
+    ''' <param name="callback">callback to custom code, accept one row of fields(as Hashtable)</param>
     ''' <param name="filepath">.csv file name to import</param>
-    Public Shared Sub importCSV(fw As FW, callback As Action(Of Hashtable), filepath As String)
+    Public Shared Sub importCSV(fw As FW, callback As Action(Of Hashtable), filepath As String, Optional is_header As Boolean = True)
         Dim dir = Path.GetDirectoryName(filepath)
         Dim filename = Path.GetFileName(filepath)
 
-        Dim ConnectionString As String = "Provider=Microsoft.ACE.OLEDB.12.0;" +
+        Dim ConnectionString As String = "Provider=" & OLEDB_PROVIDER & ";" +
                                 "Data Source=" & dir & ";" &
-                                "Extended Properties=""Text;HDR=Yes;IMEX=1;FORMAT=Delimited"";"
+                                "Extended Properties=""Text;HDR=" & IIf(is_header, "Yes", "No") & ";IMEX=1;FORMAT=Delimited"";"
 
         Using cn As New Data.OleDb.OleDbConnection(ConnectionString)
             cn.Open()
@@ -263,6 +265,50 @@ Public Class Utils
             End While
         End Using
     End Sub
+
+    ''' <summary>
+    ''' helper for importing Excel files. Example:
+    '''    Utils.importExcel(fw, AddressOf importer, "c:\import.xlsx")
+    '''    Sub importer(sheet_name as String, rows as ArrayList)
+    '''       ...your custom import code
+    '''    End Sub
+    ''' </summary>
+    ''' <param name="fw">fw instance</param>
+    ''' <param name="callback">callback to custom code, accept worksheet name and all rows(as ArrayList of Hashtables)</param>
+    ''' <param name="filepath">.xlsx file name to import</param>
+    ''' <param name="is_header"></param>
+    ''' <returns></returns>
+    Protected Function importExcel(fw As FW, callback As Action(Of String, ArrayList), filepath As String, Optional is_header As Boolean = True) As Hashtable
+        Dim result As New Hashtable()
+        Dim conf As New Hashtable From {
+                {"type", "OLE"},
+                {"connection_string", "Provider=" & OLEDB_PROVIDER & ";Data Source=" & filepath & ";Extended Properties=""Excel 12.0 Xml;HDR=" & IIf(is_header, "Yes", "No") & ";ReadOnly=True;IMEX=1"""}
+            }
+        Dim accdb = New DB(fw, conf)
+        Dim conn As System.Data.OleDb.OleDbConnection = accdb.connect()
+        Dim schema = conn.GetOleDbSchemaTable(Data.OleDb.OleDbSchemaGuid.Tables, Nothing)
+        If schema Is Nothing OrElse schema.Rows.Count < 1 Then
+            Throw New ApplicationException("No worksheets found in the Excel file")
+        End If
+
+        Dim where As New Hashtable
+        For i As Integer = 0 To schema.Rows.Count - 1
+            Dim sheet_name_full = schema.Rows(i)("TABLE_NAME").ToString()
+            Dim sheet_name = sheet_name_full.Replace("""", "")
+            sheet_name = sheet_name.Replace("'", "")
+            sheet_name = sheet_name.Substring(0, sheet_name.Length - 1)
+            Try
+                Dim rows = accdb.array(sheet_name_full, where)
+                callback(sheet_name, rows)
+            Catch ex As Exception
+                Throw New ApplicationException("Error while reading data from [" & sheet_name & "] sheet: " & ex.Message())
+            End Try
+        Next
+        ' close connection to release the file
+        accdb.disconnect()
+
+        Return result
+    End Function
 
 
     Public Shared Function toCSVRow(row As Hashtable, fields As Array) As String
