@@ -55,9 +55,10 @@
         {
             "field": "parent_id",
             "label": "Parent",
-            "lookup_table": "demos",
+            "lookup_model": "Demos",
             "lookup_field": "iname",
-            "type": "plaintext"
+            "type": "plaintext_link",
+            "admin_url": "/Admin/DemosDynamic"
         },
         {
             "field": "demo_dicts_id",
