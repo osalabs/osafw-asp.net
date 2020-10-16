@@ -13,6 +13,13 @@ Imports Amazon
 
 Public Class Att
     Inherits FwModel
+    Const MAX_THUMB_W_S As Integer = 180
+    Const MAX_THUMB_H_S As Integer = 180
+    Const MAX_THUMB_W_M As Integer = 512
+    Const MAX_THUMB_H_M As Integer = 512
+    Const MAX_THUMB_W_L As Integer = 1200
+    Const MAX_THUMB_H_L As Integer = 1200
+
     Public MIME_MAP As String = "doc|application/msword docx|application/msword xls|application/vnd.ms-excel xlsx|application/vnd.ms-excel ppt|application/vnd.ms-powerpoint pptx|application/vnd.ms-powerpoint pdf|application/pdf html|text/html zip|application/x-zip-compressed jpg|image/jpeg jpeg|image/jpeg gif|image/gif png|image/png wmv|video/x-ms-wmv avi|video/x-msvideo"
     Public att_table_link As String = "att_table_link"
 
@@ -20,6 +27,53 @@ Public Class Att
         MyBase.New()
         table_name = "att"
     End Sub
+
+    Public Function uploadOne(id As Integer, file_index As Integer, Optional is_new As Boolean = False) As Boolean
+        Dim result = False
+        Dim filepath As String = Nothing
+        If uploadFile(id, filepath, file_index, True) Then
+            logger("uploaded to [" & filepath & "]")
+            Dim ext As String = UploadUtils.getUploadFileExt(filepath)
+
+            'TODO refactor in better way
+            Dim file As HttpPostedFile = fw.req.Files(file_index)
+
+            'update db with file information
+            Dim fields As New Hashtable
+            If is_new Then fields("iname") = file.FileName
+            fields("iname") = file.FileName
+            fields("fname") = file.FileName
+            fields("fsize") = Utils.fileSize(filepath)
+            fields("ext") = ext
+            'turn on image flag if it's an image
+            If UploadUtils.isUploadImgExtAllowed(ext) Then
+                'if it's an image - turn on flag and resize for thumbs
+                fields("is_image") = 1
+
+                Utils.resizeImage(filepath, getUploadImgPath(id, "s", ext), MAX_THUMB_W_S, MAX_THUMB_H_S)
+                Utils.resizeImage(filepath, getUploadImgPath(id, "m", ext), MAX_THUMB_W_M, MAX_THUMB_H_M)
+                Utils.resizeImage(filepath, getUploadImgPath(id, "l", ext), MAX_THUMB_W_L, MAX_THUMB_H_L)
+            End If
+
+            Me.update(id, fields)
+            result = True
+        End If
+        Return result
+    End Function
+
+    'return id of the first successful upload
+    Public Function uploadMulti(item As Hashtable) As Integer
+        Dim result = 0
+
+        For i = 0 To fw.req.Files.Count - 1
+            Dim id = Me.add(item)
+            Me.uploadOne(id, i, True)
+
+            If result = 0 Then result = id
+        Next
+
+        Return result
+    End Function
 
     'add/update att_table_links
     Public Sub updateAttLinks(table_name As String, id As Integer, form_att As Hashtable)

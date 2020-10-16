@@ -203,6 +203,9 @@ Public MustInherit Class FwModel : Implements IDisposable
     Public Overridable Function uploadFile(id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
         Return UploadUtils.uploadFile(fw, table_name, id, filepath, input_name, is_skip_check)
     End Function
+    Public Overridable Function uploadFile(id As Integer, ByRef filepath As String, Optional file_index As Integer = 0, Optional is_skip_check As Boolean = False) As Boolean
+        Return UploadUtils.uploadFile(fw, table_name, id, filepath, file_index, is_skip_check)
+    End Function
 
     'return upload dir for the module name and id related to FW.config("site_root")/upload
     ' id splitted to 1000

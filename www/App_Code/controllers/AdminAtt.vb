@@ -10,10 +10,6 @@ Public Class AdminAttController
     Public Shared Shadows access_level As Integer = 80
 
     Protected model As New Att
-    Private Const MAX_THUMB_W_S As Integer = 180
-    Private Const MAX_THUMB_H_S As Integer = 180
-    Private Const MAX_THUMB_W_M As Integer = 315
-    Private Const MAX_THUMB_H_M As Integer = 315
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -138,56 +134,38 @@ Public Class AdminAttController
             Dim itemdb As Hashtable = FormUtils.filter(item, Utils.qw("att_categories_id iname status"))
             If Not itemdb("iname") > "" Then itemdb("iname") = "new file upload"
 
-            Dim is_add As Boolean = False
             If id > 0 Then
                 model.update(id, itemdb)
                 fw.FLASH("updated", 1)
+
+                'Proceed upload - for edit - just one file
+                model.uploadOne(id, 0, False)
             Else
-                is_add = True
-                id = model.add(itemdb)
+                'Proceed upload - for add - could be multiple files
+                id = model.uploadMulti(itemdb)
                 fw.FLASH("added", 1)
             End If
 
-            'Proceed upload
-            Dim filepath As String = Nothing
-            If model.uploadFile(id, filepath, "file1", True) Then
-                logger("uploaded to [" & filepath & "]")
-                Dim ext As String = UploadUtils.getUploadFileExt(filepath)
-
-                'TODO refactor in better way
-                Dim file As HttpPostedFile = fw.req.Files("file1")
-
-                'update db with file information
-                Dim vars As New Hashtable
-                If is_add Then vars("iname") = file.FileName
-                vars("fname") = file.FileName
-                vars("fsize") = Utils.fileSize(filepath)
-                vars("ext") = ext
-                'turn on image flag if it's an image
-                If UploadUtils.isUploadImgExtAllowed(ext) Then
-                    'if it's an image - turn on flag and resize for thumbs
-                    vars("is_image") = 1
-                    is_image = 1
-
-                    Utils.resizeImage(filepath, model.getUploadImgPath(id, "s", ext), MAX_THUMB_W_S, MAX_THUMB_H_S)
-                    Utils.resizeImage(filepath, model.getUploadImgPath(id, "m", ext), MAX_THUMB_W_M, MAX_THUMB_H_M)
-                End If
-
-                Dim where As New Hashtable
-                where("id") = id
-                db.update("att", vars, where)
+            'if select in popup - return json
+            hf("_json") = True
+            hf("id") = id
+            If id > 0 Then
+                item = model.one(id)
+                hf("success") = True
+                hf("url") = model.getUrlDirect(id)
+                hf("iname") = item("iname")
+                hf("is_image") = item("is_image")
+            Else
+                hf("success") = False
             End If
 
-            'if select in popup - return json
-            hf("success") = True
-            hf("id") = id
-            hf("iname") = itemdb("iname")
-            hf("url") = model.getUrlDirect(id)
-            hf("is_image") = is_image
-            hf("_json") = True
-
             'otherwise just redirect
-            hf("_redirect") = base_url & "/" & id & "/edit"
+            If return_url > "" Then
+                fw.FLASH("success", "File uploaded")
+                hf("_redirect") = return_url
+            Else
+                hf("_redirect") = base_url & "/" & id & "/edit"
+            End If
 
         Catch ex As ApplicationException
             hf("success") = False
@@ -218,8 +196,7 @@ Public Class AdminAttController
         End If
 
         If itemdb("fsize") = 0 Then
-            Dim file As HttpPostedFile = fw.req.Files("file1")
-            If IsNothing(file) OrElse file.ContentLength = 0 Then
+            If fw.req.Files.Count = 0 OrElse IsNothing(fw.req.Files(0)) OrElse fw.req.Files(0).ContentLength = 0 Then
                 result = False
                 fw.FERR("file1") = "NOFILE"
             End If
