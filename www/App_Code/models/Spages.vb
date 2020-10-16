@@ -203,6 +203,10 @@ Public Class Spages
             Exit Sub
         End If
 
+        If item("redirect_url") > "" Then
+            fw.redirect(item("redirect_url"))
+        End If
+
         ps("page") = item
         ps("meta_keywords") = item("meta_keywords")
         ps("meta_description") = item("meta_description")
