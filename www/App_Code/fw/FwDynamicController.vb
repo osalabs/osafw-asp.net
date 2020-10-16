@@ -217,7 +217,7 @@ Public Class FwDynamicController
             If field = "" Then Continue For
 
             Dim val = Utils.qh(def("validate"))
-            If val.ContainsKey("exists") AndAlso model0.isExists(item(field), id) Then
+            If val.ContainsKey("exists") AndAlso model0.isExistsByField(item(field), id, field) Then
                 fw.FERR(field) = "EXISTS"
                 result = False
             End If
