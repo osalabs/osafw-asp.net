@@ -8,6 +8,7 @@ Imports System.Data.SqlClient
 Imports System.Data
 Imports System.Data.Common
 Imports System.IO
+Imports System.Data.Odbc
 
 Public Enum DBOps As Integer
     [EQ]            '=
@@ -168,6 +169,8 @@ Public Class DB
             result = New SqlConnection(connstr)
         ElseIf dbtype = "OLE" Then
             result = New OleDbConnection(connstr)
+        ElseIf dbtype = "ODBC" Then
+            result = New OdbcConnection(connstr)
         Else
             Dim msg As String = "Unknown type [" & dbtype & "]"
             logger(LogLevel.FATAL, msg)
@@ -904,6 +907,7 @@ Public Class DB
                 row("fw_type") = map_mssqltype2fwtype(row("type")) 'meta type
                 row("fw_subtype") = LCase(row("type"))
             Next
+            'TODO else ODBC support
         Else
             'OLE DB (Access)
             Dim schemaTable As DataTable =
