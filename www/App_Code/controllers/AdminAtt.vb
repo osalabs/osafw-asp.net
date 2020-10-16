@@ -31,7 +31,7 @@ Public Class AdminAttController
 
         Dim where As String = " status = 0 and table_name='' "
         If f("s") > "" Then
-            where &= " and (iname like " & db.q("%" & f("s") & "%") & _
+            where &= " and (iname like " & db.q("%" & f("s") & "%") &
                     " or fname like " & db.q("%" & f("s") & "%") & ")"
         End If
 
@@ -51,13 +51,13 @@ Public Class AdminAttController
             End If
 
             'offset+1 because _RowNumber starts from 1
-            Dim sql As String = "SELECT TOP " & limit & " * " & _
-                            " FROM (" & _
-                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & orderby & ") AS _RowNumber" & _
-                            "   FROM " & model.table_name & _
-                            "   WHERE " & where & _
-                            ") tmp" & _
-                        " WHERE _RowNumber >= " & (offset + 1) & _
+            Dim sql As String = "SELECT TOP " & limit & " * " &
+                            " FROM (" &
+                            "   SELECT *, ROW_NUMBER() OVER (ORDER BY " & orderby & ") AS _RowNumber" &
+                            "   FROM " & model.table_name &
+                            "   WHERE " & where &
+                            ") tmp" &
+                        " WHERE _RowNumber >= " & (offset + 1) &
                         " ORDER BY " & orderby
 
             hf("list_rows") = db.array(sql)
