@@ -1012,6 +1012,10 @@ Public Class DevManageController
         Dim columns = ""
         Dim column_names = ""
         Dim fields = Me.array2hashtable(entity("fields"), "fw_name")
+        If fields.ContainsKey("icode") Then
+            columns &= IIf(columns > "", ",", "") & "icode"
+            column_names &= IIf(column_names > "", ",", "") & fields("icode")("iname")
+        End If
         If fields.ContainsKey("iname") Then
             columns &= IIf(columns > "", ",", "") & "iname"
             column_names &= IIf(column_names > "", ",", "") & fields("iname")("iname")
