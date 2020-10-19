@@ -204,6 +204,21 @@ window.fw={
       }
     });
 
+    //on click - confirm, then submit via POST
+    //ex: <button type="button" class="btn btn-default on-fw-submit" data-url="SUBMIT_URL?XSS=<~SESSION[XSS]>" data-title="CONFIRMATION TITLE"></button>
+    $(document).on('click', '.on-fw-submit', function (e) {
+        var $this=$(this);
+        var url = $this.data('url');
+        var title = $this.data('title');
+        if (!title) title='Are you sure?';
+        fw.confirm(title, function (e) {
+            $('#FTmpSubmit').remove();
+            $('body').append('<form id="FTmpSubmit" method="POST" action="'+url+'"></form>');
+            $('#FTmpSubmit').submit();
+        });
+    });
+
+
   },
 
   //for all forms with data-check-changes on a page - setup changes tracker, call in $(document).ready()
