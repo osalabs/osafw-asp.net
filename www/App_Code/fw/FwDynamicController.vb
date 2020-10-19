@@ -87,10 +87,8 @@ Public Class FwDynamicController
     End Function
 
     Public Overridable Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
-        'TODO define via config.json
-        'Me.form_new_defaults = New Hashtable 'set new form defaults here if any
-        'Me.form_new_defaults = reqh("item") 'OR optionally set defaults from request params
-        'item("field")="default value"
+        'define form_new_defaults via config.json
+        'Me.form_new_defaults = New Hashtable From {{"field", "default value"}} 'OR set new form defaults here
 
         Dim ps As New Hashtable
         Dim item = reqh("item") 'set defaults from request params

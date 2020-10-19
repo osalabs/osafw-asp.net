@@ -89,6 +89,8 @@ Public MustInherit Class FwController
             save_fields = Utils.f2str(save_fields_raw)
         End If
 
+        form_new_defaults = Me.config("form_new_defaults")
+
         'save_fields_checkboxes could be defined as qw string - check and convert
         Dim save_fields_checkboxes_raw = Me.config("save_fields_checkboxes")
         If TypeOf save_fields_checkboxes_raw Is IDictionary Then
