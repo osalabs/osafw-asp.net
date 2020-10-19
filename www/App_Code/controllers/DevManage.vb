@@ -1216,7 +1216,8 @@ Public Class DevManageController
                             Dim mname = _tablename2model(Utils.name2fw(fkinfo("pk_table")))
 
                             sf("lookup_model") = mname
-                            'sf("lookup_field") = "iname"
+                            'sf("lookup_field") = "iname"    
+                            sf("type") = "plaintext_link"
 
                             sff("type") = "select"
                             sff("lookup_model") = mname
@@ -1241,6 +1242,7 @@ Public Class DevManageController
 
                         sf("lookup_model") = mname
                         'sf("lookup_field") = "iname"
+                        sf("type") = "plaintext_link"
 
                         sff("type") = "select"
                         sff("lookup_model") = mname
@@ -1286,7 +1288,7 @@ Public Class DevManageController
                 Case "att_id" 'Single attachment field - TODO better detect on foreign key to "att" table
                     sf("type") = "att"
                     sf("label") = "Attachment"
-                    sf("class_contents") = "col-md-2"
+                    sf("class_contents") = "col-md-3"
                     sff.Remove("lookup_model")
 
                     sff("type") = "att_edit"
@@ -1338,7 +1340,11 @@ Public Class DevManageController
             If is_skip Then Continue For
 
             Dim is_sys = False
-            If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then
+            If fld("is_identity") = "1" _
+                OrElse sys_fields.Contains(fld("name")) _
+                OrElse sf("type") = "att" _
+                OrElse sf("type") = "att_links" _
+            Then
                 'add to system fields
                 showFieldsRight.Add(sf)
                 showFormFieldsRight.Add(sff)
@@ -1449,9 +1455,16 @@ Public Class DevManageController
 
         config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
         If config("is_dynamic_show") Then
-            'TODO TDB? make 2 separate columns for view
-            showFieldsLeft.AddRange(showFieldsRight)
-            config("show_fields") = showFieldsLeft
+            Dim showFields = New ArrayList
+            showFields.Add(Utils.qh("type|row"))
+            showFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFields.AddRange(showFieldsLeft)
+            showFields.Add(Utils.qh("type|col_end"))
+            showFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFields.AddRange(showFieldsRight)
+            showFields.Add(Utils.qh("type|col_end"))
+            showFields.Add(Utils.qh("type|row_end"))
+            config("show_fields") = showFields
         End If
         config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
         If config("is_dynamic_showform") Then
