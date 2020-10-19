@@ -100,9 +100,8 @@ Public MustInherit Class FwModel : Implements IDisposable
     End Function
 
     'override if id/iname differs in table
-    'params - to use - override in your model
-    'def - in dynamic controller - field definition (also contains "i" and "ps")
-    Public Overridable Function listSelectOptions(Optional params As Object = Nothing, Optional def As Hashtable = Nothing) As ArrayList
+    'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
+    Public Overridable Function listSelectOptions(Optional def As Hashtable = Nothing) As ArrayList
         Dim where As New Hashtable
         If field_status > "" Then where(field_status) = STATUS_ACTIVE
 
@@ -260,8 +259,8 @@ Public MustInherit Class FwModel : Implements IDisposable
     End Function
 
     'sel_ids - selected ids in the list()
-    'params - to use - override in your model
-    Public Overridable Function getMultiListAL(ids As ArrayList, Optional params As Object = Nothing) As ArrayList
+    'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
+    Public Overridable Function getMultiListAL(ids As ArrayList, Optional def As Hashtable = Nothing) As ArrayList
         Dim rows As ArrayList = Me.list()
         For Each row As Hashtable In rows
             row("is_checked") = ids.Contains(row(Me.field_id))
@@ -271,10 +270,10 @@ Public MustInherit Class FwModel : Implements IDisposable
 
     'overloaded version for string comma-separated ids
     'sel_ids - comma-separated ids
-    'params - to use - override in your model
-    Public Overridable Function getMultiList(sel_ids As String, Optional params As Object = Nothing) As ArrayList
+    'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
+    Public Overridable Function getMultiList(sel_ids As String, Optional def As Hashtable = Nothing) As ArrayList
         Dim ids As New ArrayList(Split(sel_ids, ","))
-        Return Me.getMultiListAL(ids, params)
+        Return Me.getMultiListAL(ids, def)
     End Function
 
     ''' <summary>

@@ -386,9 +386,9 @@ Public Class FwDynamicController
             ElseIf dtype = "multi" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
                 Else
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
 
             ElseIf dtype = "att" Then
@@ -462,9 +462,9 @@ Public Class FwDynamicController
             ElseIf dtype = "multicb" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
                 Else
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
 
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
@@ -498,7 +498,7 @@ Public Class FwDynamicController
                         def("value") = def("lookup_row")(def("lookup_field"))
                     Else
                         'lookup select
-                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def("lookup_params"), def)
+                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def)
                         def("value") = item(field)
                     End If
 
