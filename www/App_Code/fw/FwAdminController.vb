@@ -60,8 +60,7 @@ Public Class FwAdminController
         Dim item As Hashtable = model0.one(id)
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
-        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
         'userlists support if necessary
         If Me.is_userlists Then Me.setUserLists(ps, id)
@@ -109,8 +108,7 @@ Public Class FwAdminController
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
         ps("id") = id
         ps("i") = item

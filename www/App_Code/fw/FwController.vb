@@ -669,6 +669,11 @@ Public MustInherit Class FwController
         End If
     End Sub
 
+    Public Overridable Sub setAddUpdUser(ps As Hashtable, item As Hashtable)
+        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item(model0.field_add_users_id))
+        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item(model0.field_upd_users_id))
+    End Sub
+
     '********************************** dynamic controller support
     'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order
     'if fields defined - show fields only

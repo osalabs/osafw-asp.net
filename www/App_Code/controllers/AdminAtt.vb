@@ -105,8 +105,7 @@ Public Class AdminAttController
 
         hf("select_options_att_categories_id") = fw.model(Of AttCategories).listSelectOptions()
 
-        hf("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        hf("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(hf, item)
 
         hf("id") = id
         hf("i") = item
