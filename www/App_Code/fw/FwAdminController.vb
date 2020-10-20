@@ -17,6 +17,7 @@ Public Class FwAdminController
         'required_fields = "iname"
         'save_fields = "iname idesc status"
         'save_fields_checkboxes = ""
+        'save_fields_nullable=""
 
         'search_fields = "iname idesc"
         'list_sortdef = "iname asc"
@@ -140,6 +141,7 @@ Public Class FwAdminController
 
             Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
             If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
+            If Me.save_fields_nullable > "" Then FormUtils.filterNullable(itemdb, save_fields_nullable)
 
             id = Me.modelAddOrUpdate(id, itemdb)
         Catch ex As ApplicationException
