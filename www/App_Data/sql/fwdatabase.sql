@@ -237,7 +237,7 @@ CREATE TABLE lookup_manager_tables (
   list_columns          NVARCHAR(MAX),                     /*comma-separated field list to display on list view, if defined - bo table edit mode available*/
   columns               NVARCHAR(MAX),                     /*comma-separated field list to display, if empty - all fields displayed*/
   column_names          NVARCHAR(MAX),                     /*comma-separated column list of column names, if empty - use field name*/
-  column_types          NVARCHAR(MAX),                     /*comma-separated column list of column types/lookups (" "-string(default),textarea,checkbox,tname.IDfield:INAMEfield-lookup table), if empty - use standard input[text]*/
+  column_types          NVARCHAR(MAX),                     /*comma-separated column list of column types/lookups (" "-string(default),readonly,textarea,checkbox,tname.IDfield:INAMEfield-lookup table), if empty - use standard input[text]*/
   column_groups         NVARCHAR(MAX),                     /*comma-separated column list of groups column related to, if empty - don't include column in group*/
   url                   NVARCHAR(255) NOT NULL DEFAULT '', /*if defined - redirected to this URL instead of LookupManager forms*/
 

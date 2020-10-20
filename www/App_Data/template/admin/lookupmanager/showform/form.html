@@ -18,6 +18,7 @@
           <label class="col-form-label col-md-3" for="<~colname>"><~iname></label>
           <div class="col">
             <~type_input unless="type">
+            <~type_readonly ifeq="type" value="readonly">
             <~type_checkbox ifeq="type" value="checkbox">
             <~type_textarea ifeq="type" value="textarea">
             <~type_lookup ifeq="type" value="lookup">
