@@ -46,8 +46,8 @@ Public Class FwDynamicController
         'set standard output parse strings
         Dim ps = Me.setPS()
 
-        'userlists support
-        Me.setUserLists(ps)
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps)
 
         If is_dynamic_index Then
             'customizable headers
@@ -74,14 +74,15 @@ Public Class FwDynamicController
         'dynamic fields
         If is_dynamic_show Then ps("fields") = prepareShowFields(item, ps)
 
-        'userlists support
-        ps("list_view") = IIf(String.IsNullOrEmpty(list_view), model0.table_name, list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps, id)
 
         ps("id") = id
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
+        ps("base_url") = base_url
+        ps("is_userlists") = is_userlists
 
         Return ps
     End Function

@@ -6,7 +6,7 @@
 Public Class UserLists
     Inherits FwModel
 
-    'TODO add here your entities or just use list_view in controllers
+    'TODO add here your entities or just use base_url in controllers
     'Public Const ENTITY_DEMOS = "demos"
 
     Public table_items As String = "user_lists_items"

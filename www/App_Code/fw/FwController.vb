@@ -44,6 +44,8 @@ Public MustInherit Class FwController
     Protected is_dynamic_show As Boolean = False    'true if controller has dynamic ShowAction, requires "show_fields" to be defined in config.json
     Protected is_dynamic_showform As Boolean = False 'true if controller has dynamic ShowFormAction, requires "showform_fields" to be defined in config.json
 
+    Protected is_userlists As Boolean = False       'true if controller should support UserLists
+
     Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
     Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
     Protected related_field_name As String         ' if set (in Controller) and $related_id passed - list will be filtered on this field
@@ -629,17 +631,21 @@ Public MustInherit Class FwController
         ps("pager") = Me.list_pager
         ps("f") = Me.list_filter
         ps("related_id") = Me.related_id
+        ps("base_url") = Me.base_url
+        ps("is_userlists") = Me.is_userlists
 
         If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
 
         Return ps
     End Function
 
-    Public Overridable Function setUserLists(ps As Hashtable) As Boolean
+    Public Overridable Function setUserLists(ps As Hashtable, Optional id As Integer = 0) As Boolean
         'userlists support
-        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
-        ps("list_view") = list_view
+        If id = 0 Then
+            'select only for list screens
+            ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(base_url)
+        End If
+        ps("my_userlists") = fw.model(Of UserLists).listForItem(base_url, id)
         Return True
     End Function
 

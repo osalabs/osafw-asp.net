@@ -2,9 +2,9 @@
   <div class="modal-dialog modal-lg">
     <form method="post" action="<~/my/lists/url>">
      <input type="hidden" name="XSS" value="<~session[XSS]>">
-     <input type="hidden" name="return_url" value="<~return_url>">
+     <input type="hidden" name="return_url" value="<~GLOBAL[request_url]>">
      <input type="hidden" name="item[entity]" value="<~userlist_entity>">
-     <input type="hidden" name="item[item_id]" value="<~item_id>">
+     <input type="hidden" name="item[item_id]" value="<~id>">
 
     <div class="modal-content">
         <div class="modal-header">
@@ -45,7 +45,7 @@
             name = name.replace(']', '');
             ids.push(name); //leave just id
          });
-         $modal.find('input[name="item[item_id]"]').val(ids.join(','));
+         if (ids.length) $modal.find('input[name="item[item_id]"]').val(ids.join(','));
       });
     });
 

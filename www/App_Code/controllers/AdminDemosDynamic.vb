@@ -21,7 +21,9 @@ Public Class AdminDemosDynamicController
         db = model.getDB() 'model-based controller works with model's db
 
         model_related = fw.model(Of DemoDicts)()
+        is_userlists = True
 
+        'override sortmap for date fields
         list_sortmap("fdate_pop_str") = "fdate_pop"
     End Sub
 
