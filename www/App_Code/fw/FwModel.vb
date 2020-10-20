@@ -64,11 +64,11 @@ Public MustInherit Class FwModel : Implements IDisposable
 
     'add renamed fields For template engine - spaces and special chars replaced With "_" and other normalizations
     Public Overloads Sub normalizeNames(row As Hashtable)
-        If Not is_normalize_names Then Return
+        If Not is_normalize_names OrElse row.Count = 0 Then Return
         For Each key In New ArrayList(row.Keys) 'static copy of row keys to avoid loop issues
             row(Utils.name2fw(key)) = row(key)
         Next
-        If field_id > "" AndAlso Not row.ContainsKey("id") Then row("id") = row(field_id)
+        If field_id > "" AndAlso row(field_id) IsNot Nothing AndAlso Not row.ContainsKey("id") Then row("id") = row(field_id)
     End Sub
 
     Public Overloads Sub normalizeNames(rows As ArrayList)

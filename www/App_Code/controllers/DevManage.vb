@@ -265,7 +265,7 @@ Public Class DevManageController
         content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
         FW.set_file_content(tpl_path & "/showform/form.html", content)
 
-        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
+        ''TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
 
         'now we could remove dynamic field definitions - uncomment if necessary
         'config.Remove("show_fields")
