@@ -101,8 +101,8 @@ Public MustInherit Class FwController
 
         'save_fields_nullable could be defined as qw string - check and convert
         Dim save_fields_nullable_raw = Me.config("save_fields_nullable")
-        If TypeOf save_fields_nullable_raw Is IDictionary Then
-            save_fields_nullable = Utils.qhRevert(save_fields_nullable_raw) 'not optimal, but simplest for now
+        If TypeOf save_fields_nullable_raw Is IList Then
+            save_fields_nullable = Utils.qwRevert(save_fields_nullable_raw) 'not optimal, but simplest for now
         Else
             save_fields_nullable = Utils.f2str(save_fields_nullable_raw)
         End If
