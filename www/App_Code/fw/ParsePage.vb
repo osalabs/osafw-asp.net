@@ -91,10 +91,10 @@
 'support modifiers:
 ' htmlescape
 ' date          - format as datetime, sample "d M yyyy HH:mm", see https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
-'       <~var date>         output "m/d/yyyy" - date only (TODO - should be formatted per user settings actually)
-'       <~var date="short"> output "m/d/yyyy hh:mm" - date and time short (to mins)
-'       <~var date="long">  output "m/d/yyyy hh:mm:ss" - date and time long
-'       <~var date="sql">   output "yyyy-mm-dd hh:mm:ss" - sql date and time
+'       <~var date>         output "M/d/yyyy" - date only (TODO - should be formatted per user settings actually)
+'       <~var date="short"> output "M/d/yyyy hh:mm" - date and time short (to mins)
+'       <~var date="long">  output "M/d/yyyy hh:mm:ss" - date and time long
+'       <~var date="sql">   output "yyyy-MM-dd hh:mm:ss" - sql date and time
 ' url           - add http:// to begin of string if absent
 ' number_format - FormatNumber(value, 2) => 12345.12
 ' truncate      - truncate with options <~tag truncate="80" trchar="..." trword="1" trend="1">
