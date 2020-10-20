@@ -367,6 +367,7 @@
                     "field": "dict_link_auto_id",
                     "label": "DemoDicts Autocomplete",
                     "type": "autocomplete",
+                    "autocomplete_url": "/Admin/Demos/(Autocomplete)",
                     "lookup_model": "DemoDicts",
                     "lookup_field": "iname",
                     "help_text": "will add new items to DemoDicts"
