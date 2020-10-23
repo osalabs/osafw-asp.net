@@ -193,23 +193,23 @@ Renders:
 ```
 
 |Field name|Description|Example|
-|-|-|-|
-|type||required, Element type, see values in table below|select - renders as `<select>` html|
+|---|---|---|
+|type|required, Element type, see values in table below|select - renders as `<select>` html|
 |field|Field name from database.table or arbitrary name for non-db block|demo_dicts_id - in case of select id value won't be displayed, but used to select active list element|
 |label|Label text|Demo Dictionary|
 |lookup_model|Model name where to read lookup values|DemoDicts|
 |is_option0|only for "select" type, if true - includes `<option value="0">option0_title</option>`|false(default),true|
 |is_option_empty|only for "select" type, if true - includes `<option value="">option0_title</option>`|false(default),true|
 |option0_title|only for "select" type for is_option0 or is_option_empty option title|"- select -"(default)|
-|required|For `showform_fields` only, make field required (both client and server-side validation)|false(default),true|
-|maxlength|For `showform_fields` only, set input's maxlength attribute|10|
-|max|For `showform_fields` only, set input type="number" max attribute|999|
-|min|For `showform_fields` only, set input type="number" min attribute|0|
-|step|For `showform_fields` only, set input type="number" step attribute|0.1|
-|placeholder|For `showform_fields` only, set input's maxlength attribute|"Enter value here"|
-|autocomplete_url|For `showform_fields` only, type="autocomplete". Input will get data from `autocomplete_url?q=%QUERY` where %QUERY will be replaced with input value|/Admin/SomeLookup/(Autocompete)|
-|is_inline|For `showform_fields` only, type `radio` or `yesno`. If true - place all options in one line|true(default),false|
-|rows|For `showform_fields` only, set textarea rows attribute|5|
+|required|make field required (both client and server-side validation), for `showform_fields` only|false(default),true|
+|maxlength|set input's maxlength attribute, for `showform_fields` only|10|
+|max|set input type="number" max attribute, for `showform_fields` only|999|
+|min|set input type="number" min attribute, for `showform_fields` only|0|
+|step|set input type="number" step attribute, for `showform_fields` only|0.1|
+|placeholder|set input's maxlength attribute, for `showform_fields` only|"Enter value here"|
+|autocomplete_url|type="autocomplete". Input will get data from `autocomplete_url?q=%QUERY` where %QUERY will be replaced with input value, for `showform_fields` only|/Admin/SomeLookup/(Autocompete)|
+|is_inline|type `radio` or `yesno`. If true - place all options in one line, for `showform_fields` only|true(default),false|
+|rows|set textarea rows attribute, for `showform_fields` only|5|
 |class|Class(es) added to the wrapping `div.form-row` |mb-2 - add bottom margin under the control block|
 |attrs|Arbitrary html attributes for the wrapping `div.form-row`|data-something="123"|
 |class_label|Class(es) added to the `label.col-form-label` |col-md-3(default) - set label width|
@@ -225,8 +225,8 @@ Renders:
 ##### type values
 
 |Type|Description|
-|-|-|
-|_available for both show_fields and showform_fields_|
+|---|---|
+|_available for both show_fields and showform_fields_||
 |plaintext|Plain text|
 |plaintext_link|Plain text with a link to "admin_url"|
 |markdown|Markdown text (server-side rendered)|
@@ -240,7 +240,7 @@ Renders:
 |att_links|Block for displaying multiple attachments/files|
 |added|Added on date/user block|
 |updated|Updated on date/user block|
-|_available only showform_fields_|
+|_available only showform_fields_||
 |group_id|ID with Submit/Cancel buttons block|
 |group_id_addnew|ID with Submit/Submit and Add New/Cancel buttons block|
 |select|select with options html block|
