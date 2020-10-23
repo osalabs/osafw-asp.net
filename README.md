@@ -143,8 +143,119 @@ Most of the global settings defined in `web.config` `<appSettings>` section. But
 |log|physical path to application log file|C:\inetpub\somesite\www\App_Data\logs\main.log|
 |tmp|physical path to the system tmp directory|C:\Windows\Temp|
 
+### config.json
 
+In `FwDynamicController` controller behaviour defined by `/template/CONTROLLER/config.json`. Sample file can be fount at `/template/admin/demosdynamic/config.json`
+This config file allows to define/override several properties of the `FwController` (for example: as `model`, `save_fields`, `search_fields`, `list_view`,...) as well as define configuration of Show (`show_fields`) and ShowForm (`showform_fields`)  screens. Note `is_dynamic_show` and `is_dynamic_showform` should be set to true accordingly.
+There are samples for the one `show_fields` or `showform_fields` element:
 
+```json
+  //minimal setup to display the field value
+  {
+      "type": "plaintext",
+      "field": "iname",
+      "label": "Title"
+  },
+```
+Renders:
+```html
+<div class="form-row">
+  <label class="col-form-label">Title</label>
+  <div class="col">
+    <p class="form-control-plaintext">FIELD_VALUE</p>
+  </div>
+</div>
+```
+
+```json
+  //more complex - displays dropdown with values from lookup model
+  {
+      "type": "select",
+      "field": "demo_dicts_id",
+      "label": "DemoDicts",
+      "lookup_model": "DemoDicts",
+      "is_option0": true,
+      "class_contents": "col-md-3",
+      "class_control": "on-refresh"
+  },
+```
+Renders:
+```html
+<div class="form-row">
+  <label class="col-form-label">DemoDicts</label>
+  <div class="col-md-3">
+    <select id="demo_dicts_id" name="item[demo_dicts_id]" class="form-control on-refresh">
+      <option value="0">- select -</option>
+      ... select options from lookup here...
+    </select>
+  </div>
+</div>
+```
+
+|Field name|Description|Example|
+|-|-|-|
+|type||required, Element type, see values in table below|select - renders as `<select>` html|
+|field|Field name from database.table or arbitrary name for non-db block|demo_dicts_id - in case of select id value won't be displayed, but used to select active list element|
+|label|Label text|Demo Dictionary|
+|lookup_model|Model name where to read lookup values|DemoDicts|
+|is_option0|only for "select" type, if true - includes `<option value="0">option0_title</option>`|false(default),true|
+|is_option_empty|only for "select" type, if true - includes `<option value="">option0_title</option>`|false(default),true|
+|option0_title|only for "select" type for is_option0 or is_option_empty option title|"- select -"(default)|
+|required|For `showform_fields` only, make field required (both client and server-side validation)|false(default),true|
+|maxlength|For `showform_fields` only, set input's maxlength attribute|10|
+|max|For `showform_fields` only, set input type="number" max attribute|999|
+|min|For `showform_fields` only, set input type="number" min attribute|0|
+|step|For `showform_fields` only, set input type="number" step attribute|0.1|
+|placeholder|For `showform_fields` only, set input's maxlength attribute|"Enter value here"|
+|autocomplete_url|For `showform_fields` only, type="autocomplete". Input will get data from `autocomplete_url?q=%QUERY` where %QUERY will be replaced with input value|/Admin/SomeLookup/(Autocompete)|
+|is_inline|For `showform_fields` only, type `radio` or `yesno`. If true - place all options in one line|true(default),false|
+|rows|For `showform_fields` only, set textarea rows attribute|5|
+|class|Class(es) added to the wrapping `div.form-row` |mb-2 - add bottom margin under the control block|
+|attrs|Arbitrary html attributes for the wrapping `div.form-row`|data-something="123"|
+|class_label|Class(es) added to the `label.col-form-label` |col-md-3(default) - set label width|
+|class_contents|Class(es) added to the `div` that wraps input control |col(default) - set control width|
+|class_control|Class(es) added to the input control to change appearance/behaviour|"on-refresh" - forms refreshes(re-submits) when input changed|
+|attrs_control|Arbitrary html attributes for the input control|data-something="123"|
+|help_text|Help text displayed as muted text under control block|"Minimum 8 letters and digits required"|
+|admin_url|For type="plaintext_link", controller url, final URL will be: "<~admin_url>/<~lookup_id>"|/Admin/SomeController|
+|lookup_id|to use with admin_url, if link to specific ID required|123|
+|att_category|For type="att_edit", att category new upload will be related to|"general"(default)|
+|validate|Simple validation codes: exists, isemail, isphone, isdate, isfloat|"exists isemail" - input value validated if such value already exists, validate if value is an email|
+
+##### type values
+
+|Type|Description|
+|-|-|
+|_available for both show_fields and showform_fields_|
+|plaintext|Plain text|
+|plaintext_link|Plain text with a link to "admin_url"|
+|markdown|Markdown text (server-side rendered)|
+|noescape|Value without htmlescape|
+|float|Value formatted with 2 decimal digits|
+|checkbox|Read-only checkbox (checked if value equal to true value)|
+|date|Date in default format - M/d/yyyy|
+|date_long|Date in logn forma - M/d/yyyy hh:mm:ss|
+|multi|Multi-selection list with checkboxes (read-only)|
+|att|Block for displaying one attachment/file|
+|att_links|Block for displaying multiple attachments/files|
+|added|Added on date/user block|
+|updated|Updated on date/user block|
+|_available only showform_fields_|
+|group_id|ID with Submit/Cancel buttons block|
+|group_id_addnew|ID with Submit/Submit and Add New/Cancel buttons block|
+|select|select with options html block|
+|input|input type="text" html block|
+|textarea|textaread html block|
+|email|input type="email" html block|
+|number|input type="number" html block|
+|autocomplete|input type="text" with autocomplete using "autocomplete_url"|
+|multicb|Multi-selection list with checkboxes|
+|radio|radio options block|
+|yesno|radio options block with Yes(1)/No(2) only|
+|cb|single checkbox block|
+|date_popup|date selection input with popup calendar block|
+|att_edit|Block for selection/upload one attachment/file|
+|att_links_edit|Block for selection/upload multiple attachments/files|
 
 ### How to Debug
 
