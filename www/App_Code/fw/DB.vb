@@ -23,6 +23,7 @@ Public Enum DBOps As Integer
     [NOTIN]         'NOT IN
     [LIKE]          'LIKE
     [NOTLIKE]       'NOT LIKE
+    [BETWEEN]       'BETWEEN
 End Enum
 
 'describes DB operation
@@ -65,6 +66,8 @@ Public Class DBOperation
                 opstr = "LIKE"
             Case DBOps.NOTLIKE
                 opstr = "NOT LIKE"
+            Case DBOps.BETWEEN
+                opstr = "BETWEEN"
             Case Else
                 Throw New ApplicationException("Wrong DB OP")
         End Select
@@ -494,6 +497,8 @@ Public Class DB
                 Else
                     quoted = qone_by_type(field_type, field_value)
                 End If
+            ElseIf dbop.op = DBOps.BETWEEN Then
+                quoted = qone_by_type(field_type, dbop.value(0)) & " AND " & qone_by_type(field_type, dbop.value(1))
             Else
                 quoted = qone_by_type(field_type, field_value)
             End If
@@ -683,6 +688,14 @@ Public Class DB
         Return New DBOperation(DBOps.NOTIN, values)
     End Function
 
+    ''' <summary>
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opBETWEEN(10,20)}})
+    ''' select * from users where field BETWEEN 10 AND 20
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function opBETWEEN(from_value As Object, to_value As Object) As DBOperation
+        Return New DBOperation(DBOps.BETWEEN, New Object() {from_value, to_value})
+    End Function
 
     'return last inserted id
     Public Function insert(ByVal table As String, ByVal fields As Hashtable) As Integer
