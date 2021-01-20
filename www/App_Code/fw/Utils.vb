@@ -278,7 +278,7 @@ Public Class Utils
     ''' <param name="filepath">.xlsx file name to import</param>
     ''' <param name="is_header"></param>
     ''' <returns></returns>
-    Protected Function importExcel(fw As FW, callback As Action(Of String, ArrayList), filepath As String, Optional is_header As Boolean = True) As Hashtable
+    Public Function importExcel(fw As FW, callback As Action(Of String, ArrayList), filepath As String, Optional is_header As Boolean = True) As Hashtable
         Dim result As New Hashtable()
         Dim conf As New Hashtable From {
                 {"type", "OLE"},
