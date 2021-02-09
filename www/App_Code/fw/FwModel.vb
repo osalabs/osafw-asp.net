@@ -191,7 +191,7 @@ Public MustInherit Class FwModel : Implements IDisposable
             Dim vars As New Hashtable
             vars(field_status) = STATUS_DELETED
             If field_upd_time > "" Then vars(field_upd_time) = Now()
-            If field_add_users_id > "" AndAlso fw.SESSION("is_logged") Then vars(field_add_users_id) = fw.SESSION("user_id")
+            If field_upd_users_id > "" AndAlso fw.SESSION("is_logged") Then vars(field_upd_users_id) = fw.SESSION("user_id")
 
             db.update(table_name, vars, where)
         End If
