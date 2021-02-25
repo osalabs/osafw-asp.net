@@ -187,11 +187,13 @@ Public Class Att
             'local storage
             Dim filepath As String = getUploadImgPath(id, "", item("ext"))
             If filepath > "" Then File.Delete(filepath)
-            'for images - also delete s/m thumbnails
+            'for images - also delete s/m/l thumbnails
             If item("is_image") = 1 Then
                 filepath = getUploadImgPath(id, "s", item("ext"))
                 If filepath > "" Then File.Delete(filepath)
                 filepath = getUploadImgPath(id, "m", item("ext"))
+                If filepath > "" Then File.Delete(filepath)
+                filepath = getUploadImgPath(id, "l", item("ext"))
                 If filepath > "" Then File.Delete(filepath)
             End If
         End If
