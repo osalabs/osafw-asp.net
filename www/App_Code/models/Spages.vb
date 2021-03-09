@@ -211,7 +211,13 @@ Public Class Spages
         ps("meta_keywords") = item("meta_keywords")
         ps("meta_description") = item("meta_description")
         ps("hide_std_sidebar") = True 'TODO - control via item[template]
-        fw.parser("/home/spage", ps)
+
+        ' Call parser with specific layout if set
+        If Utils.f2str(item("layout_filename")) <> "" Then
+            fw.parser("/home/spage", item("layout_filename"), ps)
+        Else
+            fw.parser("/home/spage", ps)
+        End If
     End Sub
 
 
