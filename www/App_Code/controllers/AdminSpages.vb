@@ -141,10 +141,6 @@ Public Class AdminSpagesController
                 End If
             End If
 
-            If item("layout_filename") = "" Then
-                item("layout_filename") = Nothing
-            End If
-
             Validate(id, item)
             'load old record if necessary
 
