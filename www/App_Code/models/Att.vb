@@ -341,33 +341,34 @@ Public Class Att
     Public Function uploadPostedFilesS3(item_table_name As String, item_id As Integer, Optional att_categories_id As String = Nothing, Optional fieldnames As String = "") As Integer
         Dim result = 0
 
+        Dim honlynames = Utils.qh(fieldnames)
+
+        'create list of eligible file uploads, check for the ContentLength as any 'input type="file"' creates a System.Web.HttpPostedFile object even if the file was not attached to the input
+        Dim afiles As New ArrayList
+        If honlynames.Count > 0 Then
+            'if we only need some fields - skip if not requested field
+            For i = 0 To fw.req.Files.Count - 1
+                If Not honlynames.ContainsKey(fw.req.Files.GetKey(i)) Then Continue For
+                If fw.req.Files(i).ContentLength > 0 Then afiles.Add(fw.req.Files(i))
+            Next
+        Else
+            'just add all files
+            For i = 0 To fw.req.Files.Count - 1
+                If fw.req.Files(i).ContentLength > 0 Then afiles.Add(fw.req.Files(i))
+            Next
+        End If
+
+        'do nothing if empty file list
+        If afiles.Count = 0 Then Return 0
+
         'upload files to the S3
         Dim model_s3 = fw.model(Of S3)
 
         'create /att folder
         model_s3.createFolder(Me.table_name)
 
-        Dim honlynames = Utils.qh(fieldnames)
-
-        'create list of eligible file uploads
-        Dim afiles As New ArrayList
-        If honlynames.Count > 0 Then
-            'if we only need some fields - skip if not requested field
-            For Each fieldname In fw.req.Files.Keys
-                If Not honlynames.ContainsKey(fieldname) Then Continue For
-                afiles.Add(fw.req.Files(fieldname))
-            Next
-        Else
-            'just add all files
-            For i = 0 To fw.req.Files.Count - 1
-                afiles.Add(fw.req.Files(i))
-            Next
-        End If
-
         'upload files to S3
         For Each file In afiles
-            If file.ContentLength = 0 Then Continue For 'skip empty
-
             'first - save to db so we can get att_id
             Dim attitem As New Hashtable
             attitem("att_categories_id") = att_categories_id
