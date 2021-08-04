@@ -260,20 +260,24 @@ CREATE TABLE user_views (
   icode                 NVARCHAR(128) NOT NULL, --related screen code, ex: "Demos"
   fields                NVARCHAR(MAX), -- comma-separated list of fields to display, order kept
 
+  iname                 NVARCHAR(255) NOT NULL DEFAULT '', -- if empty - it's a "default" view
+  is_system             TINYINT NOT NULL DEFAULT 0, -- 1 - system - visible for all
+  is_shared             TINYINT NOT NULL DEFAULT 0, -- 1 if shared/published
+
   status                TINYINT NOT NULL DEFAULT 0,
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related user
   upd_time              DATETIME2,
   upd_users_id          INT DEFAULT 0,
 
-  INDEX UX_user_views (add_users_id, icode)
+  INDEX UX_user_views (add_users_id, icode, iname)
 );
 
 /*user lists*/
 DROP TABLE IF EXISTS user_lists;
 CREATE TABLE user_lists (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-  entity                NVARCHAR(128) NOT NULL, -- usually table name, ex: 'demos'
+  entity                NVARCHAR(128) NOT NULL, -- usually table name or base_url, ex: 'demos' or /Admin/Demos
 
   iname                 NVARCHAR(255) NOT NULL,
   idesc                 NVARCHAR(MAX), -- description

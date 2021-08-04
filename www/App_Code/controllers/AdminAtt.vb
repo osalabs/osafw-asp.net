@@ -14,6 +14,8 @@ Public Class AdminAttController
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
         model.init(fw)
+        model0 = model
+
         required_fields = "iname" 'default required fields, space-separated
         base_url = "/Admin/Att" 'base url for the controller
     End Sub
@@ -141,7 +143,8 @@ Public Class AdminAttController
                 model.uploadOne(id, 0, False)
             Else
                 'Proceed upload - for add - could be multiple files
-                id = model.uploadMulti(itemdb)
+                Dim addedAtt = model.uploadMulti(itemdb)
+                If addedAtt.count > 0 Then id = addedAtt(0)("id")
                 fw.FLASH("added", 1)
             End If
 

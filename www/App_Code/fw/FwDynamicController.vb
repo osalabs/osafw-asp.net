@@ -3,8 +3,6 @@
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
 ' (c) 2009-2018 Oleg Savchuk www.osalabs.com
 
-Imports System.Web.Management
-
 Public Class FwDynamicController
     Inherits FwController
     Public Shared Shadows access_level As Integer = 100
@@ -48,6 +46,8 @@ Public Class FwDynamicController
 
         'userlists support if necessary
         If Me.is_userlists Then Me.setUserLists(ps)
+
+        ps("select_userfilters") = fw.model(Of UserFilters).listSelectByIcode(fw.G("controller.action"))
 
         If is_dynamic_index Then
             'customizable headers
@@ -385,10 +385,15 @@ Public Class FwDynamicController
             ElseIf dtype = "multi" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
+                    'def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIdsByDef(id, def), def)
                 Else
                     def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
+
+            ElseIf dtype = "multi_prio" Then
+                'complex field with prio
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiListLinkedRows(id, def)
 
             ElseIf dtype = "att" Then
                 def("att") = fw.model(Of Att).one(Utils.f2int(item(field)))
@@ -444,6 +449,7 @@ Public Class FwDynamicController
         Dim fields As ArrayList = Me.config("showform_fields")
         If fields Is Nothing Then Throw New ApplicationException("Controller config.json doesn't contain 'showform_fields'")
         For Each def As Hashtable In fields
+            'logger(def)
             def("i") = item 'ref to item
             def("ps") = ps 'ref to whole ps
             Dim dtype = def("type") 'type is required
@@ -461,12 +467,19 @@ Public Class FwDynamicController
             ElseIf dtype = "multicb" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
+                    '  model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIdsByDef(id, def), def)
                 Else
                     def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
 
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
+                    row("field") = def("field")
+                Next
+            ElseIf dtype = "multicb_prio" Then
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiListLinkedRows(id, def)
+
+                For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked, _link[prio]
                     row("field") = def("field")
                 Next
 
@@ -572,6 +585,8 @@ Public Class FwDynamicController
                 If def("table_link") > "" Then
                     model0.updateLinked(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"), reqh(def("field") & "_multi"))
                 End If
+            ElseIf def("type") = "multicb_prio" Then
+                fw.model(def("lookup_model")).updateLinkedRows(id, reqh(def("field") & "_multi"))
             End If
         Next
 

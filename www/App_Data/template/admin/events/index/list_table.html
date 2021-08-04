@@ -6,6 +6,7 @@
             <th>`Event`</th>
             <th>`Related Object ID`</th>
             <th>`Notes`</th>
+            <th>`Fields Changed`</th>
         </tr>
     </thead>
     <tbody>
@@ -17,6 +18,8 @@
             <td><~item_id if="item_id"><~item_id2_block if="item_id2" inline>, <~item_id2></~item_id2_block></td>
             <td><~iname>
                 <~ra if="records_affected" inline><div>Records affected - <~records_affected></div></~ra>
+            </td>
+            <td><~fields>
             </td>
         </tr>
 </~list_rows>

@@ -27,14 +27,27 @@ Public MustInherit Class FwModel : Implements IDisposable
     Public field_add_users_id As String = "add_users_id"
     Public field_upd_users_id As String = "upd_users_id"
     Public field_upd_time As String = "upd_time"
+    Public field_prio As String = ""
     Public is_normalize_names As Boolean = False 'if true - Utils.name2fw() will be called for all fetched rows to normalize names (no spaces or special chars)
 
+    Public is_log_changes As Boolean = True 'if true - event_log record added on add/update/delete
+    Public is_log_fields_changed As Boolean = True 'if true - event_log.fields filled with changes
+
+    'for linked models ex UsersCompanies that link 2 tables
+    Public linked_model_main As FwModel
+    Public linked_field_main_id As String 'ex users_id
+    Public linked_model_link As FwModel
+    Public linked_field_link_id As String 'ex companies_id
+
+    Protected cache_prefix As String = "fwmodel.one." 'default cache prefix for caching items
 
     Protected Sub New(Optional fw As FW = Nothing)
         If fw IsNot Nothing Then
             Me.fw = fw
             Me.db = fw.db
         End If
+
+        cache_prefix = cache_prefix & Me.GetType().Name & "*" 'setup cache prefix for this model only
     End Sub
 
     Public Overridable Sub init(fw As FW)
@@ -51,15 +64,22 @@ Public MustInherit Class FwModel : Implements IDisposable
     End Function
 
     Public Overridable Function one(id As Integer) As Hashtable
-        Dim item As Hashtable = fw.cache.getRequestValue("fwmodel_one_" & table_name & "#" & id)
+        Dim cache_key = Me.cache_prefix & id
+        Dim item As Hashtable = fw.cache.getRequestValue(cache_key)
         If IsNothing(item) Then
             Dim where As Hashtable = New Hashtable
             where(Me.field_id) = id
             item = db.row(table_name, where)
             normalizeNames(item)
-            fw.cache.setRequestValue("fwmodel_one_" & table_name & "#" & id, item)
+            fw.cache.setRequestValue(cache_key, item)
         End If
         Return item
+    End Function
+
+    Public Overridable Function multi(ids As ICollection) As ArrayList
+        Dim arr(ids.Count - 1) As Object
+        ids.CopyTo(arr, 0)
+        Return db.array(table_name, New Hashtable From {{"id", db.opIN(arr)}})
     End Function
 
     'add renamed fields For template engine - spaces and special chars replaced With "_" and other normalizations
@@ -92,24 +112,42 @@ Public MustInherit Class FwModel : Implements IDisposable
         Return result
     End Function
 
+    Protected Overridable Function getOrderBy() As String
+        Dim result = field_iname
+        If field_prio > "" Then result = db.q_ident(field_prio) & " desc, " & db.q_ident(field_iname)
+        Return result
+    End Function
+
     'return standard list of id,iname where status=0 order by iname
     Public Overridable Function list() As ArrayList
         Dim where As New Hashtable
-        If field_status > "" Then where(field_status) = STATUS_ACTIVE
-        Return db.array(table_name, where, field_iname)
+        If field_status > "" Then where(field_status) = db.opNOT(STATUS_DELETED)
+        Return db.array(table_name, where, getOrderBy())
     End Function
 
     'override if id/iname differs in table
     'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
     Public Overridable Function listSelectOptions(Optional def As Hashtable = Nothing) As ArrayList
         Dim where As New Hashtable
-        If field_status > "" Then where(field_status) = STATUS_ACTIVE
+        If field_status > "" Then where(field_status) = db.opNOT(STATUS_DELETED)
 
         Dim select_fields As New ArrayList From {
                 New Hashtable From {{"field", field_id}, {"alias", "id"}},
                 New Hashtable From {{"field", field_iname}, {"alias", "iname"}}
             }
-        Return db.array(table_name, where, db.q_ident(field_iname), select_fields)
+        Return db.array(table_name, where, getOrderBy(), select_fields)
+    End Function
+
+    'similar to listSelectOptions but returns iname/iname
+    Public Overridable Function listSelectOptionsName(Optional def As Hashtable = Nothing) As ArrayList
+        Dim where As New Hashtable
+        If field_status > "" Then where(field_status) = db.opNOT(STATUS_DELETED)
+
+        Dim select_fields As New ArrayList From {
+                New Hashtable From {{"field", field_iname}, {"alias", "id"}},
+                New Hashtable From {{"field", field_iname}, {"alias", "iname"}}
+            }
+        Return db.array(table_name, where, getOrderBy(), select_fields)
     End Function
 
     'return count of all non-deleted
@@ -159,12 +197,28 @@ Public MustInherit Class FwModel : Implements IDisposable
         'item("add_time") = Now() 'not necessary because add_time field in db should have default value now() or getdate()
         If field_add_users_id > "" AndAlso Not item.ContainsKey(field_add_users_id) AndAlso fw.SESSION("is_logged") Then item(field_add_users_id) = fw.SESSION("user_id")
         Dim id As Integer = db.insert(table_name, item)
-        fw.logEvent(table_name & "_add", id)
+
+        If is_log_changes Then
+            If is_log_fields_changed Then
+                fw.logEvent(table_name & "_add", id, 0, "", 0, item)
+            Else
+                fw.logEvent(table_name & "_add", id)
+            End If
+        End If
+
+        Me.removeCache(id)
+
         Return id
     End Function
 
     'update exising record
     Public Overridable Function update(id As Integer, item As Hashtable) As Boolean
+        Dim item_changes As New Hashtable
+        If is_log_changes Then
+            Dim item_old = Me.one(id)
+            item_changes = fw.model(Of FwEvents).changes_only(item, item_old)
+        End If
+
         If field_upd_time > "" Then item(field_upd_time) = Now()
         If field_upd_users_id > "" AndAlso Not item.ContainsKey(field_upd_users_id) AndAlso fw.SESSION("is_logged") Then item(field_upd_users_id) = fw.SESSION("user_id")
 
@@ -172,9 +226,16 @@ Public MustInherit Class FwModel : Implements IDisposable
         where(Me.field_id) = id
         db.update(table_name, item, where)
 
-        fw.logEvent(table_name & "_upd", id)
+        Me.removeCache(id) 'cleanup cache, so next one read will read new value
 
-        fw.cache.requestRemove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
+        If is_log_changes AndAlso item_changes.Count > 0 Then
+            If is_log_fields_changed Then
+                fw.logEvent(table_name & "_upd", id, 0, "", 0, item_changes)
+            Else
+                fw.logEvent(table_name & "_upd", id)
+            End If
+        End If
+
         Return True
     End Function
 
@@ -186,7 +247,7 @@ Public MustInherit Class FwModel : Implements IDisposable
         If is_perm OrElse String.IsNullOrEmpty(field_status) Then
             'place here code that remove related data
             db.del(table_name, where)
-            fw.cache.requestRemove("fwmodel_one_" & table_name & "#" & id) 'cleanup cache, so next one read will read new value
+            Me.removeCache(id)
         Else
             Dim vars As New Hashtable
             vars(field_status) = STATUS_DELETED
@@ -195,7 +256,18 @@ Public MustInherit Class FwModel : Implements IDisposable
 
             db.update(table_name, vars, where)
         End If
-        fw.logEvent(table_name & "_del", id)
+        If is_log_changes Then
+            fw.logEvent(table_name & "_del", id)
+        End If
+    End Sub
+
+    Public Overridable Sub removeCache(id As Integer)
+        Dim cache_key = Me.cache_prefix & id
+        fw.cache.requestRemove(cache_key)
+    End Sub
+
+    Public Overridable Sub removeCacheAll()
+        fw.cache.requestRemoveWithPrefix(Me.cache_prefix)
     End Sub
 
     'upload utils
@@ -258,13 +330,100 @@ Public MustInherit Class FwModel : Implements IDisposable
         Return db.col(table_name, where, field_iname)
     End Function
 
+    'called from withing link model like UsersCompanies that links 2 tables By Main ID (like users_id)
+    'id - main table id
+    'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
+    Public Overridable Function getMultiListLinkedRows(id As Object, Optional def As Hashtable = Nothing) As ArrayList
+        Dim linked_rows = db.array(table_name, New Hashtable From {{linked_field_main_id, id}})
+
+        Dim lookup_rows As ArrayList = linked_model_link.list()
+        If linked_rows IsNot Nothing AndAlso linked_rows.Count > 0 Then
+            For Each row As Hashtable In lookup_rows
+                'check if linked_rows contain main id
+                row("is_checked") = False
+                row("_link") = New Hashtable
+                For Each lrow As Hashtable In linked_rows
+                    If row(linked_model_link.field_id) = lrow(linked_field_link_id) Then
+                        row("is_checked") = True
+                        row("_link") = lrow
+                        Exit For
+                    End If
+                Next
+            Next
+
+            'now sort so checked values will be at the top AND then by prio field (if any) - using LINQ
+            Dim result As New ArrayList
+            If field_prio > "" Then
+                result.AddRange((From h In lookup_rows Order By h("_link")(field_prio), h("is_checked") Descending).ToList())
+            Else
+                result.AddRange((From h In lookup_rows Order By h("is_checked") Descending).ToList())
+            End If
+            lookup_rows = result
+        End If
+        Return lookup_rows
+    End Function
+
+    'called from withing link model like UsersCompanies that links 2 tables By Linked ID (like companies_id)
+    'id - linked table id
+    'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
+    Public Overridable Function getMultiListLinkedRowsByLinkedId(id As Object, Optional def As Hashtable = Nothing) As ArrayList
+        Dim linked_rows = db.array(table_name, New Hashtable From {{linked_field_link_id, id}})
+
+        Dim lookup_rows As ArrayList = linked_model_main.list()
+        If linked_rows IsNot Nothing AndAlso linked_rows.Count > 0 Then
+            For Each row As Hashtable In lookup_rows
+                'check if linked_rows contain main id
+                row("is_checked") = False
+                row("_link") = New Hashtable
+                For Each lrow As Hashtable In linked_rows
+                    If row(linked_model_main.field_id) = lrow(linked_field_main_id) Then
+                        row("is_checked") = True
+                        row("_link") = lrow
+                        Exit For
+                    End If
+                Next
+            Next
+
+            'now sort so checked values will be at the top AND then by prio field (if any) - using LINQ
+            Dim result As New ArrayList
+            If field_prio > "" Then
+                result.AddRange((From h In lookup_rows Order By h("_link")(field_prio), h("is_checked") Descending).ToList())
+            Else
+                result.AddRange((From h In lookup_rows Order By h("is_checked") Descending).ToList())
+            End If
+            lookup_rows = result
+        End If
+        Return lookup_rows
+    End Function
+
+    Protected Sub setMultiListChecked(ByRef rows As ArrayList, ids As ArrayList, Optional def As Hashtable = Nothing)
+        Dim is_checked_only = def IsNot Nothing AndAlso Utils.f2bool(def("lookup_checked_only"))
+
+        If ids IsNot Nothing AndAlso ids.Count > 0 Then
+            For Each row As Hashtable In rows
+                row("is_checked") = ids.Contains(row(Me.field_id))
+            Next
+            'now sort so checked values will be at the top - using LINQ
+            Dim result As New ArrayList
+            If is_checked_only Then
+                result.AddRange((From h In rows Where h("is_checked")).ToList())
+            Else
+                result.AddRange((From h In rows Order By h("is_checked") Descending).ToList())
+            End If
+            rows = result
+        Else
+            If is_checked_only Then
+                'return no items if no checked
+                rows = New ArrayList
+            End If
+        End If
+    End Sub
+
     'sel_ids - selected ids in the list()
     'def - in dynamic controller - field definition (also contains "i" and "ps", "lookup_params", ...) or you could use it to pass additional params
     Public Overridable Function getMultiListAL(ids As ArrayList, Optional def As Hashtable = Nothing) As ArrayList
         Dim rows As ArrayList = Me.list()
-        For Each row As Hashtable In rows
-            row("is_checked") = ids.Contains(row(Me.field_id))
-        Next
+        setMultiListChecked(rows, ids, def)
         Return rows
     End Function
 
@@ -277,7 +436,7 @@ Public MustInherit Class FwModel : Implements IDisposable
     End Function
 
     ''' <summary>
-    '''     return comma-separated ids of linked elements - TODO refactor to use arrays, not comma-separated string
+    '''     return array of ids of linked elements
     ''' </summary>
     ''' <param name="link_table_name">link table name that contains id_name and link_id_name fields</param>
     ''' <param name="id">main id</param>
@@ -294,6 +453,11 @@ Public MustInherit Class FwModel : Implements IDisposable
         Next
 
         Return result
+    End Function
+
+    'shortcut for getLinkedIds based on dynamic controller definition
+    Public Overridable Function getLinkedIdsByDef(id As Integer, def As Hashtable) As ArrayList
+        Return getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"))
     End Function
 
     ''' <summary>
@@ -335,6 +499,92 @@ Public MustInherit Class FwModel : Implements IDisposable
         db.del(link_table_name, where)
     End Sub
 
+    'override to add set more additional fields
+    Public Overridable Sub updateLinkedRowsAdditional(linked_keys As Hashtable, link_id As String, fields As Hashtable)
+        If field_prio > "" AndAlso linked_keys.Contains(field_prio & "_" & link_id) Then
+            fields(field_prio) = Utils.f2int(linked_keys(field_prio & "_" & link_id)) 'get value from prio_ID
+        End If
+    End Sub
+    'called from withing link model like UsersCompanies that links 2 tables
+    Public Overridable Sub updateLinkedRows(main_id As Integer, linked_keys As Hashtable)
+        Dim fields As New Hashtable
+        Dim where As New Hashtable
+        Dim link_table_field_status = Me.field_status
+
+        'set all fields as under update
+        fields(link_table_field_status) = 1
+        where(linked_field_main_id) = main_id
+        db.update(table_name, fields, where)
+
+        If linked_keys IsNot Nothing Then
+            For Each link_id As String In linked_keys.Keys
+                If Utils.f2int(link_id) = 0 Then Continue For 'skip non-id, ex prio_ID
+
+                fields = New Hashtable
+                fields(linked_field_main_id) = main_id
+                fields(linked_field_link_id) = link_id
+                fields(link_table_field_status) = 0
+
+                'additional fields here
+                updateLinkedRowsAdditional(linked_keys, link_id, fields)
+
+                where = New Hashtable
+                where(linked_field_main_id) = main_id
+                where(linked_field_link_id) = link_id
+                db.update_or_insert(table_name, fields, where)
+            Next
+        End If
+
+        'remove those who still not updated (so removed)
+        where = New Hashtable
+        where(linked_field_main_id) = main_id
+        where(link_table_field_status) = 1
+        db.del(table_name, where)
+    End Sub
+
+    'override to add set more additional fields
+    Public Overridable Sub updateLinkedRowsByLinkedIdAdditional(linked_keys As Hashtable, main_id As String, fields As Hashtable)
+        If field_prio > "" AndAlso linked_keys.ContainsKey(field_prio & "_" & main_id) Then
+            fields(field_prio) = Utils.f2int(linked_keys(field_prio & "_" & main_id)) 'get value from prio_ID
+        End If
+    End Sub
+    'called from withing link model like UsersCompanies that links 2 tables
+    Public Overridable Sub updateLinkedRowsByLinkedId(linked_id As Integer, linked_keys As Hashtable)
+        Dim fields As New Hashtable
+        Dim where As New Hashtable
+        Dim link_table_field_status = Me.field_status
+
+        'set all fields as under update
+        fields(link_table_field_status) = 1
+        where(linked_field_link_id) = linked_id
+        db.update(table_name, fields, where)
+
+        If linked_keys IsNot Nothing Then
+            For Each main_id As String In linked_keys.Keys
+                If Utils.f2int(main_id) = 0 Then Continue For 'skip non-id, ex prio_ID
+
+                fields = New Hashtable
+                fields(linked_field_link_id) = linked_id
+                fields(linked_field_main_id) = main_id
+                fields(link_table_field_status) = 0
+
+                'additional fields here
+                updateLinkedRowsByLinkedIdAdditional(linked_keys, main_id, fields)
+
+                where = New Hashtable
+                where(linked_field_link_id) = linked_id
+                where(linked_field_main_id) = main_id
+                logger(fields)
+                db.update_or_insert(table_name, fields, where)
+            Next
+        End If
+
+        'remove those who still not updated (so removed)
+        where = New Hashtable
+        where(linked_field_link_id) = linked_id
+        where(link_table_field_status) = 1
+        db.del(table_name, where)
+    End Sub
 
     Public Overridable Function findOrAddByIname(iname As String, ByRef Optional is_added As Boolean = False) As Integer
         iname = Trim(iname)

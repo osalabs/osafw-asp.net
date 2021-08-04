@@ -78,6 +78,7 @@ Public Class FW
 
     Public request_url As String 'current request url (relative to application url)
     Public route As New FwRoute
+    Public request_time As TimeSpan 'after dispatch() - total request processing time
 
     Public cache_control As String = "no-cache" 'cache control header to add to pages, controllers can change per request
     Public is_log_events As Boolean = True 'can be set temporarly to false to prevent event logging (for batch process for ex)
@@ -95,6 +96,7 @@ Public Class FW
 
         FwHooks.initRequest(fw)
         fw.dispatch()
+        FwHooks.finalizeRequest(fw)
         fw.Finalize()
     End Sub
 
@@ -563,43 +565,38 @@ Public Class FW
 
     'parse query string, form and json in request body into fw.FORM
     Private Sub parse_form()
-        Dim f As Hashtable = New Hashtable
+        Dim input As New Hashtable
 
-        Dim s As String
-        For Each s In req.QueryString.Keys
-            If s IsNot Nothing Then f(s) = req.QueryString(s)
-        Next s
-
-        For Each s In req.Form.Keys
-            If s IsNot Nothing Then f(s) = req.Form(s)
-        Next s
-
-        'after perpare_FORM - grouping for names like XXX[YYYY] -> FORM{XXX}=@{YYYY1, YYYY2, ...}
-        Dim SQ As Hashtable = New Hashtable
-        Dim k As String
-        Dim sk As String
-        Dim v As String
-        Dim rem_keys As ArrayList = New ArrayList
-
-        For Each s In f.Keys
-            Dim m As Match = Regex.Match(s, "^([^\]]+)\[([^\]]+)\]$")
-            If m.Groups.Count > 1 Then
-                k = m.Groups(1).ToString()
-                sk = m.Groups(2).ToString()
-                v = f(s)
-                If Not SQ.ContainsKey(k) Then SQ(k) = New Hashtable
-                SQ.Item(k).item(sk) = v
-                rem_keys.Add(s)
-            End If
-        Next s
-
-        For Each k In rem_keys
-            f.Remove(k)
+        For Each s As String In req.QueryString.Keys
+            If s IsNot Nothing Then input(s) = req.QueryString(s)
         Next
 
-        For Each s In SQ.Keys
+        For Each s As String In req.Form.Keys
+            If s IsNot Nothing Then input(s) = req.Form(s)
+        Next
+
+        'after perpare_FORM - grouping for names like XXX[YYYY] -> FORM{XXX}=@{YYYY1, YYYY2, ...}
+        Dim SQ As New Hashtable
+        Dim k As String
+        Dim sk As String
+
+        Dim f As New Hashtable
+        For Each s As String In input.Keys
+            Dim m As Match = Regex.Match(s, "^([^\]]+)\[([^\]]+)\]$")
+            If m.Groups.Count > 1 Then
+                'complex name
+                k = m.Groups(1).ToString()
+                sk = m.Groups(2).ToString()
+                If Not SQ.ContainsKey(k) Then SQ(k) = New Hashtable
+                SQ(k)(sk) = input(s)
+            Else
+                f(s) = input(s)
+            End If
+        Next
+
+        For Each s As String In SQ.Keys
             f(s) = SQ(s)
-        Next s
+        Next
 
         'also parse json in request body if any
         If req.InputStream.Length > 0 AndAlso Left(req.ContentType, Len("application/json")) = "application/json" Then
@@ -800,6 +797,8 @@ Public Class FW
     '(not for json) to perform redirect - set hf("_redirect")="url"
     'TODO - create another func and call it from call_controller for processing _redirect, ... (non-parsepage) instead of calling parser?
     Public Overloads Sub parser(ByVal bdir As String, hf As Hashtable)
+        Me.resp.CacheControl = cache_control
+
         Dim format As String = Me.get_response_expected_format()
         If format = "json" Then
             If hf.ContainsKey("_json") Then
@@ -829,8 +828,6 @@ Public Class FW
             Me.redirect(hf("_redirect"))
             Return 'no further processing
         End If
-
-        Me.resp.CacheControl = cache_control
 
         If Me.FERR.Count > 0 AndAlso Not hf.ContainsKey("ERR") Then hf("ERR") = Me.FERR 'add errors if any
 
@@ -1087,11 +1084,6 @@ Public Class FW
         Dim hf As Hashtable = New Hashtable
         Dim tpl_dir = "/error"
 
-        'no need to log/report user exception
-        If Ex IsNot Nothing AndAlso TypeOf (Ex) Is UserException Then
-            tpl_dir &= "/client"
-        End If
-
 #If isSentry Then
         'Sentry logging
         Sentry.SentrySdk.CaptureException(Ex)
@@ -1111,6 +1103,13 @@ Public Class FW
         hf("success") = False
         hf("message") = msg
         hf("_json") = True
+
+        If TypeOf Ex Is ApplicationException Then
+            Me.resp.StatusCode = 500
+        ElseIf TypeOf Ex Is UserException Then
+            Me.resp.StatusCode = 403
+            'TBD tpl_dir &= "/client"
+        End If
 
         parser(tpl_dir, hf)
     End Sub
@@ -1141,9 +1140,9 @@ Public Class FW
         Return models(model_name)
     End Function
 
-    Public Sub logEvent(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0)
+    Public Sub logEvent(ev_icode As String, Optional item_id As Integer = 0, Optional item_id2 As Integer = 0, Optional iname As String = "", Optional records_affected As Integer = 0, Optional changed_fields As Hashtable = Nothing)
         If Not is_log_events Then Return
-        Me.model(Of FwEvents).log(ev_icode, item_id, item_id2, iname, records_affected)
+        Me.model(Of FwEvents).log(ev_icode, item_id, item_id2, iname, records_affected, changed_fields)
     End Sub
 
     Public Sub rw(ByVal str As String)

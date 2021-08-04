@@ -26,11 +26,13 @@
         <tr data-url="<~row_click_url>">
             <td><input class="multicb" type="checkbox" name="cb[<~id>]" value="1"></td>
             <~fields_values repeat inline>
-                <td><~value></td>
+                <td><~value var unless="is_custom"><~col_custom if="is_custom"></td>
             </~fields_values>
             <td class="text-nowrap text-right">
-                <a href="<~row_click_url>">`Edit`</a>
-                <~/common/dot><a href="<~../url>/<~id>/delete?d=<~d>" onclick="return delete_btn(this)">`Del`</a>
+                <~readonly_block unless="is_readonly" inline>
+                  <a href="<~row_click_url>">`Edit`</a>
+                  <~/common/dot><a href="<~../url>/<~id>/delete?d=<~d>" class="on-delete-list-row">`Del`</a>
+                </~readonly_block>
             </td>
         </tr>
 </~list_rows>

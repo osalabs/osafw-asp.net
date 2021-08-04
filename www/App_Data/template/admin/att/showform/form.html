@@ -14,6 +14,12 @@
           <~select_options_att_categories_id select="i[att_categories_id]">
         </select>
       </div>
+      <~linked_table_info if="table_name">
+      <label class="col-form-label col-md-2">`Linked Table`</label>
+      <div class="col">
+        <p class="form-control-plaintext"><~i[table_name]><~/common/dot><~i[item_id]></p>
+      </div>
+      </~linked_table_info>
     </div>
 
     <div class="form-row">

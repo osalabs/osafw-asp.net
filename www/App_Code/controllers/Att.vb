@@ -26,7 +26,7 @@ Public Class AttController
         Dim size As String = reqs("size")
 
         Dim item As Hashtable = model.one(id)
-        If item("is_s3") = "1" Then model.redirectS3(item)
+        If item("is_s3") = "1" Then model.redirectS3(item, size)
 
         model.transmitFile(Utils.f2int(form_id), size)
     End Sub
@@ -38,7 +38,7 @@ Public Class AttController
         Dim is_preview As Boolean = reqs("preview") = "1"
 
         Dim item As Hashtable = model.one(id)
-        If item("is_s3") = "1" Then model.redirectS3(item)
+        If item("is_s3") = "1" Then model.redirectS3(item, size)
 
         If is_preview Then
 

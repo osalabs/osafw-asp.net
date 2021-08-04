@@ -21,14 +21,23 @@ Public Class LookupManager
 
     'return top X rows (default 1) from table tname
     Public Overridable Function topByTname(tname As String, Optional top_number As Integer = 1) As Hashtable
-        If tname = "" Then Throw New ApplicationException("Wrong one_by_tname params")
+        If tname = "" Then Throw New ApplicationException("Wrong topByTname params")
 
         Return db.row("select TOP " & top_number & " * from " & tname)
     End Function
 
+    Public Overridable Function maxIdByTname(tname As String) As Integer
+        If tname = "" Then Throw New ApplicationException("Wrong maxIdByTname params")
+
+        Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
+        If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")
+
+        Dim id_field = fw.model(Of LookupManagerTables).getColumnId(defs)
+        Return db.value("SELECT MAX(" & db.q_ident(id_field) & ") from " & db.q_ident(tname))
+    End Function
 
     Public Overridable Function oneByTname(tname As String, id As Integer) As Hashtable
-        If tname = "" OrElse id = 0 Then Throw New ApplicationException("Wrong one_by_tname params")
+        If tname = "" OrElse id = 0 Then Throw New ApplicationException("Wrong oneByTname params")
 
         Dim defs As Hashtable = fw.model(Of LookupManagerTables).oneByTname(tname)
         If defs.Count = 0 Then Throw New ApplicationException("Wrong lookup table name")

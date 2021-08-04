@@ -35,4 +35,10 @@ Public Class UserViews
         End If
         Return result
     End Function
+
+    'list for select by entity and only for logged user OR active system views
+    Public Function listSelectByIcode(entity As String) As ArrayList
+        Return db.array("select id, iname from " & table_name & " where status=0 and icode=" & db.q(entity) & " and (is_system=1 OR add_users_id=" & fw.model(Of Users).meId & ") order by is_system desc, iname")
+    End Function
+
 End Class

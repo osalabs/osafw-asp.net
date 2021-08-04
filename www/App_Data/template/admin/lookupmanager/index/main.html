@@ -15,9 +15,11 @@
 </div>
 </~mode_switch>
 
+<~readonly_block unless="is_readonly" inline>
 <div class="btn-group">
     <a class="btn btn-default on-add-new" href="<~../url>/new?d=<~d>"><~/common/icons/plusb> `Add New`</a>
 </div>
+</~readonly_block>
 </div>
 
 <~header_text if="defs[header_text]" inline>

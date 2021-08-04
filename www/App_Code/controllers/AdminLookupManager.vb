@@ -5,13 +5,14 @@
 
 Public Class AdminLookupManagerController
     Inherits FwController
-    Public Shared Shadows access_level As Integer = 80
+    Public Shared Shadows access_level As Integer = Users.ACL_MANAGER
 
     Protected model As New LookupManager
     Protected model_tables As New LookupManagerTables
     Protected dict As String 'current lookup dictionary
     Protected defs As Hashtable
     Protected dictionaries_url As String
+    Private is_readonly As Boolean = False
 
     Public Overrides Sub init(fw As FW)
         MyBase.init(fw)
@@ -28,6 +29,7 @@ Public Class AdminLookupManagerController
 
     Private Sub check_dict()
         If Not dict > "" Then fw.redirect(base_url & "/(Dictionaries)")
+        If defs("url") > "" Then fw.redirect(defs("url"))
     End Sub
 
     Public Function DictionariesAction() As Hashtable
@@ -187,6 +189,7 @@ Public Class AdminLookupManagerController
 
             'add/modify rows from db
             For Each row As Hashtable In hf("list_rows")
+                row("is_readonly") = is_readonly
                 'calc md5 first if in edit mode
                 If f("mode") = "edit" Then
                     row("row_md5") = model.getRowMD5(row)
@@ -203,11 +206,12 @@ Public Class AdminLookupManagerController
                     Dim fh As New Hashtable
                     fh("colname") = col("name")
                     fh("iname") = col("iname")
-                    If list_cols.Count = 0 AndAlso col("name") = "status" AndAlso f("mode") <> "edit" Then
-                        fh("value") = FormUtils.selectTplName("/common/sel/status.sel", row(col("name")))
-                    Else
-                        fh("value") = row(col("name"))
+                    fh("value") = row(col("name"))
+                    If list_cols.Count = 0 AndAlso (col("name") = "status" OrElse col("name") = "iname") Then
+                        fh("is_custom") = True
+                        'fh("value") = FormUtils.selectTplName("/common/sel/status.sel", row(col("name")))
                     End If
+
 
                     fh("id") = row("id")
                     fh("maxlen") = col("maxlen")
@@ -218,6 +222,8 @@ Public Class AdminLookupManagerController
                         'lookup type
                         fh("type") = "lookup"
                         fh("select_options") = model_tables.getLookupSelectOptions(col("itype"), fh("value"))
+                        'for lookup type display value should be from lookup table
+                        fh("value") = model_tables.getLookupValue(col("itype"), fh("value"))
                     End If
 
                     fv.Add(fh)
@@ -231,11 +237,14 @@ Public Class AdminLookupManagerController
         hf("f") = f
         hf("defs") = defs
         hf("d") = dict
+        hf("is_readonly") = is_readonly
 
         Return hf
     End Function
 
     Public Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
+        If is_readonly Then Throw New UserException("Access denied")
+
         check_dict()
 
         Dim hf As Hashtable = New Hashtable
@@ -258,6 +267,7 @@ Public Class AdminLookupManagerController
                 'set defaults here
                 item = New Hashtable
                 'item("field")='default value'
+                item("prio") = model.maxIdByTname(dict) + 1 'default prio (if exists) = max(id)+1 
             End If
         Else
             'read from db
@@ -327,6 +337,8 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Sub SaveAction(Optional ByVal form_id As String = "")
+        If is_readonly Then Throw New UserException("Access denied")
+
         check_dict()
 
         Dim item As Hashtable = reqh("item")
@@ -381,6 +393,8 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Function ShowDeleteAction(ByVal form_id As String) As Hashtable
+        If is_readonly Then Throw New UserException("Access denied")
+
         check_dict()
 
         Dim hf As New Hashtable
@@ -396,6 +410,8 @@ Public Class AdminLookupManagerController
     End Function
 
     Public Sub DeleteAction(ByVal form_id As String)
+        If is_readonly Then Throw New UserException("Access denied")
+
         check_dict()
         Dim id As Integer = Utils.f2int(form_id)
 
@@ -405,6 +421,8 @@ Public Class AdminLookupManagerController
     End Sub
 
     Public Sub SaveMultiAction()
+        If is_readonly Then Throw New UserException("Access denied")
+
         check_dict()
 
         Try
