@@ -229,6 +229,17 @@ Public MustInherit Class FwController
     End Function
 
     ''' <summary>
+    ''' clears list_filter and related session key
+    ''' </summary>
+    ''' <param name="session_key"></param>
+    Public Overridable Sub clearFilter(Optional session_key As String = Nothing)
+        Dim f As New Hashtable
+        If IsNothing(session_key) Then session_key = "_filter_" & fw.G("controller.action")
+        fw.SESSION(session_key, f)
+        Me.list_filter = f
+    End Sub
+
+    ''' <summary>
     ''' Validate required fields are non-empty and set global fw.ERR[field] values in case of errors
     ''' </summary>
     ''' <param name="item">fields/values to validate</param>
