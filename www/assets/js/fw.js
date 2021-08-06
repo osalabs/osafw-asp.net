@@ -338,7 +338,7 @@ window.fw={
     });
 
     // "*:not(.bs-searchbox)" - exclude search input in the bs selectpicker container
-    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not([data-noautosave])', function(e){
+    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not(button,[data-noautosave])', function(e){
       var $f = $(this.form);
       // console.log('on form input blur', $f);
       if ($f.data('is-changed')===true){
