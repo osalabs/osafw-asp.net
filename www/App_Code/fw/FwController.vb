@@ -604,7 +604,7 @@ Public MustInherit Class FwController
             If is_add_new > 0 Then
                 'if Submit and Add New - redirect to new
                 url = Me.base_url & "/new"
-                url_q = "&copy_id=" & id
+                url_q &= "&copy_id=" & id
             Else
                 'or just return to edit screen
                 url = Me.base_url & "/" & id & "/edit"
