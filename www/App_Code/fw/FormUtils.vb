@@ -251,7 +251,7 @@ Public Class FormUtils
     Public Shared Sub filterNullable(itemdb As Hashtable, name As String)
         Dim anames = Utils.qw(name)
         For Each fld As String In anames
-            If itemdb.ContainsKey(fld) AndAlso (itemdb(fld) = "" OrElse itemdb(fld) = "0") Then
+            If itemdb.ContainsKey(fld) AndAlso itemdb(fld) = "" Then
                 itemdb(fld) = Nothing
             End If
         Next

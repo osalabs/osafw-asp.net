@@ -189,6 +189,14 @@ Public Class Utils
         Return result
     End Function
 
+    Public Shared Function f2decimal(ByVal AField As Object) As Decimal
+        If AField Is Nothing Then Return 0
+        Dim result As Decimal = 0
+
+        Decimal.TryParse(AField.ToString(), result)
+        Return result
+    End Function
+
     'convert to double, optionally throw error
     Public Shared Function f2float(ByVal AField As Object, Optional is_error As Boolean = False) As Double
         Dim result As Double = 0
@@ -240,6 +248,7 @@ Public Class Utils
                                 "Data Source=" & dir & ";" &
                                 "Extended Properties=""Text;HDR=" & IIf(is_header, "Yes", "No") & ";IMEX=1;FORMAT=Delimited"";"
 
+        'Dim BOM As String = Chr(239) & Chr(187) & Chr(191) '"\uFEFF" '"ï»¿" '\xEF\xBB\xBF
         Using cn As New Data.OleDb.OleDbConnection(ConnectionString)
             cn.Open()
 
@@ -255,8 +264,10 @@ Public Class Utils
             While dbread.Read()
                 Dim row As New Hashtable
                 For i = 0 To dbread.FieldCount - 1
-                    Dim value As String = dbread(i).ToString()
+                    'Dim value As String = dbread(i).ToString()
+                    Dim value As Object = dbread(i)
                     Dim name As String = dbread.GetName(i).ToString()
+                    'name = name.Replace(BOM, "")
                     row.Add(name, value)
                 Next
 
@@ -615,7 +626,9 @@ Public Class Utils
     ''' <param name="data">any data like single value, arraylist, hashtable, etc..</param>
     ''' <returns></returns>
     Public Shared Function jsonEncode(data As Object) As String
-        Return New Script.Serialization.JavaScriptSerializer().Serialize(data)
+        Dim des = New Script.Serialization.JavaScriptSerializer()
+        des.MaxJsonLength = Integer.MaxValue
+        Return des.Serialize(data)
     End Function
 
     ''' <summary>
@@ -628,6 +641,7 @@ Public Class Utils
         Dim result As Object
         Try
             Dim des = New Script.Serialization.JavaScriptSerializer()
+            des.MaxJsonLength = Integer.MaxValue
             result = des.DeserializeObject(str)
             result = cast2std(result)
 
@@ -994,6 +1008,46 @@ Public Class Utils
         result = result.ToLower() 'and finally to lowercase
         result = result.Trim()
         Return result
+    End Function
+
+    'convert some system name to human-friendly name'
+    '"system_name_id" => "System Name ID"
+    Shared Function name2human(str As String) As String
+        'first - check predefined
+        Dim str_lc = str.ToLower()
+        If str_lc = "icode" Then Return "Code"
+        If str_lc = "iname" Then Return "Name"
+        If str_lc = "idesc" Then Return "Description"
+        If str_lc = "id" Then Return "ID"
+        If str_lc = "fname" Then Return "First Name"
+        If str_lc = "lname" Then Return "Last Name"
+        If str_lc = "midname" Then Return "Middle Name"
+
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
+        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
+        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
+        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
+        result = Utils.capitalize(result, "all") 'Title Case
+
+        If Regex.IsMatch(result, "\bid\b", RegexOptions.IgnoreCase) Then
+            'if contains id/ID - remove it and make singular
+            result = Regex.Replace(result, "\bid\b", "", RegexOptions.IgnoreCase)
+            result = Regex.Replace(result, "(?:es|s)\s*$", "", RegexOptions.IgnoreCase) 'remove -es or -s at the end
+        End If
+
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert c/snake style name to CamelCase
+    'system_name => SystemName
+    Shared Function nameCamelCase(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
+        result = Utils.capitalize(result)
+        result = Regex.Replace(result, " +", "") 'remove spaces
+        Return str
     End Function
 
 End Class

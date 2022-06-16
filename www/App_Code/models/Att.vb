@@ -20,7 +20,7 @@ Public Class Att
     Const MAX_THUMB_W_L As Integer = 1200
     Const MAX_THUMB_H_L As Integer = 1200
 
-    Public MIME_MAP As String = "doc|application/msword docx|application/msword xls|application/vnd.ms-excel xlsx|application/vnd.ms-excel ppt|application/vnd.ms-powerpoint pptx|application/vnd.ms-powerpoint pdf|application/pdf html|text/html zip|application/x-zip-compressed jpg|image/jpeg jpeg|image/jpeg gif|image/gif png|image/png wmv|video/x-ms-wmv avi|video/x-msvideo"
+    Public MIME_MAP As String = "doc|application/msword docx|application/msword xls|application/vnd.ms-excel xlsx|application/vnd.ms-excel ppt|application/vnd.ms-powerpoint pptx|application/vnd.ms-powerpoint pdf|application/pdf html|text/html zip|application/x-zip-compressed jpg|image/jpeg jpeg|image/jpeg gif|image/gif png|image/png wmv|video/x-ms-wmv avi|video/x-msvideo mp4|video/mp4"
     Public att_table_link As String = "att_table_link"
 
     Public Sub New()
@@ -28,8 +28,8 @@ Public Class Att
         table_name = "att"
     End Sub
 
-    Public Function uploadOne(id As Integer, file_index As Integer, Optional is_new As Boolean = False) As Boolean
-        Dim result = False
+    Public Function uploadOne(id As Integer, file_index As Integer, Optional is_new As Boolean = False) As Hashtable
+        Dim result As Hashtable = Nothing
         Dim filepath As String = Nothing
         If uploadFile(id, filepath, file_index, True) Then
             logger("uploaded to [" & filepath & "]")
@@ -45,6 +45,7 @@ Public Class Att
             fields("fname") = file.FileName
             fields("fsize") = Utils.fileSize(filepath)
             fields("ext") = ext
+            fields("status") = STATUS_ACTIVE 'finished upload - change status to active
             'turn on image flag if it's an image
             If UploadUtils.isUploadImgExtAllowed(ext) Then
                 'if it's an image - turn on flag and resize for thumbs
@@ -56,23 +57,64 @@ Public Class Att
             End If
 
             Me.update(id, fields)
-            result = True
+            fields("filepath") = filepath
+            result = fields
+
+#If is_S3 Then
+            'if S3 configured - move file to S3 immediately
+            moveToS3(id)
+#End If
         End If
         Return result
     End Function
 
     'return id of the first successful upload
-    Public Function uploadMulti(item As Hashtable) As Integer
-        Dim result = 0
+    ''' <summary>
+    ''' mulitple files upload from Request.Files
+    ''' </summary>
+    ''' <param name="item">files to add to att table, can contain: table_name, item_id, att_categories_id</param>
+    ''' <returns>db array list of added files information id, fname, fsize, ext, filepath</returns>
+    Public Function uploadMulti(item As Hashtable) As ArrayList
+        Dim result As New ArrayList
 
         For i = 0 To fw.req.Files.Count - 1
-            Dim id = Me.add(item)
-            Me.uploadOne(id, i, True)
+            Dim file = fw.req.Files(i)
+            If file.ContentLength > 0 Then
+                'add att db record
+                Dim itemdb = item.Clone()
+                itemdb("status") = 1 'under upload
+                Dim id = Me.add(itemdb)
 
-            If result = 0 Then result = id
+                Dim resone = Me.uploadOne(id, i, True)
+                If resone IsNot Nothing Then
+                    resone("id") = id
+                    result.Add(resone)
+                End If
+
+            End If
         Next
 
         Return result
+    End Function
+
+    Public Function updateTmpUploads(files_code As String, att_table_name As String, item_id As Integer) As Boolean
+        Dim where As New Hashtable
+        where("table_name") = "tmp_" & att_table_name & "_" & files_code
+        where("item_id") = 0
+        db.update(table_name, New Hashtable From {{"table_name", att_table_name}, {"item_id", item_id}}, where)
+        Return True
+    End Function
+
+    ''' <summary>
+    ''' permanently removes any temporary uploads older than 48h
+    ''' </summary>
+    ''' <returns>number of uploads deleted</returns>
+    Public Function cleanupTmpUploads() As Integer
+        Dim rows = db.array("select * from " & db.q_ident(table_name) & " where add_time<DATEADD(hour, -48, getdate()) and (status=1 or table_name like 'tmp[_]%')")
+        For Each row As Hashtable In rows
+            Me.delete(row("id"), True)
+        Next
+        Return rows.Count
     End Function
 
     'add/update att_table_links
@@ -174,6 +216,14 @@ Public Class Att
 
     'mark record as deleted (status=127) OR actually delete from db (if is_perm)
     Public Overrides Sub delete(id As Integer, Optional is_perm As Boolean = False)
+        'also delete from related tables:
+        'users.att_id -> null?
+        'spages.head_att_id -> null?
+        If is_perm Then
+            'delete from att_table_link only if perm
+            db.del(att_table_link, DB.h("att_id", id))
+        End If
+
         'remove files first
         Dim item As Hashtable = one(id)
         If item("is_s3") = "1" Then
@@ -185,18 +235,28 @@ Public Class Att
 #End If
         Else
             'local storage
-            Dim filepath As String = getUploadImgPath(id, "", item("ext"))
-            If filepath > "" Then File.Delete(filepath)
-            'for images - also delete s/m thumbnails
-            If item("is_image") = 1 Then
-                filepath = getUploadImgPath(id, "s", item("ext"))
-                If filepath > "" Then File.Delete(filepath)
-                filepath = getUploadImgPath(id, "m", item("ext"))
-                If filepath > "" Then File.Delete(filepath)
-            End If
+            deleteLocalFiles(id)
         End If
 
         MyBase.delete(id, is_perm)
+    End Sub
+
+    Public Sub deleteLocalFiles(id As Integer)
+        Dim item As Hashtable = one(id)
+
+        Dim filepath As String = getUploadImgPath(id, "", item("ext"))
+        If filepath > "" Then File.Delete(filepath)
+        'for images - also delete s/m thumbnails
+        If item("is_image") = 1 Then
+            For Each size As String In Utils.qw("s m l")
+                filepath = getUploadImgPath(id, size, item("ext"))
+                If filepath > "" Then File.Delete(filepath)
+            Next
+        End If
+        'also remove folder - can't as there could be files with other ids
+        'TODO -check if folder empty And remove
+        'Dim folder = getUploadDir(id)
+        'Directory.Delete(folder)
     End Sub
 
     'check access rights for current user for the file by id
@@ -294,19 +354,34 @@ Public Class Att
     'return all att files linked via att.table_name and att.item_id
     ' is_image = -1 (all - files and images), 0 (files only), 1 (images only)
     Public Function getAllByTableName(table_name As String, item_id As Integer, Optional is_image As Integer = -1) As ArrayList
-        Dim where As String = ""
+        Dim where As New Hashtable
+        where("status") = STATUS_ACTIVE
+        where("table_name") = table_name
+        where("item_id") = item_id
         If is_image > -1 Then
-            where &= " and a.is_image=" & is_image
+            where("is_image") = is_image
         End If
-        Return db.array("select a.* " &
-                    " from att a " &
-                    " where a.table_name=" & db.q(table_name) &
-                    " and a.item_id=" & db.qi(item_id) &
-                    where &
-                    " order by a.id ")
+        Return db.array(table_name, where, "id")
+    End Function
+
+    'like getAllByTableName, but also fills att_categories hash
+    Public Function getAllByTableNameWithCategories(table_name As String, item_id As Integer, Optional is_image As Integer = -1) As ArrayList
+        Dim rows = getAllByTableName(table_name, item_id, is_image)
+        For Each row As Hashtable In rows
+            Dim att_categories_id = Utils.f2int(row("att_categories_id"))
+            If att_categories_id > 0 Then row("att_categories") = fw.model(Of AttCategories).one(att_categories_id)
+        Next
+        Return rows
     End Function
 
     'return one att record with additional check by table_name
+    Public Function oneWithTableName(id As Integer, item_table_name As String) As Hashtable
+        Dim row = one(id)
+        If row("table_name") <> item_table_name Then row.Clear()
+        Return row
+    End Function
+
+    'return one att record by table_name and item_id
     Public Function oneByTableName(item_table_name As String, item_id As Integer) As Hashtable
         Return db.row(table_name, New Hashtable From {
                       {"table_name", item_table_name},
@@ -314,12 +389,19 @@ Public Class Att
                       })
     End Function
 
+    Function getS3KeyByID(id As String, Optional size As String = "") As String
+        Dim sizestr = ""
+        If size > "" Then sizestr = "_" & size
+
+        Return Me.table_name & "/" & id & "/" & id & sizestr
+    End Function
+
     'generate signed url and redirect to it, so user download directly from S3
-    Public Sub redirectS3(item As Hashtable)
+    Public Sub redirectS3(item As Hashtable, Optional size As String = "")
 #If is_S3 Then
         If fw.model(Of Users).meId() = 0 Then Throw New ApplicationException("Access Denied") 'denied for non-logged
 
-        Dim url = fw.model(Of S3).getSignedUrl(table_name & "/" & item("id"))
+        Dim url = fw.model(Of S3).getSignedUrl(getS3KeyByID(item("id"), size))
 
         fw.redirect(url)
 #Else
@@ -328,6 +410,37 @@ Public Class Att
     End Sub
 
 #If is_S3 Then
+
+    Public Function moveToS3(id As Integer) As Boolean
+        Dim result = True
+        Dim item = one(id)
+        If item("is_s3") = 1 Then Return True 'already in S3
+
+        Dim model_s3 = fw.model(Of S3)
+        'model_s3.createFolder(Me.table_name)
+        'upload all sizes if exists
+        'id=47 -> /47/47 /47/47_s /47/47_m /47/47_l
+        For Each size As String In Utils.qw("&nbsp; s m l")
+            size = Trim(size)
+            Dim filepath As String = getUploadImgPath(id, size, item("ext"))
+            If Not System.IO.File.Exists(filepath) Then Continue For
+
+            Dim res = model_s3.uploadFilepath(getS3KeyByID(id, size), filepath, "inline")
+            If res.HttpStatusCode <> Net.HttpStatusCode.OK Then
+                result = False
+                Exit For
+            End If
+        Next
+
+        If result Then
+            'mark as uploaded
+            Me.update(id, New Hashtable From {{"is_s3", 1}})
+            'remove local files
+            deleteLocalFiles(id)
+        End If
+
+        Return True
+    End Function
 
     ''' <summary>
     ''' upload all posted files (fw.req.Files) to S3 for the table
@@ -341,33 +454,34 @@ Public Class Att
     Public Function uploadPostedFilesS3(item_table_name As String, item_id As Integer, Optional att_categories_id As String = Nothing, Optional fieldnames As String = "") As Integer
         Dim result = 0
 
+        Dim honlynames = Utils.qh(fieldnames)
+
+        'create list of eligible file uploads, check for the ContentLength as any 'input type="file"' creates a System.Web.HttpPostedFile object even if the file was not attached to the input
+        Dim afiles As New ArrayList
+        If honlynames.Count > 0 Then
+            'if we only need some fields - skip if not requested field
+            For i = 0 To fw.req.Files.Count - 1
+                If Not honlynames.ContainsKey(fw.req.Files.GetKey(i)) Then Continue For
+                If fw.req.Files(i).ContentLength > 0 Then afiles.Add(fw.req.Files(i))
+            Next
+        Else
+            'just add all files
+            For i = 0 To fw.req.Files.Count - 1
+                If fw.req.Files(i).ContentLength > 0 Then afiles.Add(fw.req.Files(i))
+            Next
+        End If
+
+        'do nothing if empty file list
+        If afiles.Count = 0 Then Return 0
+
         'upload files to the S3
         Dim model_s3 = fw.model(Of S3)
 
         'create /att folder
         model_s3.createFolder(Me.table_name)
 
-        Dim honlynames = Utils.qh(fieldnames)
-
-        'create list of eligible file uploads
-        Dim afiles As New ArrayList
-        If honlynames.Count > 0 Then
-            'if we only need some fields - skip if not requested field
-            For Each fieldname In fw.req.Files.Keys
-                If Not honlynames.ContainsKey(fieldname) Then Continue For
-                afiles.Add(fw.req.Files(fieldname))
-            Next
-        Else
-            'just add all files
-            For i = 0 To fw.req.Files.Count - 1
-                afiles.Add(fw.req.Files(i))
-            Next
-        End If
-
         'upload files to S3
         For Each file In afiles
-            If file.ContentLength = 0 Then Continue For 'skip empty
-
             'first - save to db so we can get att_id
             Dim attitem As New Hashtable
             attitem("att_categories_id") = att_categories_id
@@ -381,7 +495,7 @@ Public Class Att
             Dim att_id = fw.model(Of Att).add(attitem)
 
             Try
-                Dim response = model_s3.uploadPostedFile(Me.table_name & "/" & att_id, file, "inline")
+                Dim response = model_s3.uploadPostedFile(getS3KeyByID(att_id), file, "inline")
 
                 'TODO check response for 200 and if not - error/delete?
                 'once uploaded - mark in db as uploaded

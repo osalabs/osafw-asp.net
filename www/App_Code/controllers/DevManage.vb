@@ -525,13 +525,13 @@ Public Class DevManageController
             table_entity("db_config") = db.db_name
             table_entity("table") = tblname
             table_entity("fw_name") = Utils.name2fw(tblname) 'new table name using fw standards
-            table_entity("iname") = name2human(tblname) 'human table name
+            table_entity("iname") = Utils.name2human(tblname) 'human table name
             table_entity("fields") = tableschema2fields(tblschema)
             table_entity("foreign_keys") = db.get_foreign_keys(tblname)
 
             table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
             table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
-            table_entity("controller_title") = name2human(table_entity("model_name"))
+            table_entity("controller_title") = Utils.name2human(table_entity("model_name"))
 
             'set is_fw flag - if it's fw compatible (contains id,iname,status,add_time,add_users_id)
             Dim fields = array2hashtable(table_entity("fields"), "name")
@@ -553,7 +553,7 @@ Public Class DevManageController
             '    fldschema("iname") = "ID"
             'Else
             fldschema("fw_name") = Utils.name2fw(fldschema("name"))
-            fldschema("iname") = name2human(fldschema("name"))
+            fldschema("iname") = Utils.name2human(fldschema("name"))
             'End If
         Next
         'result("xxxx") = "yyyy"
@@ -569,45 +569,6 @@ Public Class DevManageController
         Return result
     End Function
 
-    'convert some system name to human-friendly name'
-    '"system_name_id" => "System Name ID"
-    Private Function name2human(str As String) As String
-        'first - check predefined
-        Dim str_lc = str.ToLower()
-        If str_lc = "icode" Then Return "Code"
-        If str_lc = "iname" Then Return "Name"
-        If str_lc = "idesc" Then Return "Description"
-        If str_lc = "id" Then Return "ID"
-        If str_lc = "fname" Then Return "First Name"
-        If str_lc = "lname" Then Return "Last Name"
-        If str_lc = "midname" Then Return "Middle Name"
-
-        Dim result = str
-        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
-        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
-        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
-        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
-        result = Utils.capitalize(result, "all") 'Title Case
-
-        If Regex.IsMatch(result, "\bid\b", RegexOptions.IgnoreCase) Then
-            'if contains id/ID - remove it and make singular
-            result = Regex.Replace(result, "\bid\b", "", RegexOptions.IgnoreCase)
-            result = Regex.Replace(result, "(?:es|s)\s*$", "", RegexOptions.IgnoreCase) 'remove -es or -s at the end
-        End If
-
-        result = result.Trim()
-        Return result
-    End Function
-
-    'convert c/snake style name to CamelCase
-    'system_name => SystemName
-    Private Function nameCamelCase(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
-        result = Utils.capitalize(result)
-        result = Regex.Replace(result, " +", "") 'remove spaces
-        Return str
-    End Function
 
     'convert array of hashtables to hashtable of hashtables using key
     Private Function array2hashtable(arr As ArrayList, key As String) As Hashtable
@@ -714,7 +675,7 @@ Public Class DevManageController
                 Dim table_name = parts(0) 'name is first 
 
                 table_entity("db_config") = "" 'main
-                table_entity("iname") = Me.name2human(table_name)
+                table_entity("iname") = Utils.name2human(table_name)
                 table_entity("table") = Utils.name2fw(table_name)
                 If isFwTableName(table_entity("table")) Then Throw New ApplicationException("Cannot have table name " & table_entity("table"))
 
@@ -722,7 +683,7 @@ Public Class DevManageController
 
                 table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
                 table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
-                table_entity("controller_title") = name2human(table_entity("model_name"))
+                table_entity("controller_title") = Utils.name2human(table_entity("model_name"))
                 If Regex.IsMatch(line, "\blookup\b") Then
                     table_entity("controller_is_lookup") = True
                 End If
@@ -765,7 +726,7 @@ Public Class DevManageController
                 End If
 
                 field("name") = field_name
-                field("iname") = name2human(field_name)
+                field("iname") = Utils.name2human(field_name)
                 field("fw_name") = Utils.name2fw(field_name)
                 field("is_identity") = 0
 
@@ -908,7 +869,7 @@ Public Class DevManageController
         Dim model_name = entity("model_name")
 
         If model_name = "" Then
-            model_name = nameCamelCase(table_name)
+            model_name = Utils.nameCamelCase(table_name)
         End If
         If table_name = "" OrElse model_name = "" Then Throw New ApplicationException("No table name or no model name")
         'If _models.Contains(model_name) Then Throw New ApplicationException("Such model already exists")
@@ -1046,7 +1007,7 @@ Public Class DevManageController
 
         If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
-        If controller_title = "" Then controller_title = name2human(model_name)
+        If controller_title = "" Then controller_title = Utils.name2human(model_name)
 
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
         'If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
@@ -1158,7 +1119,7 @@ Public Class DevManageController
             logger("field name=", fld("name"), fld)
 
             If fld("fw_name") = "" Then fld("fw_name") = Utils.name2fw(fld("name")) 'system name using fw standards
-            If fld("iname") = "" Then fld("iname") = name2human(fld("name")) 'human name using fw standards
+            If fld("iname") = "" Then fld("iname") = Utils.name2human(fld("name")) 'human name using fw standards
 
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("iname")
@@ -1733,7 +1694,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", field_name},
                 {"fw_name", Utils.name2fw(field_name)},
-                {"iname", name2human(field_name)},
+                {"iname", Utils.name2human(field_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 255},
@@ -1745,7 +1706,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", field_name & "2"},
                 {"fw_name", Utils.name2fw(field_name & "2")},
-                {"iname", name2human(field_name & "2")},
+                {"iname", Utils.name2human(field_name & "2")},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 255},
@@ -1757,7 +1718,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", city_name},
                 {"fw_name", Utils.name2fw(city_name)},
-                {"iname", name2human(city_name)},
+                {"iname", Utils.name2human(city_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 64},
@@ -1769,7 +1730,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", state_name},
                 {"fw_name", Utils.name2fw(state_name)},
-                {"iname", name2human(state_name)},
+                {"iname", Utils.name2human(state_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 2},
@@ -1781,7 +1742,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", zip_name},
                 {"fw_name", Utils.name2fw(zip_name)},
-                {"iname", name2human(zip_name)},
+                {"iname", Utils.name2human(zip_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 11},

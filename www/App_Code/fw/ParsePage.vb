@@ -165,6 +165,8 @@ Public Class ParsePage
             load_lang()
         End If
         lang_evaluator = New MatchEvaluator(AddressOf Me.lang_replacer)
+
+        lang_update = Utils.f2bool(fw.config("is_lang_update"))
     End Sub
 
     Public Function parse_json(ByVal hf As Object) As String
@@ -1059,11 +1061,37 @@ Public Class ParsePage
     Private Function lang_replacer(m As Match) As String
         Dim value = Trim(m.Groups(1).Value)
         'fw.logger("checking:", lang, value)
-        Dim result = LANG_CACHE(lang)(value)
-        If result = "" Then
-            'if no language - return original string
-            result = value
+        Return langMap(value)
+    End Function
+
+    '
+    ''' <summary>
+    ''' map input string (with optional context) into output accoring to the current lang
+    ''' </summary>
+    ''' <param name="str">input string in default language</param>
+    ''' <param name="context">optional context, for example "screename". Useful when same original string need to be translated differenly in different contexts</param>
+    ''' <returns>string in output languge</returns>
+    Public Function langMap(str As String, Optional context As String = "") As String
+        Dim input = str
+        If context > "" Then input &= "|" & context
+        Dim result = LANG_CACHE(lang)(input)
+        If String.IsNullOrEmpty(result) Then
+            'no translation found
+            If context > "" Then
+                'if no value with context - try without context
+                result = LANG_CACHE(lang)(str)
+                If String.IsNullOrEmpty(result) Then
+                    'if no such string in cache and we allowed to update lang file - add_lang
+                    If result Is Nothing AndAlso lang_update Then add_lang(str)
+                    'if still no translation - return original string
+                    result = str
+                End If
+            Else
+                'if no translation - return original string
+                result = str
+            End If
         End If
+        'fw.logger("in=[" & str & "], out=[" & result & "]")
         Return result
     End Function
 
@@ -1080,8 +1108,17 @@ Public Class ParsePage
             If String.IsNullOrEmpty(line) OrElse Not line.Contains("===") Then Continue For
             Dim pair = Split(line, "===", 2)
             'fw.logger("added to cache:", Trim(pair(0)))
-            LANG_CACHE(lang)(Trim(pair(0))) = pair(1)
+            LANG_CACHE(lang)(Trim(pair(0))) = LTrim(pair(1))
         Next
+    End Sub
+
+    'add new language string to the lang file (for futher translation)
+    Private Sub add_lang(str As String)
+        fw.logger(LogLevel.DEBUG, "ParsePage notice - updating lang [" & lang & "] with: " & str)
+        FW.set_file_content(TMPL_PATH & "\lang\" & lang & ".txt", str & " === " & vbCrLf, True)
+
+        'also add to lang cache
+        LANG_CACHE(lang)(Trim(str)) = ""
     End Sub
 
 End Class

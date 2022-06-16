@@ -10,7 +10,7 @@ CREATE TABLE att_categories (
   idesc                 NVARCHAR(MAX),
   prio                  INT NOT NULL DEFAULT 0,     /* 0 is normal and lowest priority*/
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -40,7 +40,7 @@ CREATE TABLE att (
   ext                   NVARCHAR(16) NOT NULL DEFAULT '',                 /*extension*/
   iname                 NVARCHAR(255) NOT NULL DEFAULT '',   /*attachment name*/
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -58,7 +58,7 @@ CREATE TABLE att_table_link (
   table_name            NVARCHAR(128) NOT NULL DEFAULT '',
   item_id               INT NOT NULL,
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 1-under update*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 1-under update*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
 
@@ -93,7 +93,7 @@ CREATE TABLE users (
   pwd_reset             NVARCHAR(255) NULL,
   pwd_reset_time        datetime2 NULL,
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -157,7 +157,7 @@ CREATE TABLE spages (
   custom_css            NVARCHAR(MAX),                          /*custom page css*/
   custom_js             NVARCHAR(MAX),                          /*custom page js*/
 
-  status                TINYINT DEFAULT 0,    /*0-ok, 10-not published, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,    /*0-ok, 10-not published, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -184,7 +184,7 @@ CREATE TABLE events (
   iname                 NVARCHAR(255) NOT NULL default '',
   idesc                 NVARCHAR(MAX),
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -242,7 +242,7 @@ CREATE TABLE lookup_manager_tables (
   column_groups         NVARCHAR(MAX),                     /*comma-separated column list of groups column related to, if empty - don't include column in group*/
   url                   NVARCHAR(255) NOT NULL DEFAULT '', /*if defined - redirected to this URL instead of LookupManager forms*/
 
-  status                TINYINT DEFAULT 0,                /*0-ok, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,                /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
@@ -261,25 +261,29 @@ CREATE TABLE user_views (
   icode                 NVARCHAR(128) NOT NULL, --related screen code, ex: "Demos"
   fields                NVARCHAR(MAX), -- comma-separated list of fields to display, order kept
 
-  status                TINYINT DEFAULT 0,
+  iname                 NVARCHAR(255) NOT NULL DEFAULT '', -- if empty - it's a "default" view
+  is_system             TINYINT NOT NULL DEFAULT 0, -- 1 - system - visible for all
+  is_shared             TINYINT NOT NULL DEFAULT 0, -- 1 if shared/published
+
+  status                TINYINT NOT NULL DEFAULT 0,
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related user
   upd_time              DATETIME2,
   upd_users_id          INT DEFAULT 0,
 
-  INDEX UX_user_views (add_users_id, icode)
+  INDEX UX_user_views (add_users_id, icode, iname)
 );
 
 /*user lists*/
 DROP TABLE IF EXISTS user_lists;
 CREATE TABLE user_lists (
   id                    INT IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-  entity                NVARCHAR(128) NOT NULL, -- usually table name, ex: 'demos'
+  entity                NVARCHAR(128) NOT NULL, -- usually table name or base_url, ex: 'demos' or /Admin/Demos
 
   iname                 NVARCHAR(255) NOT NULL,
   idesc                 NVARCHAR(MAX), -- description
 
-  status                TINYINT DEFAULT 0,
+  status                TINYINT NOT NULL DEFAULT 0,
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related owner user
   upd_time              DATETIME2,
@@ -295,7 +299,7 @@ CREATE TABLE user_lists_items (
   user_lists_id         INT NOT NULL FOREIGN KEY REFERENCES user_lists(id),
   item_id               INT NOT NULL, -- related item id, example demos.id
 
-  status                TINYINT DEFAULT 0,
+  status                TINYINT NOT NULL DEFAULT 0,
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0, -- related owner user
   upd_time              DATETIME2,
@@ -315,7 +319,7 @@ CREATE TABLE menu_items (
   controller            NVARCHAR(255) NOT NULL default '',  -- controller class name for UI highlighting
   access_level          TINYINT NOT NULL DEFAULT 0,         -- min access level
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 10-hidden, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 10-hidden, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,

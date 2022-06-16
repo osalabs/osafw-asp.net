@@ -12,10 +12,17 @@ Public Class AttCategories
     End Sub
 
     'just return first row by iname field (you may want to make it unique)
-    Public Overridable Function oneByIcode(icode As String) As Hashtable
+    Public Overrides Function oneByIcode(icode As String) As Hashtable
         Dim where As Hashtable = New Hashtable
         where("icode") = icode
         Return db.row(table_name, where)
+    End Function
+
+    Public Function listSelectOptionsLikeIcode(icode_prefix As String) As ArrayList
+        Return db.array(table_name, New Hashtable From {
+                    {field_status, STATUS_ACTIVE},
+                    {field_icode, db.opLIKE(icode_prefix & "[_]%")}
+                 }, field_id, Utils.qw("id iname"))
     End Function
 
 End Class

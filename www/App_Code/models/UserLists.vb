@@ -6,9 +6,6 @@
 Public Class UserLists
     Inherits FwModel
 
-    'TODO add here your entities or just use base_url in controllers
-    'Public Const ENTITY_DEMOS = "demos"
-
     Public table_items As String = "user_lists_items"
 
     Public Sub New()
@@ -16,9 +13,17 @@ Public Class UserLists
         table_name = "user_lists"
     End Sub
 
+    Function countItems(id As Integer) As Integer
+        Return db.value(table_items, New Hashtable From {{"user_lists_id", id}}, "count(*)")
+    End Function
+
     'list for select by entity and for only logged user
     Public Function listSelectByEntity(entity As String) As ArrayList
         Return db.array("select id, iname from " & table_name & " where status=0 and entity=" & db.q(entity) & " and add_users_id=" & fw.model(Of Users).meId & " order by iname")
+    End Function
+
+    Public Function listItemsById(id As Integer) As ArrayList
+        Return db.array("select id, item_id from " & table_items & " where status=0 and user_lists_id=" & db.qi(id) & " order by id desc")
     End Function
 
     Public Function listForItem(entity As String, item_id As Integer) As ArrayList

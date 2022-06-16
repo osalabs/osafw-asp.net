@@ -82,6 +82,7 @@ Public MustInherit Class FwController
 
         'check/conv to str
         required_fields = Utils.f2str(Me.config("required_fields"))
+        is_userlists = Utils.f2bool(Me.config("is_userlists"))
 
         'save_fields could be defined as qw string - check and convert
         Dim save_fields_raw = Me.config("save_fields")
@@ -215,6 +216,26 @@ Public MustInherit Class FwController
         If Not is_dofilter Then
             Utils.mergeHash(sfilter, f)
             f = sfilter
+        Else
+            'check if we need to load user filer
+            Dim userfilters_id = reqi("userfilters_id")
+            If userfilters_id > 0 Then
+                Dim uf = fw.model(Of UserFilters).one(userfilters_id)
+                Dim f1 = Utils.jsonDecode(uf("idesc"))
+                If f1 IsNot Nothing Then f = f1
+                If Utils.f2int(uf("is_system")) = 0 Then
+                    f("userfilters_id") = userfilters_id 'set filter id (for edit/delete) only if not system
+                    f("userfilter") = uf
+                End If
+            Else
+                'check if we have some filter loaded
+                userfilters_id = Utils.f2int(f("userfilters_id"))
+                If userfilters_id > 0 Then
+                    'just ned info on this filter
+                    Dim uf = fw.model(Of UserFilters).one(userfilters_id)
+                    f("userfilter") = uf
+                End If
+            End If
         End If
 
         'paging
@@ -227,6 +248,17 @@ Public MustInherit Class FwController
         Me.list_filter = f
         Return f
     End Function
+
+    ''' <summary>
+    ''' clears list_filter and related session key
+    ''' </summary>
+    ''' <param name="session_key"></param>
+    Public Overridable Sub clearFilter(Optional session_key As String = Nothing)
+        Dim f As New Hashtable
+        If IsNothing(session_key) Then session_key = "_filter_" & fw.G("controller.action")
+        fw.SESSION(session_key, f)
+        Me.list_filter = f
+    End Sub
 
     ''' <summary>
     ''' Validate required fields are non-empty and set global fw.ERR[field] values in case of errors
@@ -381,6 +413,7 @@ Public MustInherit Class FwController
     '''      - exact: "=term"
     '''      - Not equals "!=term"
     '''      - Not contains: "!term"
+    '''      - more/less: <=, <, >=, >"
     ''' </summary>
     Public Overridable Sub setListSearchAdvanced()
         'advanced search
@@ -389,17 +422,34 @@ Public MustInherit Class FwController
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
                 Dim value = hsearch(fieldname)
                 Dim str As String
+                Dim fieldname_sql = "ISNULL(CAST(" & db.q_ident(fieldname) & " as NVARCHAR), '')"
+                Dim fieldname_sql2 = "TRY_CONVERT(DECIMAL(18,1),CAST(" & db.q_ident(fieldname) & " as NVARCHAR))" 'SQL Server 2012+ only
                 If Left(value, 1) = "=" Then
                     str = " = " & db.q(Mid(value, 2))
                 ElseIf Left(value, 2) = "!=" Then
                     str = " <> " & db.q(Mid(value, 3))
+
+                ElseIf Left(value, 2) = "<=" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " <= " & db.q(Mid(value, 3))
+                ElseIf Left(value, 1) = "<" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " < " & db.q(Mid(value, 2))
+
+                ElseIf Left(value, 2) = ">=" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " >= " & db.q(Mid(value, 3))
+                ElseIf Left(value, 1) = ">" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " > " & db.q(Mid(value, 2))
+
                 ElseIf Left(value, 1) = "!" Then
                     str = " NOT LIKE " & db.q("%" & Mid(value, 2) & "%")
                 Else
                     str = " LIKE " & db.q("%" & value & "%")
                 End If
 
-                Me.list_where &= " and ISNULL(" & db.q_ident(fieldname) & ", '') " & str
+                Me.list_where &= " and " & fieldname_sql & " " & str
             End If
         Next
     End Sub
@@ -420,6 +470,11 @@ Public MustInherit Class FwController
                 Me.list_where &= " and " & db.q_ident(model0.field_status) & "<>127 " 'by default - show all non-deleted
             End If
         End If
+    End Sub
+
+    Public Overridable Sub getListCount(Optional list_view As String = "")
+        Dim list_view_name = IIf(list_view > "", list_view, Me.list_view)
+        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
     End Sub
 
     ''' <summary>
@@ -445,7 +500,7 @@ Public MustInherit Class FwController
         If String.IsNullOrEmpty(list_view) Then list_view = model0.table_name
         Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
 
-        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
+        Me.getListCount(list_view_name)
         If Me.list_count > 0 Then
             Dim offset As Integer = pagenum * pagesize
             Dim limit As Integer = pagesize
@@ -549,7 +604,7 @@ Public MustInherit Class FwController
             If is_add_new > 0 Then
                 'if Submit and Add New - redirect to new
                 url = Me.base_url & "/new"
-                url_q = "&copy_id=" & id
+                url_q &= "&copy_id=" & id
             Else
                 'or just return to edit screen
                 url = Me.base_url & "/" & id & "/edit"
@@ -735,9 +790,10 @@ Public MustInherit Class FwController
     ' headers
     ' headers_search
     ' depends on ps("list_rows")
+    ' use is_cols=false when return ps as json
     'usage:
     ' model.setViewList(ps, reqh("search"))
-    Public Overridable Sub setViewList(ps As Hashtable, hsearch As Hashtable)
+    Public Overridable Sub setViewList(ps As Hashtable, hsearch As Hashtable, Optional is_cols As Boolean = True)
         Dim fields = getViewListUserFields()
 
         Dim headers = getViewListArr(fields)
@@ -751,19 +807,21 @@ Public MustInherit Class FwController
 
         Dim hcustom = Utils.qh(view_list_custom)
 
-        'dynamic cols
-        For Each row As Hashtable In ps("list_rows")
-            Dim cols As New ArrayList
-            For Each fieldname In Utils.qw(fields)
-                cols.Add(New Hashtable From {
+        If is_cols Then
+            'dynamic cols
+            For Each row As Hashtable In ps("list_rows")
+                Dim cols As New ArrayList
+                For Each fieldname In Utils.qw(fields)
+                    cols.Add(New Hashtable From {
                     {"row", row},
                     {"field_name", fieldname},
                     {"data", row(fieldname)},
                     {"is_custom", hcustom.ContainsKey(fieldname)}
                 })
+                Next
+                row("cols") = cols
             Next
-            row("cols") = cols
-        Next
+        End If
     End Sub
 
     '''''''''''''''''''''''''''''''''''''' Default Actions

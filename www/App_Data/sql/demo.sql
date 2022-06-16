@@ -8,7 +8,7 @@ CREATE TABLE demo_dicts (
   iname                 NVARCHAR(64) NOT NULL default '',
   idesc                 NVARCHAR(MAX),
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 1-under upload, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,
@@ -48,7 +48,7 @@ CREATE TABLE demos (
 
   att_id                int NULL FOREIGN KEY REFERENCES att(id), /*optional attached image*/
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 127-deleted*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 127-deleted*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),  /*date record added*/
   add_users_id          INT DEFAULT 0,                        /*user added record*/
   upd_time              DATETIME2,
@@ -65,7 +65,7 @@ CREATE TABLE demos_demo_dicts_link (
   demos_id              INT NULL FOREIGN KEY REFERENCES demos(id),
   demo_dicts_id         INT NULL FOREIGN KEY REFERENCES demo_dicts(id),
 
-  status                TINYINT DEFAULT 0,        /*0-ok, 1-under change, deleted instantly*/
+  status                TINYINT NOT NULL DEFAULT 0,        /*0-ok, 1-under change, deleted instantly*/
   add_time              DATETIME2 NOT NULL DEFAULT getdate(),
   add_users_id          INT DEFAULT 0,
   upd_time              DATETIME2,

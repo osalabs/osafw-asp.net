@@ -93,6 +93,26 @@ Public Class S3
         Return response
     End Function
 
+    Public Function uploadFilepath(key As String, filepath As String, Optional disposition As String = "") As PutObjectResponse
+        logger("uploading to S3: key=[" & key & "], filepath=[" & filepath & "]")
+        Dim request = New PutObjectRequest With {
+                .BucketName = Me.bucket,
+                .Key = Me.root & key,
+                .FilePath = filepath
+                }
+        request.Headers("Content-Type") = fw.model(Of Att).getMimeForExt(UploadUtils.getUploadFileExt(filepath))
+
+        If disposition > "" Then
+            Dim filename = Replace(System.IO.Path.GetFileName(filepath), """", "'") 'replace quotes
+            request.Headers("Content-Disposition") = "inline; filename=""" & filename & """"
+        End If
+
+        Dim response = client.PutObject(request)
+        'logger("uploaded to: " & request.Key)
+        'logger("HttpStatusCode=" & response.HttpStatusCode)
+        Return response
+    End Function
+
     ''' <summary>
     '''  upload HttpPostedFile to the S3
     ''' </summary>
@@ -137,6 +157,14 @@ Public Class S3
             .Key = Me.root & key,
             .Expires = DateTime.Now.AddMinutes(10)
         }
+        'or DateTime.UtcNow
+        'sample code
+        'request.ResponseHeaderOverrides.ContentType = "text/xml+zip"
+        'request.ResponseHeaderOverrides.ContentDisposition = "attachment; filename=dispName.pdf"
+        'request.ResponseHeaderOverrides.CacheControl = "No-cache"
+        'request.ResponseHeaderOverrides.ContentLanguage = "mi, en"
+        'request.ResponseHeaderOverrides.Expires = "Thu, 01 Dec 1994 16:00:00 GMT"
+        'request.ResponseHeaderOverrides.ContentEncoding = "x-gzip"
         Return client.GetPreSignedURL(request)
     End Function
 

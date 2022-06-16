@@ -88,7 +88,7 @@ window.fw={
       }
     });
 
-    $('table.list').on('keypress','.search input', function(e) {
+    $('table.list').on('keypress','.search :input', function(e) {
       if (e.which == 13) {// on Enter press
           e.preventDefault();
           //on explicit search - could reset pagenum to 0
@@ -106,7 +106,7 @@ window.fw={
             //if search ON - add search fields to the form
             $f.find('.osafw-list-search').remove();
             var html=[];
-            $('table.list:first .search input').each(function (i, el) {
+            $('table.list:first .search :input').each(function (i, el) {
               if (el.value>''){
                 html.push( '<input class="osafw-list-search" type="hidden" name="'+el.name.replace(/"/g,'&quot;')+'" value="'+el.value.replace(/"/g,'&quot;')+'">');
               }
@@ -195,7 +195,7 @@ window.fw={
       var $this = $(this);
       var s = $this.val().replace(/"/g, '').toUpperCase();
       var $div = $this.closest('.field-multi-value');
-      var $cb = $div.find('.custom-checkbox');
+      var $cb = $div.find('[data-s]');
       if (s>''){
           $cb.hide();
           $cb.filter('[data-s*="'+s+'"]').show();
@@ -308,8 +308,12 @@ window.fw={
     });
 
     $('body').on('change', 'form[data-autosave]', function(e){
+      if ($(e.target).is('[data-noautosave]')) {
+        e.preventDefault();
+        return;
+      }
       var $f = $(this);
-      // console.log('on form change', $f, e);
+      //console.log('on form change', $f, e);
       $f.data('is-changed', true);
 
       set_status($f, 1);
@@ -334,7 +338,7 @@ window.fw={
     });
 
     // "*:not(.bs-searchbox)" - exclude search input in the bs selectpicker container
-    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not([data-noautosave])', function(e){
+    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not(button,[data-noautosave])', function(e){
       var $f = $(this.form);
       // console.log('on form input blur', $f);
       if ($f.data('is-changed')===true){

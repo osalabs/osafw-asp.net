@@ -95,6 +95,21 @@ Public Class DB
     Private ReadOnly UNSUPPORTED_OLE_TYPES As New Hashtable
 
     ''' <summary>
+    ''' "synax sugar" helper to build Hashtable from list of arguments instead more complex New Hashtable from {...}
+    ''' Example: db.row("table", h("id", 123)) => "select * from table where id=123"
+    ''' </summary>
+    ''' <param name="args">even number of args required</param>
+    ''' <returns></returns>
+    Public Shared Function h(ParamArray args() As Object) As Hashtable
+        If args.Length = 0 OrElse args.Length Mod 2 <> 0 Then Throw New ArgumentException("h() accepts even number of arguments")
+        Dim result As New Hashtable
+        For i = 0 To args.Length - 1 Step 2
+            result(args(i)) = args(i + 1)
+        Next
+        Return result
+    End Function
+
+    ''' <summary>
     ''' construct new DB object with
     ''' </summary>
     ''' <param name="fw">framework reference</param>
@@ -398,6 +413,17 @@ Public Class DB
         Next
         Return " IN (" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
     End Function
+    'same as insql, but for quoting numbers - uses qi() 
+    Public Function insqli(params As String) As String
+        Return insqli(Split(params, ","))
+    End Function
+    Public Function insqli(params As IList) As String
+        Dim result As New ArrayList
+        For Each param As String In params
+            result.Add(Me.qi(param))
+        Next
+        Return " IN (" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
+    End Function
 
     'quote identifier: table => [table]
     Public Function q_ident(ByVal str As String) As String
@@ -660,7 +686,7 @@ Public Class DB
     ''' <returns></returns>
     Public Function opIN(ParamArray args() As Object) As DBOperation
         Dim values As Object
-        If args.Count = 1 AndAlso IsArray(args(0)) Then
+        If args.Count = 1 AndAlso (IsArray(args(0)) OrElse TypeOf (args(0)) Is IList) Then
             values = args(0)
         Else
             values = args
@@ -680,7 +706,7 @@ Public Class DB
     ''' <returns></returns>
     Public Function opNOTIN(ParamArray args() As Object) As DBOperation
         Dim values As Object
-        If args.Count = 1 AndAlso IsArray(args(0)) Then
+        If args.Count = 1 AndAlso (IsArray(args(0)) OrElse TypeOf (args(0)) Is IList) Then
             values = args(0)
         Else
             values = args

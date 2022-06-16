@@ -43,6 +43,13 @@ Public Class MyListsController
             Me.list_where &= " and entity=" & db.q(list_filter("entity"))
         End If
     End Sub
+    Public Overrides Sub getListRows()
+        MyBase.getListRows()
+
+        For Each row As Hashtable In Me.list_rows
+            row("ctr") = model.countItems(row("id"))
+        Next
+    End Sub
 
     Public Overrides Function ShowFormAction(Optional form_id As String = "") As Hashtable
         Me.form_new_defaults = New Hashtable
@@ -107,6 +114,63 @@ Public Class MyListsController
             Dim res = fw.model(Of UserLists).toggleItemList(user_lists_id, item_id)
             ps("iname") = user_lists("iname")
             ps("action") = IIf(res, "added", "removed")
+
+        Catch ex As ApplicationException
+            ps("success") = False
+            ps("err_msg") = ex.Message
+        End Try
+
+        Return ps
+    End Function
+
+    'request item_id - could be one id, or comma-separated ids
+    Public Function AddToListAction(form_id As String) As Hashtable
+        Dim user_lists_id = Utils.f2int(form_id)
+        Dim items As Hashtable = Utils.commastr2hash(reqs("item_id"))
+
+        Dim ps = New Hashtable From {
+                {"_json", True},
+                {"success", True}
+            }
+
+        Try
+            Dim user_lists = fw.model(Of UserLists).one(user_lists_id)
+            If user_lists.Count = 0 OrElse user_lists("add_users_id") <> fw.model(Of Users).meId Then Throw New ApplicationException("Wrong Request")
+
+            For Each key As String In items.Keys
+                Dim item_id = Utils.f2int(key)
+                If item_id > 0 Then
+                    fw.model(Of UserLists).addItemList(user_lists_id, item_id)
+                End If
+            Next
+
+        Catch ex As ApplicationException
+            ps("success") = False
+            ps("err_msg") = ex.Message
+        End Try
+
+        Return ps
+    End Function
+
+    'request item_id - could be one id, or comma-separated ids
+    Public Function RemoveFromListAction(form_id As String) As Hashtable
+        Dim user_lists_id = Utils.f2int(form_id)
+        Dim items As Hashtable = Utils.commastr2hash(reqs("item_id"))
+        Dim ps = New Hashtable From {
+                {"_json", True},
+                {"success", True}
+            }
+
+        Try
+            Dim user_lists = fw.model(Of UserLists).one(user_lists_id)
+            If user_lists.Count = 0 OrElse user_lists("add_users_id") <> fw.model(Of Users).meId Then Throw New ApplicationException("Wrong Request")
+
+            For Each key As String In items.Keys
+                Dim item_id = Utils.f2int(key)
+                If item_id > 0 Then
+                    fw.model(Of UserLists).delItemList(user_lists_id, item_id)
+                End If
+            Next
 
         Catch ex As ApplicationException
             ps("success") = False
