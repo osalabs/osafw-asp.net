@@ -152,7 +152,7 @@ CREATE TABLE spages (
   prio                  INT NOT NULL DEFAULT 0,                 /* 0 is normal and lowest priority*/
   is_home               INT DEFAULT 0,                          /* 1 is for home page (non-deletable page*/
   redirect_url          NVARCHAR(255) NOT NULL DEFAULT '',      /*if set - redirect to this url instead displaying page*/
-  layout_filename       NVARCHAR(MAX)                           /*if null then default layout will be used*/
+  layout                NVARCHAR(MAX)                           /*if null then default layout will be used*/
 
   custom_css            NVARCHAR(MAX),                          /*custom page css*/
   custom_js             NVARCHAR(MAX),                          /*custom page js*/

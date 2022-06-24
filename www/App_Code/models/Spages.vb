@@ -213,8 +213,8 @@ Public Class Spages
         ps("hide_std_sidebar") = True 'TODO - control via item[template]
 
         ' Call parser with specific layout if set
-        If Utils.f2str(item("layout_filename")) <> "" Then
-            fw.parser("/home/spage", item("layout_filename"), ps)
+        If Utils.f2str(item("layout")) <> "" Then
+            fw.parser("/home/spage", item("layout"), ps)
         Else
             fw.parser("/home/spage", ps)
         End If

@@ -19,7 +19,7 @@ Public Class AdminSpagesController
         'initialization
         base_url = "/Admin/Spages"
         required_fields = "iname"
-        save_fields = "iname idesc idesc_left idesc_right head_att_id template prio meta_keywords meta_description custom_css custom_js redirect_url layout_filename"
+        save_fields = "iname idesc idesc_left idesc_right head_att_id template prio meta_keywords meta_description custom_css custom_js redirect_url layout"
 
         search_fields = "url iname idesc"
         list_sortdef = "iname asc"   'default sorting: name, asc|desc direction

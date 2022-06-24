@@ -1,2 +1,2 @@
-﻿ALTER TABLE spages ADD layout_filename NVARCHAR(MAX)
+﻿ALTER TABLE spages ADD layout NVARCHAR(MAX)
 GO
