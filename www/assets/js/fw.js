@@ -81,13 +81,19 @@ window.fw={
       }
     });
 
-    $('table.list').on('keypress','.search input', function(e) {
+    $(document).on('keyup', 'table.list .search input', function (e) {
+      //duplicte input values in the source search row, if it in scrollable 
+      var $this = $(this);
+      var $table_parent = $this.closest('table.list').parent();
+      if ($table_parent.hasClass('data-header')) {
+        $table_parent.prev('table.list').find('input[name="' + $this.attr('name') + '"]').val($this.val());
+      }
       if (e.which == 13) {// on Enter press
-          e.preventDefault();
-          //on explicit search - could reset pagenum to 0
-          //$ffilter.find('input[name="f[pagenum]"]').val(0);
-          $ffilter.trigger('submit');
-          return false;
+        e.preventDefault();
+        //on explicit search - could reset pagenum to 0
+        //$ffilter.find('input[name="f[pagenum]"]').val(0);
+        $ffilter.trigger('submit');
+        return false;
       }
     });
 
