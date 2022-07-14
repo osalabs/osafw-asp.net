@@ -39,7 +39,8 @@ Public Class AdminReportsController
 
         Dim report = model.createInstance(repcode, f)
 
-        ps("f") = report.getReportFilters()
+        ps("filter") = report.getReportFilters() 'filter data like select/lookups
+        ps("f") = report.f 'filter values
 
         If ps("is_run") Then
             ps("rep") = report.getReportData()

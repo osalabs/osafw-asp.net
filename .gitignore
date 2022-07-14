@@ -1,6 +1,8 @@
-/www/App_Data/main.log
+/www/App_Data/logs/main.log
+/www/App_Data/logs/main.log.1
 /www/upload/att
 /www/bin
 /doc
 /www/App_Data/template/dev/db.json
 /www/App_Data/template/dev/entities.txt
+/www/vwd.webinfo

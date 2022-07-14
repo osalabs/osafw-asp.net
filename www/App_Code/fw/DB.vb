@@ -8,6 +8,7 @@ Imports System.Data.SqlClient
 Imports System.Data
 Imports System.Data.Common
 Imports System.IO
+Imports System.Data.Odbc
 
 Public Enum DBOps As Integer
     [EQ]            '=
@@ -22,6 +23,7 @@ Public Enum DBOps As Integer
     [NOTIN]         'NOT IN
     [LIKE]          'LIKE
     [NOTLIKE]       'NOT LIKE
+    [BETWEEN]       'BETWEEN
 End Enum
 
 'describes DB operation
@@ -64,6 +66,8 @@ Public Class DBOperation
                 opstr = "LIKE"
             Case DBOps.NOTLIKE
                 opstr = "NOT LIKE"
+            Case DBOps.BETWEEN
+                opstr = "BETWEEN"
             Case Else
                 Throw New ApplicationException("Wrong DB OP")
         End Select
@@ -89,6 +93,21 @@ Public Class DB
 
     Private is_check_ole_types As Boolean = False 'if true - checks for unsupported OLE types during readRow
     Private ReadOnly UNSUPPORTED_OLE_TYPES As New Hashtable
+
+    ''' <summary>
+    ''' "synax sugar" helper to build Hashtable from list of arguments instead more complex New Hashtable from {...}
+    ''' Example: db.row("table", h("id", 123)) => "select * from table where id=123"
+    ''' </summary>
+    ''' <param name="args">even number of args required</param>
+    ''' <returns></returns>
+    Public Shared Function h(ParamArray args() As Object) As Hashtable
+        If args.Length = 0 OrElse args.Length Mod 2 <> 0 Then Throw New ArgumentException("h() accepts even number of arguments")
+        Dim result As New Hashtable
+        For i = 0 To args.Length - 1 Step 2
+            result(args(i)) = args(i + 1)
+        Next
+        Return result
+    End Function
 
     ''' <summary>
     ''' construct new DB object with
@@ -153,6 +172,14 @@ Public Class DB
         If Me.conn IsNot Nothing Then Me.conn.Close()
     End Sub
 
+    ''' <summary>
+    ''' return internal connection object
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function getConnection() As DbConnection
+        Return conn
+    End Function
+
     Public Function createConnection(connstr As String, Optional dbtype As String = "SQL") As DbConnection
         Dim result As DbConnection
 
@@ -160,6 +187,8 @@ Public Class DB
             result = New SqlConnection(connstr)
         ElseIf dbtype = "OLE" Then
             result = New OleDbConnection(connstr)
+        ElseIf dbtype = "ODBC" Then
+            result = New OdbcConnection(connstr)
         Else
             Dim msg As String = "Unknown type [" & dbtype & "]"
             logger(LogLevel.FATAL, msg)
@@ -177,6 +206,7 @@ Public Class DB
 
         Dim cat As Object = CreateObject("ADOX.Catalog")
         cat.Create(connstr)
+        cat.ActiveConnection.Close()
     End Sub
 
     <Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities")>
@@ -383,6 +413,17 @@ Public Class DB
         Next
         Return " IN (" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
     End Function
+    'same as insql, but for quoting numbers - uses qi() 
+    Public Function insqli(params As String) As String
+        Return insqli(Split(params, ","))
+    End Function
+    Public Function insqli(params As IList) As String
+        Dim result As New ArrayList
+        For Each param As String In params
+            result.Add(Me.qi(param))
+        Next
+        Return " IN (" & IIf(result.Count > 0, Join(result.ToArray(), ", "), "NULL") & ")"
+    End Function
 
     'quote identifier: table => [table]
     Public Function q_ident(ByVal str As String) As String
@@ -482,6 +523,8 @@ Public Class DB
                 Else
                     quoted = qone_by_type(field_type, field_value)
                 End If
+            ElseIf dbop.op = DBOps.BETWEEN Then
+                quoted = qone_by_type(field_type, dbop.value(0)) & " AND " & qone_by_type(field_type, dbop.value(1))
             Else
                 quoted = qone_by_type(field_type, field_value)
             End If
@@ -643,7 +686,7 @@ Public Class DB
     ''' <returns></returns>
     Public Function opIN(ParamArray args() As Object) As DBOperation
         Dim values As Object
-        If args.Count = 1 AndAlso IsArray(args(0)) Then
+        If args.Count = 1 AndAlso (IsArray(args(0)) OrElse TypeOf (args(0)) Is IList) Then
             values = args(0)
         Else
             values = args
@@ -663,7 +706,7 @@ Public Class DB
     ''' <returns></returns>
     Public Function opNOTIN(ParamArray args() As Object) As DBOperation
         Dim values As Object
-        If args.Count = 1 AndAlso IsArray(args(0)) Then
+        If args.Count = 1 AndAlso (IsArray(args(0)) OrElse TypeOf (args(0)) Is IList) Then
             values = args(0)
         Else
             values = args
@@ -671,6 +714,14 @@ Public Class DB
         Return New DBOperation(DBOps.NOTIN, values)
     End Function
 
+    ''' <summary>
+    ''' Example: Dim rows = db.array("users", New Hashtable From {{"field", db.opBETWEEN(10,20)}})
+    ''' select * from users where field BETWEEN 10 AND 20
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function opBETWEEN(from_value As Object, to_value As Object) As DBOperation
+        Return New DBOperation(DBOps.BETWEEN, New Object() {from_value, to_value})
+    End Function
 
     'return last inserted id
     Public Function insert(ByVal table As String, ByVal fields As Hashtable) As Integer
@@ -843,6 +894,22 @@ Public Class DB
         Return result
     End Function
 
+    'return array of view names in current db
+    Public Function views() As ArrayList
+        Dim result As New ArrayList
+
+        Dim conn As DbConnection = Me.connect()
+        Dim dataTable As DataTable = conn.GetSchema("Tables")
+        For Each row As DataRow In dataTable.Rows
+            'skip non-views
+            If row("TABLE_TYPE") <> "VIEW" Then Continue For
+            Dim tblname As String = row("TABLE_NAME").ToString()
+            result.Add(tblname)
+        Next
+
+        Return result
+    End Function
+
     Public Function load_table_schema_full(table As String) As ArrayList
         'check if full schema already there
         If IsNothing(schemafull_cache) Then schemafull_cache = New Hashtable
@@ -879,6 +946,7 @@ Public Class DB
                 row("fw_type") = map_mssqltype2fwtype(row("type")) 'meta type
                 row("fw_subtype") = LCase(row("type"))
             Next
+            'TODO else ODBC support
         Else
             'OLE DB (Access)
             Dim schemaTable As DataTable =
@@ -933,7 +1001,29 @@ Public Class DB
     Public Function get_foreign_keys(Optional table As String = "") As ArrayList
         Dim result As New ArrayList
         If dbtype = "SQL" Then
-            'TODO implement for SQL Server
+            Dim where = ""
+            If table > "" Then where = " WHERE col1.TABLE_NAME=" & Me.q(table)
+            result = Me.array("SELECT " &
+                 " col1.CONSTRAINT_NAME as [name]" &
+                 ", col1.TABLE_NAME As [table]" &
+                 ", col1.COLUMN_NAME as [column]" &
+                 ", col2.TABLE_NAME as [pk_table]" &
+                 ", col2.COLUMN_NAME as [pk_column]" &
+                 ", rc.UPDATE_RULE as [on_update]" &
+                 ", rc.DELETE_RULE as [on_delete]" &
+                 " FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc " &
+                 " INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE col1 " &
+                 "   ON (col1.CONSTRAINT_CATALOG = rc.CONSTRAINT_CATALOG  " &
+                 "       AND col1.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA " &
+                 "       AND col1.CONSTRAINT_NAME = rc.CONSTRAINT_NAME)" &
+                 " INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE col2 " &
+                 "   ON (col2.CONSTRAINT_CATALOG = rc.UNIQUE_CONSTRAINT_CATALOG  " &
+                 "       AND col2.CONSTRAINT_SCHEMA = rc.UNIQUE_CONSTRAINT_SCHEMA " &
+                 "       AND col2.CONSTRAINT_NAME = rc.UNIQUE_CONSTRAINT_NAME " &
+                 "       AND col2.ORDINAL_POSITION = col1.ORDINAL_POSITION)" &
+                 where)
+            'on_update or on_delete can contain: NO ACTION, CASCASE
+
         Else
             Dim dt = DirectCast(conn, OleDbConnection).GetOleDbSchemaTable(OleDb.OleDbSchemaGuid.Foreign_Keys, New Object() {Nothing})
             For Each row As DataRow In dt.Rows

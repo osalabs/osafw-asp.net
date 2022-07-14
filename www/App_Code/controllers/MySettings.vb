@@ -29,7 +29,7 @@ Public Class MySettingsController
         Dim item As Hashtable
         Dim id = model.meId()
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             item = model.one(id)
         Else
             'read from db

@@ -16,7 +16,8 @@ Public Class AttController
     End Sub
 
     Public Sub IndexAction()
-        Throw New ApplicationException("No file specified")
+        fw.redirect(fw.config("ASSETS_URL") & "/img/0.gif")
+        'Throw New ApplicationException("No file specified")
     End Sub
 
     Public Sub DownloadAction(Optional ByVal form_id As String = "")
@@ -25,7 +26,7 @@ Public Class AttController
         Dim size As String = reqs("size")
 
         Dim item As Hashtable = model.one(id)
-        If item("is_s3") = "1" Then model.redirectS3(item)
+        If item("is_s3") = "1" Then model.redirectS3(item, size)
 
         model.transmitFile(Utils.f2int(form_id), size)
     End Sub
@@ -37,7 +38,7 @@ Public Class AttController
         Dim is_preview As Boolean = reqs("preview") = "1"
 
         Dim item As Hashtable = model.one(id)
-        If item("is_s3") = "1" Then model.redirectS3(item)
+        If item("is_s3") = "1" Then model.redirectS3(item, size)
 
         If is_preview Then
 

@@ -29,7 +29,7 @@ Public Class SignupController
         Dim ps As Hashtable = New Hashtable
         Dim item As New Hashtable
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             'set defaults here
             'item("field")='default value'
         Else

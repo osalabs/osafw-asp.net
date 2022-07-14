@@ -3,7 +3,11 @@
 ' Part of ASP.NET osa framework  www.osalabs.com/osafw/asp.net
 ' (c) 2009-2018  Oleg Savchuk www.osalabs.com
 
+Imports System.Activities.Statements
+Imports System.CodeDom
 Imports System.IO
+Imports System.Runtime.CompilerServices
+Imports System.Runtime.InteropServices.WindowsRuntime
 
 Public Class DevManageController
     Inherits FwController
@@ -22,8 +26,10 @@ Public Class DevManageController
     Public Function IndexAction() As Hashtable
         Dim ps As New Hashtable
 
-        'table list
+        'table and views list
         Dim tables = db.tables()
+        Dim views = db.views()
+        tables.AddRange(views)
         tables.Sort()
         ps("select_tables") = New ArrayList
         For Each table As String In tables
@@ -89,6 +95,97 @@ Public Class DevManageController
         fw.redirect(base_url)
     End Sub
 
+    Public Function ShowDBUpdatesAction() As Hashtable
+        Dim ps As New Hashtable
+
+        'show list of available db updates
+        Dim updates_root = fw.config("site_root") & "\App_Data\sql\updates"
+        If IO.Directory.Exists(updates_root) Then
+            Dim files() As String = IO.Directory.GetFiles(updates_root)
+
+            Dim rows As New ArrayList
+            For Each file As String In files
+                rows.Add(New Hashtable From {{"filename", IO.Path.GetFileName(file)}})
+            Next
+            ps("rows") = rows
+        Else
+            ps("is_nodir") = True
+            ps("updates_root") = updates_root
+        End If
+
+        Return ps
+    End Function
+
+    Public Sub SaveDBUpdatesAction()
+        checkXSS()
+
+        Dim is_view_only = (reqi("ViewsOnly") = 1)
+        Dim ctr = 0
+
+        Try
+            If Not is_view_only Then
+                'apply selected updates
+                Dim updates_root = fw.config("site_root") & "\App_Data\sql\updates"
+                Dim item = reqh("item")
+                For Each filename As String In item.Keys
+                    Dim filepath = updates_root & "\" & filename
+                    rw("applying: " & filepath)
+                    ctr += exec_multi_sql(FW.get_file_content(filepath))
+                Next
+                rw("Done, " & ctr & " statements executed")
+            End If
+
+            'refresh views
+            ctr = 0
+            Dim views_file = fw.config("site_root") & "\App_Data\sql\views.sql"
+            rw("Applying views file: " & views_file)
+            'for views - ignore errors
+            ctr = exec_multi_sql(FW.get_file_content(views_file), True)
+            rw("Done, " & ctr & " statements executed")
+
+            rw("<b>All Done</b>")
+
+        Catch ex As Exception
+            rw("got an error")
+            rw("<span style='color:red'>" & ex.Message & "</span>")
+        End Try
+
+        'and last - reset db schema cache
+        FwCache.clear()
+        db.clear_schema_cache()
+    End Sub
+    'TODO move these functions to DB?
+    Private Function exec_multi_sql(sql As String, Optional is_ignore_errors As Boolean = False) As Integer
+        Dim result = 0
+        'launch the query
+        Dim sql1 As String = strip_comments_sql(sql)
+        Dim asql() As [String] = split_multi_sql(sql)
+        For Each sqlone As String In asql
+            sqlone = Trim(sqlone)
+            If sqlone > "" Then
+                If is_ignore_errors Then
+                    Try
+                        db.exec(sqlone)
+                        result += 1
+                    Catch ex As Exception
+                        rw("<span style='color:red'>" & ex.Message & "</span>")
+                    End Try
+                Else
+                    db.exec(sqlone)
+                    result += 1
+                End If
+            End If
+        Next
+        Return result
+    End Function
+    Private Function strip_comments_sql(ByVal sql As String) As String
+        Return Regex.Replace(sql, "/\*.+?\*/", " ", RegexOptions.Singleline)
+    End Function
+    Private Function split_multi_sql(ByVal sql As String) As String()
+        Return Regex.Split(sql, ";[\n\r](?:GO[\n\r]+)[\n\r]*|[\n\r]+GO[\n\r]+")
+    End Function
+
+
 
     Public Sub CreateModelAction()
         Dim item = reqh("item")
@@ -117,8 +214,10 @@ Public Class DevManageController
                     {"model_name", model_name},
                     {"controller_url", controller_url},
                     {"controller_title", controller_title},
-                    {"table", Utils.name2fw(model_name)}
+                    {"table", fw.model(model_name).table_name}
                 }
+        'table = Utils.name2fw(model_name) - this is not always ok
+
         createController(entity, Nothing)
         Dim controller_name = Replace(entity("controller_url"), "/", "")
 
@@ -166,7 +265,7 @@ Public Class DevManageController
         content = Regex.Replace(content, "&lt;~(.+?)&gt;", "<~$1>") 'unescape tags
         FW.set_file_content(tpl_path & "/showform/form.html", content)
 
-        'TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
+        ''TODO here - also modify controller code ShowFormAction to include listSelectOptions, multi_datarow, comboForDate, autocomplete name, etc...
 
         'now we could remove dynamic field definitions - uncomment if necessary
         'config.Remove("show_fields")
@@ -426,13 +525,13 @@ Public Class DevManageController
             table_entity("db_config") = db.db_name
             table_entity("table") = tblname
             table_entity("fw_name") = Utils.name2fw(tblname) 'new table name using fw standards
-            table_entity("iname") = name2human(tblname) 'human table name
+            table_entity("iname") = Utils.name2human(tblname) 'human table name
             table_entity("fields") = tableschema2fields(tblschema)
             table_entity("foreign_keys") = db.get_foreign_keys(tblname)
 
             table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
             table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
-            table_entity("controller_title") = name2human(table_entity("model_name"))
+            table_entity("controller_title") = Utils.name2human(table_entity("model_name"))
 
             'set is_fw flag - if it's fw compatible (contains id,iname,status,add_time,add_users_id)
             Dim fields = array2hashtable(table_entity("fields"), "name")
@@ -454,7 +553,7 @@ Public Class DevManageController
             '    fldschema("iname") = "ID"
             'Else
             fldschema("fw_name") = Utils.name2fw(fldschema("name"))
-            fldschema("iname") = name2human(fldschema("name"))
+            fldschema("iname") = Utils.name2human(fldschema("name"))
             'End If
         Next
         'result("xxxx") = "yyyy"
@@ -470,29 +569,6 @@ Public Class DevManageController
         Return result
     End Function
 
-    'convert some system name to human-friendly name'
-    '"system_name_id" => "System Name ID"
-    Private Function name2human(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
-        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
-        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
-        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
-        result = Utils.capitalize(result, "all") 'Title Case
-        result = Regex.Replace(result, "\bid\b", "ID", RegexOptions.IgnoreCase) 'id => ID
-        result = result.Trim()
-        Return result
-    End Function
-
-    'convert c/snake style name to CamelCase
-    'system_name => SystemName
-    Private Function nameCamelCase(str As String) As String
-        Dim result = str
-        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
-        result = Utils.capitalize(result)
-        result = Regex.Replace(result, " +", "") 'remove spaces
-        Return str
-    End Function
 
     'convert array of hashtables to hashtable of hashtables using key
     Private Function array2hashtable(arr As ArrayList, key As String) As Hashtable
@@ -599,7 +675,7 @@ Public Class DevManageController
                 Dim table_name = parts(0) 'name is first 
 
                 table_entity("db_config") = "" 'main
-                table_entity("iname") = Me.name2human(table_name)
+                table_entity("iname") = Utils.name2human(table_name)
                 table_entity("table") = Utils.name2fw(table_name)
                 If isFwTableName(table_entity("table")) Then Throw New ApplicationException("Cannot have table name " & table_entity("table"))
 
@@ -607,7 +683,7 @@ Public Class DevManageController
 
                 table_entity("model_name") = Me._tablename2model(table_entity("fw_name")) 'potential Model Name
                 table_entity("controller_url") = "/Admin/" & table_entity("model_name") 'potential Controller URL/Name/Title
-                table_entity("controller_title") = name2human(table_entity("model_name"))
+                table_entity("controller_title") = Utils.name2human(table_entity("model_name"))
                 If Regex.IsMatch(line, "\blookup\b") Then
                     table_entity("controller_is_lookup") = True
                 End If
@@ -650,7 +726,7 @@ Public Class DevManageController
                 End If
 
                 field("name") = field_name
-                field("iname") = name2human(field_name)
+                field("iname") = Utils.name2human(field_name)
                 field("fw_name") = Utils.name2fw(field_name)
                 field("is_identity") = 0
 
@@ -793,7 +869,7 @@ Public Class DevManageController
         Dim model_name = entity("model_name")
 
         If model_name = "" Then
-            model_name = nameCamelCase(table_name)
+            model_name = Utils.nameCamelCase(table_name)
         End If
         If table_name = "" OrElse model_name = "" Then Throw New ApplicationException("No table name or no model name")
         'If _models.Contains(model_name) Then Throw New ApplicationException("Such model already exists")
@@ -819,6 +895,7 @@ Public Class DevManageController
             Dim fld_int As Hashtable = Nothing
             Dim fld_identity As Hashtable = Nothing
             Dim fld_iname As Hashtable = Nothing
+            Dim is_normalize_names = False
             For Each fld As Hashtable In entity("fields")
                 'find identity
                 If fld_identity Is Nothing AndAlso fld("is_identity") = "1" Then
@@ -833,6 +910,11 @@ Public Class DevManageController
                 'for iname - just use 2nd to 4th field which not end with ID, varchar type and has some maxlen
                 If fld_iname Is Nothing AndAlso i >= 2 AndAlso i <= 4 AndAlso fld("fw_type") = "varchar" AndAlso Utils.f2int(fld("maxlen")) > 0 AndAlso Right(fld("name"), 2).ToLower() <> "id" Then
                     fld_iname = fld
+                End If
+
+                If Regex.IsMatch(fld("name"), "^[\w_]", RegexOptions.IgnoreCase) Then
+                    'normalize names only if at least one field contains non-alphanumeric chars
+                    is_normalize_names = True
                 End If
 
                 i += 1
@@ -872,7 +954,14 @@ Public Class DevManageController
             If Not Utils.f2bool(entity("is_fw")) Then
                 codegen &= "        is_normalize_names = True" & vbCrLf
             End If
+
+            If is_normalize_names Then
+                codegen &= "        is_normalize_names = True" & vbCrLf
+            End If
+
         End If
+
+
         mdemo = mdemo.Replace("'###CODEGEN", codegen)
 
         FW.set_file_content(path & "\" & model_name & ".vb", mdemo)
@@ -884,6 +973,10 @@ Public Class DevManageController
         Dim columns = ""
         Dim column_names = ""
         Dim fields = Me.array2hashtable(entity("fields"), "fw_name")
+        If fields.ContainsKey("icode") Then
+            columns &= IIf(columns > "", ",", "") & "icode"
+            column_names &= IIf(column_names > "", ",", "") & fields("icode")("iname")
+        End If
         If fields.ContainsKey("iname") Then
             columns &= IIf(columns > "", ",", "") & "iname"
             column_names &= IIf(column_names > "", ",", "") & fields("iname")("iname")
@@ -914,7 +1007,7 @@ Public Class DevManageController
 
         If controller_url = "" Then controller_url = "/Admin/" & model_name
         Dim controller_name = Replace(controller_url, "/", "")
-        If controller_title = "" Then controller_title = name2human(model_name)
+        If controller_title = "" Then controller_title = Utils.name2human(model_name)
 
         If model_name = "" Then Throw New ApplicationException("No model or no controller name or no title")
         'If _controllers.Contains(controller_name & "Controller") Then Throw New ApplicationException("Such controller already exists")
@@ -991,8 +1084,14 @@ Public Class DevManageController
         Dim fields As ArrayList = entity("fields")
         If fields Is Nothing Then
             'TODO deprecate reading from db, always use entity info
-            Dim db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            Dim db As DB
+            If entity("db_config") > "" Then
+                db = New DB(fw, fw.config("db")(entity("db_config")), entity("db_config"))
+            Else
+                db = New DB(fw)
+            End If
             fields = db.load_table_schema_full(table_name)
+            If Not entity.ContainsKey("is_fw") Then entity("is_fw") = True 'TODO actually detect if there any fields to be normalized
             Dim atables = db.tables()
             For Each tbl As String In atables
                 tables(tbl) = New Hashtable
@@ -1005,17 +1104,23 @@ Public Class DevManageController
 
         Dim is_fw = Utils.f2bool(entity("is_fw"))
         Dim hfields As New Hashtable
-        Dim sys_fields = Utils.qh("add_time add_users_id upd_time upd_users_id")
+        Dim sys_fields = Utils.qh("id status add_time add_users_id upd_time upd_users_id")
 
         Dim saveFields As New ArrayList
+        Dim saveFieldsNullable As New ArrayList
         Dim hFieldsMap As New Hashtable   'name => iname
         Dim hFieldsMapFW As New Hashtable 'fw_name => name
-        Dim showFields As New ArrayList
-        Dim showFormFields As New ArrayList
+        Dim showFieldsLeft As New ArrayList
+        Dim showFieldsRight As New ArrayList
+        Dim showFormFieldsLeft As New ArrayList
+        Dim showFormFieldsRight As New ArrayList 'system fields - to the right
 
-        Dim isf_status As Integer = 0, isff_status As Integer = 0
         For Each fld In fields
             logger("field name=", fld("name"), fld)
+
+            If fld("fw_name") = "" Then fld("fw_name") = Utils.name2fw(fld("name")) 'system name using fw standards
+            If fld("iname") = "" Then fld("iname") = Utils.name2human(fld("name")) 'human name using fw standards
+
             hfields(fld("name")) = fld
             hFieldsMap(fld("name")) = fld("iname")
             If Not is_fw Then
@@ -1023,8 +1128,8 @@ Public Class DevManageController
                 hFieldsMapFW(fld("fw_name")) = fld("name")
             End If
 
-            Dim sf As New Hashtable
-            Dim sff As New Hashtable
+            Dim sf As New Hashtable  'show fields
+            Dim sff As New Hashtable 'showform fields
             Dim is_skip = False
             sf("field") = fld("name")
             sf("label") = fld("iname")
@@ -1033,12 +1138,18 @@ Public Class DevManageController
             sff("field") = fld("name")
             sff("label") = fld("iname")
 
-            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then sff("required") = True 'if not nullable - required
+            If fld("is_nullable") = "0" AndAlso fld("default") Is Nothing Then
+                sff("required") = True 'if not nullable and no default - required
+            End If
+
+            If fld("is_nullable") = "1" Then
+                saveFieldsNullable.Add(fld("name"))
+            End If
 
             Dim maxlen = Utils.f2int(fld("maxlen"))
             If maxlen > 0 Then sff("maxlength") = maxlen
             If fld("fw_type") = "varchar" Then
-                If maxlen <= 0 Then 'large text
+                If maxlen <= 0 OrElse fld("name") = "idesc" Then 'large text if no maxlen or standard idesc
                     sf("type") = "markdown"
                     sff("type") = "textarea"
                     sff("rows") = 5
@@ -1047,8 +1158,8 @@ Public Class DevManageController
                     'normal text input
                     sff("type") = "input"
                     If maxlen < 255 Then
-                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 2)
-                        If col < 1 Then col = 1
+                        Dim col As Integer = Math.Round(maxlen / 255 * 9 * 4)
+                        If col < 2 Then col = 2 'minimum - 2
                         If col > 9 Then col = 9
                         sff("class_contents") = "col-md-" & col
                     End If
@@ -1066,7 +1177,8 @@ Public Class DevManageController
                             Dim mname = _tablename2model(Utils.name2fw(fkinfo("pk_table")))
 
                             sf("lookup_model") = mname
-                            'sf("lookup_field") = "iname"
+                            'sf("lookup_field") = "iname"    
+                            sf("type") = "plaintext_link"
 
                             sff("type") = "select"
                             sff("lookup_model") = mname
@@ -1076,6 +1188,7 @@ Public Class DevManageController
                             Else
                                 sff("is_option_empty") = True
                             End If
+                            sff("option0_title") = "- select -"
 
                             sff("class_contents") = "col-md-3"
                             Exit For
@@ -1090,6 +1203,7 @@ Public Class DevManageController
 
                         sf("lookup_model") = mname
                         'sf("lookup_field") = "iname"
+                        sf("type") = "plaintext_link"
 
                         sff("type") = "select"
                         sff("lookup_model") = mname
@@ -1124,6 +1238,7 @@ Public Class DevManageController
 
             If fld("is_identity") = "1" Then
                 sff("type") = "group_id"
+                sff.Remove("class_contents")
                 sff.Remove("required")
             End If
 
@@ -1134,7 +1249,7 @@ Public Class DevManageController
                 Case "att_id" 'Single attachment field - TODO better detect on foreign key to "att" table
                     sf("type") = "att"
                     sf("label") = "Attachment"
-                    sf("class_contents") = "col-md-2"
+                    sf("class_contents") = "col-md-3"
                     sff.Remove("lookup_model")
 
                     sff("type") = "att_edit"
@@ -1158,12 +1273,14 @@ Public Class DevManageController
 
                     sff("label") = "Added on"
                     sff("type") = "added"
+                    sff.Remove("class_contents")
                 Case "upd_time"
                     sf("label") = "Updated on"
                     sf("type") = "updated"
 
                     sff("label") = "Updated on"
                     sff("type") = "updated"
+                    sff.Remove("class_contents")
                 Case "add_users_id", "upd_users_id"
                     is_skip = True
                 Case Else
@@ -1173,23 +1290,35 @@ Public Class DevManageController
 
                         sff("type") = "select"
                         sff("lookup_tpl") = "/common/sel/state.sel"
+                        sff("is_option_empty") = True
+                        sff("option0_title") = "- select -"
                         sff("class_contents") = "col-md-3"
                     Else
                         'nothing else
                     End If
             End Select
 
-            If Not is_skip Then
-                Dim sf_index = showFields.Add(sf)
-                Dim sff_index = showFormFields.Add(sff)
-                If fld("name") = "status" Then
-                    isf_status = sf_index
-                    isff_status = sff_index
-                End If
+            If is_skip Then Continue For
+
+            Dim is_sys = False
+            If fld("is_identity") = "1" _
+                OrElse sys_fields.Contains(fld("name")) _
+                OrElse sf("type") = "att" _
+                OrElse sf("type") = "att_links" _
+            Then
+                'add to system fields
+                showFieldsRight.Add(sf)
+                showFormFieldsRight.Add(sff)
+                is_sys = True
+            Else
+                showFieldsLeft.Add(sf)
+                showFormFieldsLeft.Add(sff)
             End If
 
-            If fld("is_identity") = "1" OrElse sys_fields.Contains(fld("name")) Then Continue For
-            saveFields.Add(fld("name"))
+            If Not is_sys OrElse fld("name") = "status" Then
+                'add to save fields only if not system (except status)
+                saveFields.Add(fld("name"))
+            End If
         Next
 
         'special case - "Lookup via Link Table" - could be multiple tables
@@ -1223,20 +1352,8 @@ Public Class DevManageController
                         {"table_link_linked_id_name", table_name_linked & "_id"}
                     }
 
-                    'add linked table before Status 
-                    If isf_status > 0 Then
-                        showFields.Insert(isf_status, sflink)
-                        isf_status += 1
-                    Else
-                        showFields.Add(sflink)
-                    End If
-
-                    If isff_status > 0 Then
-                        showFormFields.Insert(isff_status, sfflink)
-                        isff_status += 1
-                    Else
-                        showFormFields.Add(sfflink)
-                    End If
+                    showFieldsLeft.Add(sflink)
+                    showFormFieldsLeft.Add(sfflink)
                 End If
 
             End If
@@ -1245,6 +1362,7 @@ Public Class DevManageController
 
         config("model") = model_name
         config("is_dynamic_index") = True
+        config("save_fields_nullable") = saveFieldsNullable
         config("save_fields") = saveFields 'save all non-system
         config("save_fields_checkboxes") = ""
         config("search_fields") = "id" & If(hfields.ContainsKey("iname"), " iname", "") 'id iname
@@ -1255,7 +1373,9 @@ Public Class DevManageController
             config("list_sortdef") = "iname asc"
         Else
             'just get first field
-            config("list_sortdef") = fields(0)("fw_name")
+            If fields.Count > 0 Then
+                config("list_sortdef") = fields(0)("fw_name")
+            End If
         End If
 
         config.Remove("list_sortmap") 'N/A in dynamic controller
@@ -1272,7 +1392,7 @@ Public Class DevManageController
         config("view_list_defaults") = ""
         For i = 0 To fields.Count - 1
             If fields(i)("is_identity") = "1" Then Continue For
-            If fields(i)("fw_type") = "varchar" AndAlso fields(i)("maxlen") <= 0 Then Continue For
+            If fields(i)("fw_type") = "varchar" AndAlso Utils.f2int(fields(i)("maxlen")) <= 0 Then Continue For
             If is_fw Then
                 If fields(i)("name") = "add_time" OrElse fields(i)("name") = "add_users_id" OrElse fields(i)("name") = "upd_time" OrElse fields(i)("name") = "upd_users_id" Then Continue For
                 config("view_list_defaults") &= IIf(i = 0, "", " ") & fields(i)("name")
@@ -1295,9 +1415,31 @@ Public Class DevManageController
         config("view_list_custom") = "status"
 
         config("is_dynamic_show") = IIf(entity.ContainsKey("controller_is_dynamic_show"), entity("controller_is_dynamic_show"), True)
-        If config("is_dynamic_show") Then config("show_fields") = showFields
+        If config("is_dynamic_show") Then
+            Dim showFields = New ArrayList
+            showFields.Add(Utils.qh("type|row"))
+            showFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFields.AddRange(showFieldsLeft)
+            showFields.Add(Utils.qh("type|col_end"))
+            showFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFields.AddRange(showFieldsRight)
+            showFields.Add(Utils.qh("type|col_end"))
+            showFields.Add(Utils.qh("type|row_end"))
+            config("show_fields") = showFields
+        End If
         config("is_dynamic_showform") = IIf(entity.ContainsKey("controller_is_dynamic_showform"), entity("controller_is_dynamic_showform"), True)
-        If config("is_dynamic_showform") Then config("showform_fields") = showFormFields
+        If config("is_dynamic_showform") Then
+            Dim showFormFields = New ArrayList
+            showFormFields.Add(Utils.qh("type|row"))
+            showFormFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFormFields.AddRange(showFormFieldsLeft)
+            showFormFields.Add(Utils.qh("type|col_end"))
+            showFormFields.Add(Utils.qh("type|col class|col-lg-6"))
+            showFormFields.AddRange(showFormFieldsRight)
+            showFormFields.Add(Utils.qh("type|col_end"))
+            showFormFields.Add(Utils.qh("type|row_end"))
+            config("showform_fields") = showFormFields
+        End If
 
         'remove all commented items - name start with "#"
         For Each key In config.Keys.Cast(Of String).ToArray()
@@ -1552,7 +1694,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", field_name},
                 {"fw_name", Utils.name2fw(field_name)},
-                {"iname", name2human(field_name)},
+                {"iname", Utils.name2human(field_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 255},
@@ -1564,7 +1706,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", field_name & "2"},
                 {"fw_name", Utils.name2fw(field_name & "2")},
-                {"iname", name2human(field_name & "2")},
+                {"iname", Utils.name2human(field_name & "2")},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 255},
@@ -1576,7 +1718,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", city_name},
                 {"fw_name", Utils.name2fw(city_name)},
-                {"iname", name2human(city_name)},
+                {"iname", Utils.name2human(city_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 64},
@@ -1588,7 +1730,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", state_name},
                 {"fw_name", Utils.name2fw(state_name)},
-                {"iname", name2human(state_name)},
+                {"iname", Utils.name2human(state_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 2},
@@ -1600,7 +1742,7 @@ Public Class DevManageController
             New Hashtable From {
                 {"name", zip_name},
                 {"fw_name", Utils.name2fw(zip_name)},
-                {"iname", name2human(zip_name)},
+                {"iname", Utils.name2human(zip_name)},
                 {"is_identity", 0},
                 {"default", ""},
                 {"maxlen", 11},

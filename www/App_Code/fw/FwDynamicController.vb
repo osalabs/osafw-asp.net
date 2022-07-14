@@ -16,6 +16,10 @@ Public Class FwDynamicController
         'base_url = "/Admin/DemosDynamic" 'base url must be defined for loadControllerConfig
         'Me.loadControllerConfig()
         'model_related = fw.model(Of FwModel)()
+
+        'hack to sort properly by formatted dates
+        'so in list view you have: FORMAT(DATE_FIELD, 'MM/dd/yyyy') as DATE_FIELD_str
+        'list_sortmap("DATE_FIELD_str") = "DATE_FIELD"
     End Sub
 
     Public Overridable Function IndexAction() As Hashtable
@@ -37,26 +41,24 @@ Public Class FwDynamicController
         '    row("field") = "value"
         'Next
 
-        Dim ps As Hashtable = New Hashtable From {
-            {"list_rows", Me.list_rows},
-            {"count", Me.list_count},
-            {"pager", Me.list_pager},
-            {"f", Me.list_filter},
-            {"related_id", Me.related_id},
-            {"return_url", Me.return_url}
-        }
+        'set standard output parse strings
+        Dim ps = Me.setPS()
 
-        'userlists support
-        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
-        ps("list_view") = list_view
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps)
+
+        ps("select_userfilters") = fw.model(Of UserFilters).listSelectByIcode(fw.G("controller.action"))
 
         If is_dynamic_index Then
             'customizable headers
             setViewList(ps, reqh("search"))
         End If
 
-        Return ps
+        If reqs("export") > "" Then
+            exportList()
+        Else
+            Return ps
+        End If
     End Function
 
     Public Overridable Function ShowAction(Optional ByVal form_id As String = "") As Hashtable
@@ -66,56 +68,52 @@ Public Class FwDynamicController
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
         'added/updated should be filled before dynamic fields
-        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
         'dynamic fields
         If is_dynamic_show Then ps("fields") = prepareShowFields(item, ps)
 
-        'userlists support
-        ps("list_view") = IIf(String.IsNullOrEmpty(list_view), model0.table_name, list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps, id)
 
         ps("id") = id
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
+        ps("base_url") = base_url
+        ps("is_userlists") = is_userlists
 
         Return ps
     End Function
 
     Public Overridable Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
-        'TODO define via config.json
-        'Me.form_new_defaults = New Hashtable 'set new form defaults here if any
-        'Me.form_new_defaults = reqh("item") 'OR optionally set defaults from request params
-        'item("field")="default value"
+        'define form_new_defaults via config.json
+        'Me.form_new_defaults = New Hashtable From {{"field", "default value"}} 'OR set new form defaults here
 
         Dim ps As New Hashtable
-        Dim item As Hashtable
-        Dim id As Integer = Utils.f2int(form_id)
+        Dim item = reqh("item") 'set defaults from request params
+        Dim id = Utils.f2int(form_id)
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model0.one(id)
                 'item("ftime_str") = FormUtils.int2timestr(item("ftime")) 'TODO - refactor this
             Else
-                'set defaults here
-                item = New Hashtable
-                'item = reqh("item") 'optionally set defaults from request params
+                'override any defaults here
                 If Me.form_new_defaults IsNot Nothing Then
                     Utils.mergeHash(item, Me.form_new_defaults)
                 End If
             End If
         Else
             'read from db
-            item = model0.one(id)
+            Dim itemdb = model0.one(id)
             'and merge new values from the form
-            Utils.mergeHash(item, reqh("item"))
+            Utils.mergeHash(itemdb, item)
+            item = itemdb
             'here make additional changes if necessary
         End If
 
-        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
         If is_dynamic_showform Then ps("fields") = prepareShowFormFields(item, ps)
         'TODO
@@ -144,6 +142,11 @@ Public Class FwDynamicController
     Public Overridable Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in Controller.save_fields")
 
+        If reqi("refresh") = 1 Then
+            fw.routeRedirect("ShowForm", {form_id})
+            Return Nothing
+        End If
+
         Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
         Dim success = True
@@ -164,7 +167,7 @@ Public Class FwDynamicController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     ''' <summary>
@@ -185,7 +188,7 @@ Public Class FwDynamicController
         Me.validateCheckResult()
     End Sub
 
-    Protected Function validateRequiredDynamic(item As Hashtable) As Boolean
+    Protected Overridable Function validateRequiredDynamic(item As Hashtable) As Boolean
         Dim result = True
         If String.IsNullOrEmpty(Me.required_fields) AndAlso is_dynamic_showform Then
             'if required_fields not defined - fill from showform_fields
@@ -203,7 +206,7 @@ Public Class FwDynamicController
     End Function
 
     'simple validation via showform_fields
-    Protected Function validateSimpleDynamic(id As Integer, item As Hashtable) As Boolean
+    Protected Overridable Function validateSimpleDynamic(id As Integer, item As Hashtable) As Boolean
         Dim result As Boolean = True
         Dim fields As ArrayList = Me.config("showform_fields")
         For Each def As Hashtable In fields
@@ -211,7 +214,7 @@ Public Class FwDynamicController
             If field = "" Then Continue For
 
             Dim val = Utils.qh(def("validate"))
-            If val.ContainsKey("exists") AndAlso model0.isExists(item(field), id) Then
+            If val.ContainsKey("exists") AndAlso model0.isExistsByField(item(field), id, field) Then
                 fw.FERR(field) = "EXISTS"
                 result = False
             End If
@@ -254,9 +257,25 @@ Public Class FwDynamicController
     Public Overridable Function DeleteAction(ByVal form_id As String) As Hashtable
         Dim id As Integer = Utils.f2int(form_id)
 
-        model0.delete(id)
+        Dim item = model0.one(id)
+        'if record already deleted and we are admin - perform permanent delete
+        If Not String.IsNullOrEmpty(model0.field_status) AndAlso Utils.f2int(item(model0.field_status)) = FwModel.STATUS_DELETED AndAlso fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then
+            model0.delete(id, True)
+        Else
+            model0.delete(id)
+        End If
+
         fw.FLASH("onedelete", 1)
-        Return Me.saveCheckResult(True, id)
+        Return Me.afterSave(True)
+    End Function
+
+    Public Overridable Function RestoreDeletedAction(ByVal form_id As String) As Hashtable
+        Dim id As Integer = Utils.f2int(form_id)
+
+        model0.update(id, New Hashtable From {{model0.field_status, FwModel.STATUS_ACTIVE}})
+
+        fw.FLASH("record_updated", 1)
+        Return Me.afterSave(True, id)
     End Function
 
     Public Overridable Function SaveMultiAction() As Hashtable
@@ -287,12 +306,12 @@ Public Class FwDynamicController
         If is_delete Then fw.FLASH("multidelete", ctr)
         If user_lists_id > 0 Then fw.FLASH("success", ctr & " records added to the list")
 
-        Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
+        Return Me.afterSave(True, New Hashtable From {{"ctr", ctr}})
     End Function
 
 
     '********************* support for autocomlete related items
-    Public Function AutocompleteAction() As Hashtable
+    Public Overridable Function AutocompleteAction() As Hashtable
         If model_related Is Nothing Then Throw New ApplicationException("No model_related defined")
         Dim items As ArrayList = model_related.getAutocompleteList(reqs("q"))
 
@@ -300,7 +319,7 @@ Public Class FwDynamicController
     End Function
 
     '********************* support for customizable list screen
-    Public Sub UserViewsAction(Optional form_id As String = "")
+    Public Overridable Sub UserViewsAction(Optional form_id As String = "")
         Dim ps As New Hashtable
 
         Dim rows = getViewListArr(getViewListUserFields(), True) 'list all fields
@@ -314,13 +333,13 @@ Public Class FwDynamicController
         fw.parser("/common/list/userviews", ps)
     End Sub
 
-    Public Sub SaveUserViewsAction()
+    Public Overridable Sub SaveUserViewsAction()
         Dim fld As Hashtable = reqh("fld")
         Dim success = True
 
         Try
             If reqi("is_reset") = 1 Then
-                fw.model(Of UserViews).updateByScreen(base_url, view_list_defaults)
+                fw.model(Of UserViews).updateByIcode(base_url, view_list_defaults)
             Else
                 'save fields
                 'order by value
@@ -331,7 +350,7 @@ Public Class FwDynamicController
                     anames.Add(el.Key)
                 Next
 
-                fw.model(Of UserViews).updateByScreen(base_url, Join(anames.ToArray(), " "))
+                fw.model(Of UserViews).updateByIcode(base_url, Join(anames.ToArray(), " "))
             End If
 
         Catch ex As ApplicationException
@@ -350,7 +369,7 @@ Public Class FwDynamicController
     ''' <param name="item"></param>
     ''' <param name="ps"></param>
     ''' <returns></returns>
-    Public Function prepareShowFields(item As Hashtable, ps As Hashtable) As ArrayList
+    Public Overridable Function prepareShowFields(item As Hashtable, ps As Hashtable) As ArrayList
         Dim id = Utils.f2int(item("id"))
 
         Dim fields As ArrayList = Me.config("show_fields")
@@ -366,10 +385,15 @@ Public Class FwDynamicController
             ElseIf dtype = "multi" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                    'def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def)
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIdsByDef(id, def), def)
                 Else
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
+
+            ElseIf dtype = "multi_prio" Then
+                'complex field with prio
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiListLinkedRows(id, def)
 
             ElseIf dtype = "att" Then
                 def("att") = fw.model(Of Att).one(Utils.f2int(item(field)))
@@ -392,12 +416,14 @@ Public Class FwDynamicController
 
                 ElseIf def.ContainsKey("lookup_model") Then 'lookup by model
                     Dim lookup_model = fw.model(def("lookup_model"))
-                    def("lookup_row") = lookup_model.one(Utils.f2int(item(field)))
+                    def("lookup_id") = Utils.f2int(item(field))
+                    def("lookup_row") = lookup_model.one(def("lookup_id"))
 
                     Dim lookup_field = def("lookup_field")
                     If lookup_field = "" Then lookup_field = lookup_model.field_iname
 
                     def("value") = def("lookup_row")(lookup_field)
+                    If Not def.ContainsKey("admin_url") Then def("admin_url") = "/Admin/" & def("lookup_model") 'default admin url from model name
 
                 ElseIf def.ContainsKey("lookup_tpl") Then
                     def("value") = FormUtils.selectTplName(def("lookup_tpl"), item(field))
@@ -417,12 +443,13 @@ Public Class FwDynamicController
         Return fields
     End Function
 
-    Public Function prepareShowFormFields(item As Hashtable, ps As Hashtable) As ArrayList
+    Public Overridable Function prepareShowFormFields(item As Hashtable, ps As Hashtable) As ArrayList
         Dim id = Utils.f2int(item("id"))
 
         Dim fields As ArrayList = Me.config("showform_fields")
         If fields Is Nothing Then Throw New ApplicationException("Controller config.json doesn't contain 'showform_fields'")
         For Each def As Hashtable In fields
+            'logger(def)
             def("i") = item 'ref to item
             def("ps") = ps 'ref to whole ps
             Dim dtype = def("type") 'type is required
@@ -440,12 +467,19 @@ Public Class FwDynamicController
             ElseIf dtype = "multicb" Then
                 'complex field
                 If def("table_link") > "" Then
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name")), def("lookup_params"))
+                    '  model0.getLinkedIds(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiListAL(model0.getLinkedIdsByDef(id, def), def)
                 Else
-                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def("lookup_params"))
+                    def("multi_datarow") = fw.model(def("lookup_model")).getMultiList(item(field), def)
                 End If
 
                 For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked
+                    row("field") = def("field")
+                Next
+            ElseIf dtype = "multicb_prio" Then
+                def("multi_datarow") = fw.model(def("lookup_model")).getMultiListLinkedRows(id, def)
+
+                For Each row As Hashtable In def("multi_datarow") 'contains id, iname, is_checked, _link[prio]
                     row("field") = def("field")
                 Next
 
@@ -476,7 +510,7 @@ Public Class FwDynamicController
                         def("value") = def("lookup_row")(def("lookup_field"))
                     Else
                         'lookup select
-                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def("lookup_params"))
+                        def("select_options") = fw.model(def("lookup_model")).listSelectOptions(def)
                         def("value") = item(field)
                     End If
 
@@ -505,10 +539,12 @@ Public Class FwDynamicController
     End Function
 
     'auto-process fields BEFORE record saved to db
-    Protected Sub processSaveShowFormFields(id As Integer, fields As Hashtable)
+    Protected Overridable Sub processSaveShowFormFields(id As Integer, fields As Hashtable)
         Dim item As Hashtable = reqh("item")
 
         Dim showform_fields = _fieldsToHash(Me.config("showform_fields"))
+
+        Dim fnullable = Utils.qh(save_fields_nullable)
 
         'special auto-processing for fields of particular types
         For Each field As String In fields.Keys.Cast(Of String).ToArray()
@@ -524,7 +560,12 @@ Public Class FwDynamicController
                 ElseIf def("type") = "time" Then
                     fields(field) = FormUtils.timeStrToInt(fields(field)) 'ftime - convert from HH:MM to int (0-24h in seconds)
                 ElseIf def("type") = "number" Then
-                    fields(field) = Utils.f2float(fields(field)) 'number - convert to number (if field empty or non-number - it will become 0)
+                    If fnullable.ContainsKey(field) AndAlso fields(field) = "" Then
+                        'if field nullable and empty - pass NULL
+                        fields(field) = Nothing
+                    Else
+                        fields(field) = Utils.f2float(fields(field)) 'number - convert to number (if field empty or non-number - it will become 0)
+                    End If
                 End If
             End If
         Next
@@ -534,7 +575,7 @@ Public Class FwDynamicController
     End Sub
 
     'auto-process fields AFTER record saved to db
-    Protected Sub processSaveShowFormFieldsAfter(id As Integer, fields As Hashtable)
+    Protected Overridable Sub processSaveShowFormFieldsAfter(id As Integer, fields As Hashtable)
 
         'for now we just look if we have att_links_edit field and update att links
         For Each def As Hashtable In Me.config("showform_fields")
@@ -544,6 +585,8 @@ Public Class FwDynamicController
                 If def("table_link") > "" Then
                     model0.updateLinked(def("table_link"), id, def("table_link_id_name"), def("table_link_linked_id_name"), reqh(def("field") & "_multi"))
                 End If
+            ElseIf def("type") = "multicb_prio" Then
+                fw.model(def("lookup_model")).updateLinkedRows(id, reqh(def("field") & "_multi"))
             End If
         Next
 

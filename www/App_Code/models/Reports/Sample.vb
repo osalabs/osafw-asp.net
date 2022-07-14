@@ -15,6 +15,7 @@ Public Class ReportSample
     'define report filters in Me.f (available in report templates as f[...])
     'filter defaults can be Set here
     Public Overrides Function getReportFilters() As Hashtable
+        Dim result As New Hashtable
         If Not f.ContainsKey("from_date") AndAlso Not f.ContainsKey("to_date") Then
             'set default filters
             f("from_date") = DateUtils.Date2Str(DateAdd(DateInterval.Day, -30, Now())) 'last 30 days
@@ -22,9 +23,9 @@ Public Class ReportSample
         End If
         If f("from_date") > "" OrElse f("to_date") > "" Then f("is_dates") = True
 
-        f("select_events") = fw.model(Of FwEvents).listSelectOptions()
+        result("select_events") = fw.model(Of FwEvents).listSelectOptions()
 
-        Return f
+        Return result
     End Function
 
     Public Overrides Function getReportData() As Hashtable

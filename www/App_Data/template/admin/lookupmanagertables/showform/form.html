@@ -27,6 +27,12 @@
       </div>
     </div>
 
+    <div class="form-row <~/common/error if="ERR[url]">">
+      <label class="col-form-label col-md-3" for="url">`External URL`</label>
+      <div class="col">
+        <input id="url" name="item[url]" maxlength="255" value="<~i[url]>" type="text" class="form-control">
+      </div>
+    </div>
     <div class="form-row <~/common/error if="ERR[is_one_form]">">
       <label class="col-form-label col-md-3" for="is_one_form">`Is one form?`</label>
       <div class="col">

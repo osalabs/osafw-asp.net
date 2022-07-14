@@ -7,7 +7,7 @@
     <div class="col">
       <div class="input-group date">
         <input id="pub_time" name="item[pub_time]" maxlength="10" value="<~i[pub_time] date>" type="text" class="form-control">
-        <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="glyphicon glyphicon-calendar"></i></button></span>
+        <div class="input-group-append"><button class="btn btn-default" type="button"><~/common/icons/calendar3></button></div>
       </div>
     </div>
   </div>
@@ -60,6 +60,13 @@
       </select>
       </~parent_not_a_home>
     </div>
+    <label class="col-form-label col-md-3" for="layout_id">`Layout`</label>
+    <div class="col-md-9">
+      <select id="layout_id" name="item[layout]" class="form-control">
+        <option value="">-select-</option>
+        <~layouts_select select="i[layout]">
+      </select>
+     </div>
   </div>
 
   <!--div class="form-row">
@@ -81,6 +88,12 @@
       <small class="form-control-plaintext text-muted">0 - lowest priority</small>
     </div>
   </div>
+  <div class="form-row <~/common/error if="ERR[redirect_url]">">
+    <label class="col-form-label col-md-3" for="redirect_url">`Redirect to`</label>
+    <div class="col">
+      <input id="redirect_url" name="item[redirect_url]" maxlength="255" value="<~i[redirect_url]>" type="text" class="form-control">
+    </div>
+  </div>
 
   <hr>
   <~/common/form/added if="id">
@@ -92,7 +105,7 @@
  <~sub_block2 unless="i[is_home]" inline>
  <fieldset>
   <legend>`Sub-Pages`
-    <a class="btn btn-default btn-sm" href="<~../url>/new?parent_id=<~id>"><i class="glyphicon glyphicon-plus"></i> `Add Sub-Page`</a>
+    <a class="btn btn-default btn-sm" href="<~../url>/new?parent_id=<~id>"><~/common/icons/file-earmark-plus> `Add Sub-Page`</a>
   </legend>
 
   <ul>

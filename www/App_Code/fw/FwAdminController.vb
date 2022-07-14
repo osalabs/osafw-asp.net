@@ -17,6 +17,7 @@ Public Class FwAdminController
         'required_fields = "iname"
         'save_fields = "iname idesc status"
         'save_fields_checkboxes = ""
+        'save_fields_nullable=""
 
         'search_fields = "iname idesc"
         'list_sortdef = "iname asc"
@@ -44,19 +45,11 @@ Public Class FwAdminController
         '    row("field") = "value"
         'Next
 
-        Dim ps As Hashtable = New Hashtable From {
-            {"list_rows", Me.list_rows},
-            {"count", Me.list_count},
-            {"pager", Me.list_pager},
-            {"f", Me.list_filter},
-            {"related_id", Me.related_id},
-            {"return_url", Me.return_url}
-        }
+        'set standard output parse strings
+        Dim ps = Me.setPS()
 
-        'userlists support
-        ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(list_view, 0)
-        ps("list_view") = list_view
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps)
 
         Return ps
     End Function
@@ -67,17 +60,17 @@ Public Class FwAdminController
         Dim item As Hashtable = model0.one(id)
         If item.Count = 0 Then Throw New ApplicationException("Not Found")
 
-        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
-        'userlists support
-        ps("list_view") = IIf(String.IsNullOrEmpty(list_view), model0.table_name, list_view)
-        ps("mylists") = fw.model(Of UserLists).listForItem(ps("list_view"), id)
+        'userlists support if necessary
+        If Me.is_userlists Then Me.setUserLists(ps, id)
 
         ps("id") = id
         ps("i") = item
         ps("return_url") = return_url
         ps("related_id") = related_id
+        ps("base_url") = base_url
+        ps("is_userlists") = is_userlists
 
         Return ps
     End Function
@@ -93,31 +86,29 @@ Public Class FwAdminController
     ''' <remarks></remarks>
     Public Overridable Function ShowFormAction(Optional ByVal form_id As String = "") As Hashtable
         Dim ps As New Hashtable
-        Dim item As Hashtable
-        Dim id As Integer = Utils.f2int(form_id)
+        Dim item = reqh("item") 'set defaults from request params
+        Dim id = Utils.f2int(form_id) 'primary key is integer by default
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model0.one(id)
                 'item("ftime_str") = FormUtils.int2timestr(item("ftime")) 'TODO - refactor this
             Else
-                'set defaults here
-                item = New Hashtable
-                'item = reqh("item") 'optionally set defaults from request params
+                'override any defaults here
                 If Me.form_new_defaults IsNot Nothing Then
                     Utils.mergeHash(item, Me.form_new_defaults)
                 End If
             End If
         Else
             'read from db
-            item = model0.one(id)
+            Dim itemdb = model0.one(id)
             'and merge new values from the form
-            Utils.mergeHash(item, reqh("item"))
+            Utils.mergeHash(itemdb, item)
+            item = itemdb
             'here make additional changes if necessary
         End If
 
-        ps("add_users_id_name") = fw.model(Of Users).iname(item("add_users_id"))
-        ps("upd_users_id_name") = fw.model(Of Users).iname(item("upd_users_id"))
+        setAddUpdUser(ps, item)
 
         ps("id") = id
         ps("i") = item
@@ -129,7 +120,13 @@ Public Class FwAdminController
     End Function
 
     Public Overridable Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
+        'checkXSS() 'no need to check in standard SaveAction, but add to your custom actions that modifies data
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in Controller.save_fields")
+
+        If reqi("refresh") = 1 Then
+            fw.routeRedirect("ShowForm", {form_id})
+            Return Nothing
+        End If
 
         Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
@@ -143,6 +140,7 @@ Public Class FwAdminController
 
             Dim itemdb As Hashtable = FormUtils.filter(item, Me.save_fields)
             If Me.save_fields_checkboxes > "" Then FormUtils.filterCheckboxes(itemdb, item, save_fields_checkboxes)
+            If Me.save_fields_nullable > "" Then FormUtils.filterNullable(itemdb, save_fields_nullable)
 
             id = Me.modelAddOrUpdate(id, itemdb)
         Catch ex As ApplicationException
@@ -150,7 +148,7 @@ Public Class FwAdminController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     Public Overridable Sub Validate(id As Integer, item As Hashtable)
@@ -185,7 +183,7 @@ Public Class FwAdminController
 
         model0.delete(id)
         fw.FLASH("onedelete", 1)
-        Return Me.saveCheckResult(True, id)
+        Return Me.afterSave(True)
     End Function
 
     Public Overridable Function SaveMultiAction() As Hashtable
@@ -216,7 +214,7 @@ Public Class FwAdminController
         If is_delete Then fw.FLASH("multidelete", ctr)
         If user_lists_id > 0 Then fw.FLASH("success", ctr & " records added to the list")
 
-        Return Me.saveCheckResult(True, New Hashtable From {{"ctr", ctr}})
+        Return Me.afterSave(True, New Hashtable From {{"ctr", ctr}})
     End Function
 
 End Class

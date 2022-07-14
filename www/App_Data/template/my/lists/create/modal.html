@@ -2,9 +2,9 @@
   <div class="modal-dialog modal-lg">
     <form method="post" action="<~/my/lists/url>">
      <input type="hidden" name="XSS" value="<~session[XSS]>">
-     <input type="hidden" name="return_url" value="<~return_url>">
+     <input type="hidden" name="return_url" value="<~GLOBAL[request_url]>">
      <input type="hidden" name="item[entity]" value="<~userlist_entity>">
-     <input type="hidden" name="item[item_id]" value="<~item_id>">
+     <input type="hidden" name="item[item_id]" value="<~id>">
 
     <div class="modal-content">
         <div class="modal-header">
@@ -45,7 +45,7 @@
             name = name.replace(']', '');
             ids.push(name); //leave just id
          });
-         $modal.find('input[name="item[item_id]"]').val(ids.join(','));
+         if (ids.length) $modal.find('input[name="item[item_id]"]').val(ids.join(','));
       });
     });
 
@@ -56,10 +56,12 @@
       .done(function (data, textStatus, jqXHR) {
         if (data.success){
           if (data.action=='added'){
-            $this.find('.glyphicon').removeClass('d-none');
+            $this.find('.flag-yes').removeClass('d-none');
+            $this.find('.flag-no').addClass('d-none');
             fw.ok('Record added to list "'+data.iname+'"');
           }else if (data.action=='removed'){
-            $this.find('.glyphicon').addClass('d-none');
+            $this.find('.flag-yes').addClass('d-none');
+            $this.find('.flag-no').removeClass('d-none');
             fw.ok('Record removed from list "'+data.iname+'"');
           }
         }else{

@@ -44,6 +44,8 @@ Public MustInherit Class FwController
     Protected is_dynamic_show As Boolean = False    'true if controller has dynamic ShowAction, requires "show_fields" to be defined in config.json
     Protected is_dynamic_showform As Boolean = False 'true if controller has dynamic ShowFormAction, requires "showform_fields" to be defined in config.json
 
+    Protected is_userlists As Boolean = False       'true if controller should support UserLists
+
     Protected return_url As String                 ' url to return after SaveAction successfully completed, passed via request
     Protected related_id As String                 ' related id, passed via request. Controller should limit view to items related to this id
     Protected related_field_name As String         ' if set (in Controller) and $related_id passed - list will be filtered on this field
@@ -80,6 +82,7 @@ Public MustInherit Class FwController
 
         'check/conv to str
         required_fields = Utils.f2str(Me.config("required_fields"))
+        is_userlists = Utils.f2bool(Me.config("is_userlists"))
 
         'save_fields could be defined as qw string - check and convert
         Dim save_fields_raw = Me.config("save_fields")
@@ -88,6 +91,8 @@ Public MustInherit Class FwController
         Else
             save_fields = Utils.f2str(save_fields_raw)
         End If
+
+        form_new_defaults = Me.config("form_new_defaults")
 
         'save_fields_checkboxes could be defined as qw string - check and convert
         Dim save_fields_checkboxes_raw = Me.config("save_fields_checkboxes")
@@ -99,8 +104,8 @@ Public MustInherit Class FwController
 
         'save_fields_nullable could be defined as qw string - check and convert
         Dim save_fields_nullable_raw = Me.config("save_fields_nullable")
-        If TypeOf save_fields_nullable_raw Is IDictionary Then
-            save_fields_nullable = Utils.qhRevert(save_fields_nullable_raw) 'not optimal, but simplest for now
+        If TypeOf save_fields_nullable_raw Is IList Then
+            save_fields_nullable = Utils.qwRevert(save_fields_nullable_raw) 'not optimal, but simplest for now
         Else
             save_fields_nullable = Utils.f2str(save_fields_nullable_raw)
         End If
@@ -143,6 +148,14 @@ Public MustInherit Class FwController
 
     End Sub
 
+    ''' <summary>
+    ''' return true if current request is GET request
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function isGet() As Boolean
+        Return (fw.route.method = "GET")
+    End Function
+
     'set of helper functions to return string, integer, date values from request (fw.FORM)
     Public Function req(iname As String) As Object
         Return fw.FORM(iname)
@@ -181,6 +194,10 @@ Public MustInherit Class FwController
         fw._logger(level, args)
     End Sub
 
+    Public Overridable Sub checkXSS()
+        If fw.SESSION("XSS") <> fw.FORM("XSS") Then Throw New AuthException("XSS Error. Reload the page or try to re-login")
+    End Sub
+
     'return hashtable of filter values
     'NOTE: automatically set to defaults - pagenum=0 and pagesize=MAX_PAGE_ITEMS
     'NOTE: if request param 'dofilter' passed - session filters cleaned
@@ -199,6 +216,26 @@ Public MustInherit Class FwController
         If Not is_dofilter Then
             Utils.mergeHash(sfilter, f)
             f = sfilter
+        Else
+            'check if we need to load user filer
+            Dim userfilters_id = reqi("userfilters_id")
+            If userfilters_id > 0 Then
+                Dim uf = fw.model(Of UserFilters).one(userfilters_id)
+                Dim f1 = Utils.jsonDecode(uf("idesc"))
+                If f1 IsNot Nothing Then f = f1
+                If Utils.f2int(uf("is_system")) = 0 Then
+                    f("userfilters_id") = userfilters_id 'set filter id (for edit/delete) only if not system
+                    f("userfilter") = uf
+                End If
+            Else
+                'check if we have some filter loaded
+                userfilters_id = Utils.f2int(f("userfilters_id"))
+                If userfilters_id > 0 Then
+                    'just ned info on this filter
+                    Dim uf = fw.model(Of UserFilters).one(userfilters_id)
+                    f("userfilter") = uf
+                End If
+            End If
         End If
 
         'paging
@@ -213,13 +250,24 @@ Public MustInherit Class FwController
     End Function
 
     ''' <summary>
+    ''' clears list_filter and related session key
+    ''' </summary>
+    ''' <param name="session_key"></param>
+    Public Overridable Sub clearFilter(Optional session_key As String = Nothing)
+        Dim f As New Hashtable
+        If IsNothing(session_key) Then session_key = "_filter_" & fw.G("controller.action")
+        fw.SESSION(session_key, f)
+        Me.list_filter = f
+    End Sub
+
+    ''' <summary>
     ''' Validate required fields are non-empty and set global fw.ERR[field] values in case of errors
     ''' </summary>
     ''' <param name="item">fields/values to validate</param>
     ''' <param name="fields">field names required to be non-empty (trim used)</param>
     ''' <returns>true if all required field names non-empty</returns>
     ''' <remarks>also set global fw.ERR[REQUIRED]=true in case of validation error</remarks>
-    Public Overloads Function validateRequired(item As Hashtable, fields As Array) As Boolean
+    Public Overridable Overloads Function validateRequired(item As Hashtable, fields As Array) As Boolean
         Dim result As Boolean = True
         If item IsNot Nothing AndAlso IsArray(fields) AndAlso fields.Length > 0 Then
             For Each fld As String In fields
@@ -235,7 +283,7 @@ Public MustInherit Class FwController
         Return result
     End Function
     'same as above but fields param passed as a qw string
-    Public Overloads Function validateRequired(item As Hashtable, fields As String) As Boolean
+    Public Overridable Overloads Function validateRequired(item As Hashtable, fields As String) As Boolean
         Return validateRequired(item, Utils.qw(fields))
     End Function
 
@@ -246,7 +294,7 @@ Public MustInherit Class FwController
     ''' <remarks>throw ValidationException exception if global ERR non-empty.
     ''' Also set global ERR[INVALID] if ERR non-empty, but ERR[REQUIRED] not true
     ''' </remarks>
-    Public Sub validateCheckResult(Optional result As Boolean = True)
+    Public Overridable Sub validateCheckResult(Optional result As Boolean = True)
         If fw.FERR.ContainsKey("REQUIRED") AndAlso fw.FERR("REQUIRED") Then
             result = False
         End If
@@ -294,7 +342,14 @@ Public MustInherit Class FwController
             Next
             orderby = Join(aorderby, ", ")
         Else
-            orderby = db.q_ident(orderby)
+            'quote
+            Dim aorderby As String() = Split(orderby, ",")
+            For i As Integer = 0 To aorderby.Length - 1
+                Dim field As String = Nothing, order As String = Nothing
+                Utils.split2("\s+", Trim(aorderby(i)), field, order)
+                aorderby(i) = db.q_ident(field) & " " & order
+            Next
+            orderby = Join(aorderby, ", ")
         End If
         Me.list_orderby = orderby
     End Sub
@@ -358,25 +413,43 @@ Public MustInherit Class FwController
     '''      - exact: "=term"
     '''      - Not equals "!=term"
     '''      - Not contains: "!term"
+    '''      - more/less: <=, <, >=, >"
     ''' </summary>
     Public Overridable Sub setListSearchAdvanced()
         'advanced search
         Dim hsearch = reqh("search")
         For Each fieldname In hsearch.Keys
             If hsearch(fieldname) > "" AndAlso (Not is_dynamic_index OrElse view_list_map.ContainsKey(fieldname)) Then
-                Dim str = ""
                 Dim value = hsearch(fieldname)
+                Dim str As String
+                Dim fieldname_sql = "ISNULL(CAST(" & db.q_ident(fieldname) & " as NVARCHAR), '')"
+                Dim fieldname_sql2 = "TRY_CONVERT(DECIMAL(18,1),CAST(" & db.q_ident(fieldname) & " as NVARCHAR))" 'SQL Server 2012+ only
                 If Left(value, 1) = "=" Then
                     str = " = " & db.q(Mid(value, 2))
                 ElseIf Left(value, 2) = "!=" Then
                     str = " <> " & db.q(Mid(value, 3))
+
+                ElseIf Left(value, 2) = "<=" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " <= " & db.q(Mid(value, 3))
+                ElseIf Left(value, 1) = "<" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " < " & db.q(Mid(value, 2))
+
+                ElseIf Left(value, 2) = ">=" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " >= " & db.q(Mid(value, 3))
+                ElseIf Left(value, 1) = ">" Then
+                    fieldname_sql = fieldname_sql2
+                    str = " > " & db.q(Mid(value, 2))
+
                 ElseIf Left(value, 1) = "!" Then
                     str = " NOT LIKE " & db.q("%" & Mid(value, 2) & "%")
                 Else
                     str = " LIKE " & db.q("%" & value & "%")
                 End If
 
-                Me.list_where &= " and ISNULL(" & db.q_ident(fieldname) & ", '') " & str
+                Me.list_where &= " and " & fieldname_sql & " " & str
             End If
         Next
     End Sub
@@ -391,12 +464,17 @@ Public MustInherit Class FwController
             If Me.list_filter("status") > "" Then
                 Dim status = Utils.f2int(Me.list_filter("status"))
                 'if want to see trashed and not admin - just show active
-                If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_ADMIN, False) Then status = 0
+                If status = 127 And Not fw.model(Of Users).checkAccess(Users.ACL_SITEADMIN, False) Then status = 0
                 Me.list_where &= " and " & db.q_ident(model0.field_status) & "=" & db.qi(status)
             Else
                 Me.list_where &= " and " & db.q_ident(model0.field_status) & "<>127 " 'by default - show all non-deleted
             End If
         End If
+    End Sub
+
+    Public Overridable Sub getListCount(Optional list_view As String = "")
+        Dim list_view_name = IIf(list_view > "", list_view, Me.list_view)
+        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
     End Sub
 
     ''' <summary>
@@ -408,13 +486,24 @@ Public MustInherit Class FwController
     ''' </summary>
     ''' <remarks></remarks>
     Public Overridable Sub getListRows()
+        Dim is_export = False
+        Dim pagenum As Integer = Utils.f2int(list_filter("pagenum"))
+        Dim pagesize As Integer = Utils.f2int(list_filter("pagesize"))
+        'if export requested - start with first page and have a high limit (still better to have a limit just for the case)
+        If reqs("export") > "" Then
+            is_export = True
+            pagenum = 0
+            pagesize = 100000
+        End If
+
+
         If String.IsNullOrEmpty(list_view) Then list_view = model0.table_name
         Dim list_view_name = IIf(list_view.Substring(0, 1) = "(", list_view, db.q_ident(list_view)) 'don't quote if list_view is a subquery (starting with parentheses)
 
-        Me.list_count = db.value("select count(*) from " & list_view_name & " where " & Me.list_where)
+        Me.getListCount(list_view_name)
         If Me.list_count > 0 Then
-            Dim offset As Integer = Me.list_filter("pagenum") * Me.list_filter("pagesize")
-            Dim limit As Integer = Me.list_filter("pagesize")
+            Dim offset As Integer = pagenum * pagesize
+            Dim limit As Integer = pagesize
 
             Dim sql As String
 
@@ -455,7 +544,9 @@ Public MustInherit Class FwController
             'sql = "SELECT * FROM model0.table_name WHERE Me.list_where ORDER BY Me.list_orderby LIMIT offset, limit";
 
 
-            Me.list_pager = FormUtils.getPager(Me.list_count, Me.list_filter("pagenum"), Me.list_filter("pagesize"))
+            If Not is_export Then
+                Me.list_pager = FormUtils.getPager(Me.list_count, pagenum, pagesize)
+            End If
         Else
             Me.list_rows = New ArrayList
             Me.list_pager = New ArrayList
@@ -478,7 +569,7 @@ Public MustInherit Class FwController
 
     End Sub
 
-    Public Sub setFormError(ex As Exception)
+    Public Overridable Sub setFormError(ex As Exception)
         'if Validation exception - don't set general error message - specific validation message set in templates
         If Not (TypeOf ex Is ValidationException) Then
             fw.G("err_msg") = ex.Message
@@ -510,10 +601,10 @@ Public MustInherit Class FwController
         Dim is_add_new = reqi("is_add_more")
 
         If id > "" Then
-            If is_add_new = 1 Then
+            If is_add_new > 0 Then
                 'if Submit and Add New - redirect to new
                 url = Me.base_url & "/new"
-                url_q = "&copy_id=" & id
+                url_q &= "&copy_id=" & id
             Else
                 'or just return to edit screen
                 url = Me.base_url & "/" & id & "/edit"
@@ -553,20 +644,22 @@ Public MustInherit Class FwController
     ''' <param name="location">redirect to this location if success</param>
     ''' <param name="more_json">added to json response</param>
     ''' <returns></returns>
-    Public Overridable Overloads Function saveCheckResult(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
+    Public Overridable Overloads Function afterSave(success As Boolean, Optional id As String = "", Optional is_new As Boolean = False, Optional action As String = "ShowForm", Optional location As String = "", Optional more_json As Hashtable = Nothing) As Hashtable
         If String.IsNullOrEmpty(location) Then location = Me.getReturnLocation(id)
 
         If fw.isJsonExpected() Then
-            Dim ps = New Hashtable From {
-                {"_json", True},
+            Dim ps = New Hashtable
+            ps("_json") = New Hashtable From {
                 {"success", success},
                 {"id", id},
                 {"is_new", is_new},
                 {"location", location},
                 {"err_msg", fw.G("err_msg")}
             }
-            'TODO add ERR field errors to response if any
-            If Not IsNothing(more_json) Then Utils.mergeHash(ps, more_json)
+            'add ERR field errors to response if any
+            If fw.FERR.Count > 0 Then ps("_json")("ERR") = fw.FERR
+
+            If Not IsNothing(more_json) Then Utils.mergeHash(ps("_json"), more_json)
 
             Return ps
         Else
@@ -581,10 +674,60 @@ Public MustInherit Class FwController
         Return Nothing
     End Function
 
-    Public Overridable Overloads Function saveCheckResult(success As Boolean, more_json As Hashtable) As Hashtable
-        Return saveCheckResult(success, "", False, "no_action", "", more_json)
+    Public Overridable Overloads Function afterSave(success As Boolean, more_json As Hashtable) As Hashtable
+        Return afterSave(success, "", False, "no_action", "", more_json)
     End Function
 
+    Public Overridable Function setPS(Optional ps As Hashtable = Nothing) As Hashtable
+        If ps Is Nothing Then ps = New Hashtable
+
+        ps("list_rows") = Me.list_rows
+        ps("count") = Me.list_count
+        ps("pager") = Me.list_pager
+        ps("f") = Me.list_filter
+        ps("related_id") = Me.related_id
+        ps("base_url") = Me.base_url
+        ps("is_userlists") = Me.is_userlists
+
+        If Me.return_url > "" Then ps("return_url") = Me.return_url 'if not passed - don't override return_url.html
+
+        Return ps
+    End Function
+
+    Public Overridable Function setUserLists(ps As Hashtable, Optional id As Integer = 0) As Boolean
+        'userlists support
+        If id = 0 Then
+            'select only for list screens
+            ps("select_userlists") = fw.model(Of UserLists).listSelectByEntity(base_url)
+        End If
+        ps("my_userlists") = fw.model(Of UserLists).listForItem(base_url, id)
+        Return True
+    End Function
+
+    'export to csv or html/xls
+    Public Overridable Sub exportList()
+        If list_rows Is Nothing Then list_rows = New ArrayList
+
+        Dim fields = getViewListUserFields()
+        'header names
+        Dim headers As New ArrayList
+        For Each fld In Utils.qw(fields)
+            headers.Add(view_list_map(fld))
+        Next
+
+        Dim csv_export_headers As String = Join(headers.ToArray(), ",")
+
+        If reqs("export") = "xls" Then
+            Utils.writeXLSExport(fw, "export.xls", csv_export_headers, fields, list_rows)
+        Else 'default = csv
+            Utils.writeCSVExport(fw.resp, "export.csv", csv_export_headers, fields, list_rows)
+        End If
+    End Sub
+
+    Public Overridable Sub setAddUpdUser(ps As Hashtable, item As Hashtable)
+        If model0.field_add_users_id > "" Then ps("add_users_id_name") = fw.model(Of Users).iname(item(model0.field_add_users_id))
+        If model0.field_upd_users_id > "" Then ps("upd_users_id_name") = fw.model(Of Users).iname(item(model0.field_upd_users_id))
+    End Sub
 
     '********************************** dynamic controller support
     'as arraylist of hashtables {field_name=>, field_name_visible=> [, is_checked=>true]} in right order
@@ -639,7 +782,7 @@ Public MustInherit Class FwController
     End Function
 
     Public Overridable Function getViewListUserFields() As String
-        Dim item = fw.model(Of UserViews).oneByScreen(base_url) 'base_url is screen identifier
+        Dim item = fw.model(Of UserViews).oneByIcode(base_url) 'base_url is screen identifier
         Return IIf(item("fields") > "", item("fields"), view_list_defaults)
     End Function
 
@@ -647,9 +790,10 @@ Public MustInherit Class FwController
     ' headers
     ' headers_search
     ' depends on ps("list_rows")
+    ' use is_cols=false when return ps as json
     'usage:
     ' model.setViewList(ps, reqh("search"))
-    Public Overridable Sub setViewList(ps As Hashtable, hsearch As Hashtable)
+    Public Overridable Sub setViewList(ps As Hashtable, hsearch As Hashtable, Optional is_cols As Boolean = True)
         Dim fields = getViewListUserFields()
 
         Dim headers = getViewListArr(fields)
@@ -663,19 +807,21 @@ Public MustInherit Class FwController
 
         Dim hcustom = Utils.qh(view_list_custom)
 
-        'dynamic cols
-        For Each row As Hashtable In ps("list_rows")
-            Dim cols As New ArrayList
-            For Each fieldname In Utils.qw(fields)
-                cols.Add(New Hashtable From {
+        If is_cols Then
+            'dynamic cols
+            For Each row As Hashtable In ps("list_rows")
+                Dim cols As New ArrayList
+                For Each fieldname In Utils.qw(fields)
+                    cols.Add(New Hashtable From {
                     {"row", row},
                     {"field_name", fieldname},
                     {"data", row(fieldname)},
                     {"is_custom", hcustom.ContainsKey(fieldname)}
                 })
+                Next
+                row("cols") = cols
             Next
-            row("cols") = cols
-        Next
+        End If
     End Sub
 
     '''''''''''''''''''''''''''''''''''''' Default Actions

@@ -13,8 +13,8 @@ Public Class UploadParams
     Public is_overwrite As Boolean = True 'overwrite existing file
     Public is_cleanup As Boolean = False 'only if is_overwrite=true, apply remove_upload_img to destination path (cleans all old jpg/png/gif with thumbnails)
     Public is_resize As Boolean = False 'resize to max w/h if image
-    Public max_w As Integer = 1200 ' default max image width
-    Public max_h As Integer = 1200 ' default max iamge height
+    Public max_w As Integer = 10000 ' default max image width
+    Public max_h As Integer = 10000 ' default max iamge height
 
     Public field_name As String
     Public allowed_ext As Hashtable 'if empty - all exts allowed, exts should be with dots
@@ -96,10 +96,26 @@ Public Class UploadUtils
     End Function
 
     'perform file upload for module_name/id and set filepath where it's stored, return true - if upload successful
-    Public Shared Function uploadFile(fw As FW, ByVal module_name As String, id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
+    Public Overloads Shared Function uploadFile(fw As FW, ByVal module_name As String, id As Integer, ByRef filepath As String, Optional input_name As String = "file1", Optional is_skip_check As Boolean = False) As Boolean
         Dim result As Boolean = False
         Dim file As HttpPostedFile = fw.req.Files(input_name)
 
+        filepath = uploadFileSave(fw, module_name, id, file, is_skip_check)
+
+        Return result
+    End Function
+
+    'this one based on file index, not input name
+    Public Overloads Shared Function uploadFile(fw As FW, ByVal module_name As String, id As Integer, ByRef filepath As String, Optional file_index As Integer = 0, Optional is_skip_check As Boolean = False) As Boolean
+        Dim file As HttpPostedFile = fw.req.Files(file_index)
+
+        filepath = uploadFileSave(fw, module_name, id, file, is_skip_check)
+
+        Return (filepath > "")
+    End Function
+
+    Public Shared Function uploadFileSave(fw As FW, module_name As String, id As Integer, file As HttpPostedFile, Optional is_skip_check As Boolean = False) As String
+        Dim result = ""
         If Not IsNothing(file) AndAlso file.ContentLength Then
             Dim ext As String = getUploadFileExt(file.FileName)
             If is_skip_check OrElse isUploadImgExtAllowed(ext) Then
@@ -108,10 +124,8 @@ Public Class UploadUtils
 
                 'save original file
                 Dim part As String = getUploadDir(fw, module_name, id) & "\" & id
-                filepath = part & ext
-                file.SaveAs(filepath)
-
-                result = True
+                result = part & ext
+                file.SaveAs(result)
             Else
                 'Throw New ApplicationException("Image type is not supported")
             End If

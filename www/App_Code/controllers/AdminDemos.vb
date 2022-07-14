@@ -78,6 +78,11 @@ Public Class AdminDemosController
     Public Overrides Function SaveAction(Optional ByVal form_id As String = "") As Hashtable
         If Me.save_fields Is Nothing Then Throw New Exception("No fields to save defined, define in save_fields ")
 
+        If reqi("refresh") = 1 Then
+            fw.routeRedirect("ShowForm", {form_id})
+            Return Nothing
+        End If
+
         Dim item As Hashtable = reqh("item")
         Dim id As Integer = Utils.f2int(form_id)
         Dim success = True
@@ -106,7 +111,7 @@ Public Class AdminDemosController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)

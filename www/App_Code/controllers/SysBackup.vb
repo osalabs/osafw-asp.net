@@ -53,7 +53,7 @@ Public Class SysBackupController
 
     'index just show form with POST
     Public Function IndexAction() As Hashtable
-        If Utils.f2int(fw.SESSION("access_level")) < Users.ACL_ADMIN Then Throw New AuthException("Access Denied")
+        If Utils.f2int(fw.SESSION("access_level")) < Users.ACL_SITEADMIN Then Throw New AuthException("Access Denied")
 
         Dim ps As New Hashtable
         Dim outfile = get_latest_backup_file()
@@ -73,7 +73,7 @@ Public Class SysBackupController
     'perform backup tasks - only if called from localhost
     Public Sub SaveAction()
         'only allow to be called from local host OR if user logged as an admin
-        If Not is_local_request() AndAlso Utils.f2int(fw.SESSION("access_level")) < Users.ACL_ADMIN Then
+        If Not is_local_request() AndAlso Utils.f2int(fw.SESSION("access_level")) < Users.ACL_SITEADMIN Then
             logger(fw.req.ServerVariables)
             Throw New ApplicationException("Wrong Request")
         End If
@@ -116,7 +116,7 @@ Public Class SysBackupController
         Dim sdt As String = reqs("date") 'format yyyy-MM-dd.hhmmss
 
         'check that we logged as an admin (alternatively - check some token passed in URL, but in this case https is required - TODO)
-        If Utils.f2int(fw.SESSION("access_level")) < Users.ACL_ADMIN AndAlso download_token > "" AndAlso reqs("token") <> download_token Then Throw New AuthException("Access Denied")
+        If Utils.f2int(fw.SESSION("access_level")) < Users.ACL_SITEADMIN AndAlso download_token > "" AndAlso reqs("token") <> download_token Then Throw New AuthException("Access Denied")
 
         Dim outfile As String
         If sdt > "" Then

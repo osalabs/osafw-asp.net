@@ -2,9 +2,9 @@
 
 <form class="form-horizontal" method="post" action="<~../url>/<~id>?XSS=<~session[XSS]>&d=<~d>">
   <fieldset>
-    <legend>Confirm delete for "<~iname>"</legend>
+    <legend>`Confirm delete for record id`=<~i[id]> <~i[iname]></legend>
 
-    <~/common/form/actions_delete>
+    <~/common/form/showdelete/actions_delete>
 
   </fieldset>
 </form>

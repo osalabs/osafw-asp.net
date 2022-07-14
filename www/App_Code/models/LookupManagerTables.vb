@@ -92,7 +92,7 @@ Public Class LookupManagerTables
             Else
                 'defaults
                 'col("index") = 0
-                col("iname") = col("name") 'default display name is column name
+                col("iname") = Utils.name2human(col("name")) 'default display name is column name
                 col("itype") = "" 'no default input type
                 col("igroup") = "" 'no default group
             End If
@@ -126,10 +126,29 @@ Public Class LookupManagerTables
     End Function
 
     Public Function getLookupSelectOptions(itype_lookup As String, sel_id As Object) As String
-        Dim lutable As String = "", lufield As String = ""
-        Utils.split2("\.", itype_lookup, lutable, lufield)
+        Dim lutable As String = "", lufields As String = ""
+        Utils.split2("\.", itype_lookup, lutable, lufields)
 
-        Dim sql As String = "select " & db.q_ident(lufield) & " as id, " & db.q_ident(lufield) & " as iname from " & db.q_ident(lutable) & " order by 1"
+        Dim idfield = "", inamefield = ""
+        Utils.split2(":", lufields, idfield, inamefield)
+
+        Dim sql As String = "select " & db.q_ident(idfield) & " as id, " & db.q_ident(inamefield) & " as iname from " & db.q_ident(lutable) & " order by 1"
         Return FormUtils.selectOptions(db.array(sql), sel_id)
     End Function
+
+    Public Function getLookupValue(itype_lookup As String, sel_id As Object) As String
+        Dim lutable As String = "", lufields As String = ""
+        Utils.split2("\.", itype_lookup, lutable, lufields)
+
+        Dim idfield = "", inamefield = ""
+        Utils.split2(":", lufields, idfield, inamefield)
+
+        Dim where As New Hashtable From {
+                {idfield, sel_id}
+            }
+        Return db.value(lutable, where, inamefield)
+
+    End Function
+
+
 End Class

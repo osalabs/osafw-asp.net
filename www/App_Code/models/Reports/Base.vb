@@ -33,7 +33,9 @@ Public Class ReportBase
     End Function
 
     Public Overridable Function getReportFilters() As Hashtable
-        Return f
+        Dim result As New Hashtable
+        'result("select_something")=fw.model(of Something).listSelectOptions()
+        Return result
     End Function
 
     Public Overridable Function saveChanges() As Boolean
@@ -80,6 +82,5 @@ Public Class ReportBase
         End If
         Return total_ctr
     End Function
-
 
 End Class

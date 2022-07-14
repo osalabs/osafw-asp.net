@@ -1,0 +1,2 @@
+﻿ALTER TABLE spages ADD layout NVARCHAR(MAX)
+GO

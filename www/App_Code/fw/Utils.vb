@@ -12,6 +12,8 @@ Imports System.Security.Cryptography
 Imports System.Net
 
 Public Class Utils
+    Public Shared OLEDB_PROVIDER As String = "Microsoft.ACE.OLEDB.12.0" 'used for import from CSV/Excel, change it to your provider if necessary
+
     'convert "space" delimited string to an array
     'WARN! replaces all "&nbsp;" to spaces (after convert)
     Public Shared Function qw(ByVal str As String) As String()
@@ -187,6 +189,14 @@ Public Class Utils
         Return result
     End Function
 
+    Public Shared Function f2decimal(ByVal AField As Object) As Decimal
+        If AField Is Nothing Then Return 0
+        Dim result As Decimal = 0
+
+        Decimal.TryParse(AField.ToString(), result)
+        Return result
+    End Function
+
     'convert to double, optionally throw error
     Public Shared Function f2float(ByVal AField As Object, Optional is_error As Boolean = False) As Double
         Dim result As Double = 0
@@ -220,10 +230,103 @@ Public Class Utils
         Return result.ToString()
     End Function
 
+    ''' <summary>
+    ''' helper for importing csv files. Example:
+    '''    Utils.importCSV(fw, AddressOf importer, "c:\import.csv")
+    '''    Sub importer(row as Hashtable)
+    '''       ...your custom import code
+    '''    End Sub
+    ''' </summary>
+    ''' <param name="fw">fw instance</param>
+    ''' <param name="callback">callback to custom code, accept one row of fields(as Hashtable)</param>
+    ''' <param name="filepath">.csv file name to import</param>
+    Public Shared Sub importCSV(fw As FW, callback As Action(Of Hashtable), filepath As String, Optional is_header As Boolean = True)
+        Dim dir = Path.GetDirectoryName(filepath)
+        Dim filename = Path.GetFileName(filepath)
+
+        Dim ConnectionString As String = "Provider=" & OLEDB_PROVIDER & ";" +
+                                "Data Source=" & dir & ";" &
+                                "Extended Properties=""Text;HDR=" & IIf(is_header, "Yes", "No") & ";IMEX=1;FORMAT=Delimited"";"
+
+        'Dim BOM As String = Chr(239) & Chr(187) & Chr(191) '"\uFEFF" '"ï»¿" '\xEF\xBB\xBF
+        Using cn As New Data.OleDb.OleDbConnection(ConnectionString)
+            cn.Open()
+
+            Dim WorkSheetName = filename
+            'quote as table name
+            WorkSheetName = Replace(WorkSheetName, "[", "")
+            WorkSheetName = Replace(WorkSheetName, "]", "")
+
+            Dim sql = "select * from [" & WorkSheetName & "]"
+            Dim dbcomm = New Data.OleDb.OleDbCommand(sql, cn)
+            Dim dbread As Data.Common.DbDataReader = dbcomm.ExecuteReader()
+
+            While dbread.Read()
+                Dim row As New Hashtable
+                For i = 0 To dbread.FieldCount - 1
+                    'Dim value As String = dbread(i).ToString()
+                    Dim value As Object = dbread(i)
+                    Dim name As String = dbread.GetName(i).ToString()
+                    'name = name.Replace(BOM, "")
+                    row.Add(name, value)
+                Next
+
+                'logger(h)
+                callback(row)
+            End While
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' helper for importing Excel files. Example:
+    '''    Utils.importExcel(fw, AddressOf importer, "c:\import.xlsx")
+    '''    Sub importer(sheet_name as String, rows as ArrayList)
+    '''       ...your custom import code
+    '''    End Sub
+    ''' </summary>
+    ''' <param name="fw">fw instance</param>
+    ''' <param name="callback">callback to custom code, accept worksheet name and all rows(as ArrayList of Hashtables)</param>
+    ''' <param name="filepath">.xlsx file name to import</param>
+    ''' <param name="is_header"></param>
+    ''' <returns></returns>
+    Public Shared Function importExcel(fw As FW, callback As Action(Of String, ArrayList), filepath As String, Optional is_header As Boolean = True) As Hashtable
+        Dim result As New Hashtable()
+        Dim conf As New Hashtable From {
+                {"type", "OLE"},
+                {"connection_string", "Provider=" & OLEDB_PROVIDER & ";Data Source=" & filepath & ";Extended Properties=""Excel 12.0 Xml;HDR=" & IIf(is_header, "Yes", "No") & ";ReadOnly=True;IMEX=1"""}
+            }
+        Dim accdb = New DB(fw, conf)
+        Dim conn As System.Data.OleDb.OleDbConnection = accdb.connect()
+        Dim schema = conn.GetOleDbSchemaTable(Data.OleDb.OleDbSchemaGuid.Tables, Nothing)
+        If schema Is Nothing OrElse schema.Rows.Count < 1 Then
+            Throw New ApplicationException("No worksheets found in the Excel file")
+        End If
+
+        Dim where As New Hashtable
+        For i As Integer = 0 To schema.Rows.Count - 1
+            Dim sheet_name_full = schema.Rows(i)("TABLE_NAME").ToString()
+            Dim sheet_name = sheet_name_full.Replace("""", "")
+            sheet_name = sheet_name.Replace("'", "")
+            sheet_name = sheet_name.Substring(0, sheet_name.Length - 1)
+            Try
+                Dim rows = accdb.array(sheet_name_full, where)
+                callback(sheet_name, rows)
+            Catch ex As Exception
+                Throw New ApplicationException("Error while reading data from [" & sheet_name & "] sheet: " & ex.Message())
+            End Try
+        Next
+        ' close connection to release the file
+        accdb.disconnect()
+
+        Return result
+    End Function
+
+
     Public Shared Function toCSVRow(row As Hashtable, fields As Array) As String
         Dim result As New StringBuilder
+        Dim is_first = True
         For Each fld As String In fields
-            If result.Length > 0 Then result.Append(",")
+            If Not is_first Then result.Append(",")
 
             Dim str As String = Regex.Replace(row(fld) & "", "[\n\r]+", " ")
             str = Replace(str, """", """""")
@@ -232,6 +335,7 @@ Public Class Utils
                 str = """" & str & """"
             End If
             result.Append(str)
+            is_first = False
         Next
         Return result.ToString()
     End Function
@@ -274,6 +378,44 @@ Public Class Utils
         Return True
     End Function
 
+    Public Shared Function writeXLSExport(fw As FW, filename As String, csv_export_headers As String, csv_export_fields As String, rows As ArrayList) As Boolean
+        Dim ps As New Hashtable
+        ps("rows") = rows
+
+        Dim headers As New ArrayList
+        For Each str As String In csv_export_headers.Split(",")
+            Dim h As New Hashtable
+            h("iname") = str
+            headers.Add(h)
+        Next
+        ps("headers") = headers
+
+        Dim fields() As String = Utils.qw(csv_export_fields)
+        For Each row As Hashtable In rows
+            Dim cell As New ArrayList
+            For Each f As String In fields
+                Dim h As New Hashtable
+                h("value") = row(f)
+                cell.Add(h)
+            Next
+            row("cell") = cell
+        Next
+
+        'parse and out document
+        'TODO ConvUtils.parse_page_xls(fw, LCase(fw.cur_controller_path & "/index/export"), "xls.html", hf, "filename")
+
+        Dim parser As ParsePage = New ParsePage(fw)
+        'Dim tpl_dir = LCase(fw.cur_controller_path & "/index/export")
+        Dim tpl_dir = "/common/list/export"
+        Dim page As String = parser.parse_page(tpl_dir, "xls.html", ps)
+
+        filename = filename.Replace("""", "_")
+
+        fw.resp.AddHeader("Content-type", "application/vnd.ms-excel")
+        fw.resp.AddHeader("Content-Disposition", "attachment; filename=""" & filename & """")
+        fw.resp.Write(page)
+    End Function
+
     'Detect orientation and auto-rotate correctly
     Public Shared Function rotateImage(Image As Image) As Boolean
         Dim result = False
@@ -302,9 +444,10 @@ Public Class Utils
     End Function
 
     'resize image in from_file to w/h and save to to_file
-    'w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
+    '(optional)w and h - mean max weight and max height (i.e. image will not be upsized if it's smaller than max w/h)
+    'if no w/h passed - then no resizing occurs, just conversion (based on destination extension)
     'return false if no resize performed (if image already smaller than necessary). Note if to_file is not same as from_file - to_file will have a copy of the from_file
-    Public Shared Function resizeImage(ByVal from_file As String, ByVal to_file As String, ByVal w As Long, ByVal h As Long) As Boolean
+    Public Shared Function resizeImage(ByVal from_file As String, ByVal to_file As String, Optional ByVal w As Long = -1, Optional ByVal h As Long = -1) As Boolean
         Dim stream As New FileStream(from_file, FileMode.Open, FileAccess.Read)
 
         ' Create new image.
@@ -317,7 +460,10 @@ Public Class Utils
         Dim oldWidth As Integer = image.Width
         Dim oldHeight As Integer = image.Height
 
-        If oldWidth / w > 1 Or oldHeight / h > 1 Or is_rotated Then
+        If w = -1 Then w = oldWidth
+        If h = -1 Then h = oldHeight
+
+        If oldWidth / w >= 1 Or oldHeight / h >= 1 Then
             'downsizing
         Else
             'image already smaller no resize required - keep sizes same
@@ -480,7 +626,9 @@ Public Class Utils
     ''' <param name="data">any data like single value, arraylist, hashtable, etc..</param>
     ''' <returns></returns>
     Public Shared Function jsonEncode(data As Object) As String
-        Return New Script.Serialization.JavaScriptSerializer().Serialize(data)
+        Dim des = New Script.Serialization.JavaScriptSerializer()
+        des.MaxJsonLength = Integer.MaxValue
+        Return des.Serialize(data)
     End Function
 
     ''' <summary>
@@ -493,6 +641,7 @@ Public Class Utils
         Dim result As Object
         Try
             Dim des = New Script.Serialization.JavaScriptSerializer()
+            des.MaxJsonLength = Integer.MaxValue
             result = des.DeserializeObject(str)
             result = cast2std(result)
 
@@ -859,6 +1008,46 @@ Public Class Utils
         result = result.ToLower() 'and finally to lowercase
         result = result.Trim()
         Return result
+    End Function
+
+    'convert some system name to human-friendly name'
+    '"system_name_id" => "System Name ID"
+    Shared Function name2human(str As String) As String
+        'first - check predefined
+        Dim str_lc = str.ToLower()
+        If str_lc = "icode" Then Return "Code"
+        If str_lc = "iname" Then Return "Name"
+        If str_lc = "idesc" Then Return "Description"
+        If str_lc = "id" Then Return "ID"
+        If str_lc = "fname" Then Return "First Name"
+        If str_lc = "lname" Then Return "Last Name"
+        If str_lc = "midname" Then Return "Middle Name"
+
+        Dim result = str
+        result = Regex.Replace(result, "^tbl|dbo", "", RegexOptions.IgnoreCase) 'remove tbl prefix if any
+        result = Regex.Replace(result, "_+", " ") 'underscores to spaces
+        result = Regex.Replace(result, "([a-z ])([A-Z]+)", "$1 $2") 'split CamelCase words
+        result = Regex.Replace(result, " +", " ") 'deduplicate spaces
+        result = Utils.capitalize(result, "all") 'Title Case
+
+        If Regex.IsMatch(result, "\bid\b", RegexOptions.IgnoreCase) Then
+            'if contains id/ID - remove it and make singular
+            result = Regex.Replace(result, "\bid\b", "", RegexOptions.IgnoreCase)
+            result = Regex.Replace(result, "(?:es|s)\s*$", "", RegexOptions.IgnoreCase) 'remove -es or -s at the end
+        End If
+
+        result = result.Trim()
+        Return result
+    End Function
+
+    'convert c/snake style name to CamelCase
+    'system_name => SystemName
+    Shared Function nameCamelCase(str As String) As String
+        Dim result = str
+        result = Regex.Replace(result, "\W+", " ") 'non-alphanum chars to spaces
+        result = Utils.capitalize(result)
+        result = Regex.Replace(result, " +", "") 'remove spaces
+        Return str
     End Function
 
 End Class

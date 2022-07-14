@@ -28,7 +28,7 @@ Public Class MyPasswordController
         Dim item As Hashtable
         Dim id As Integer = fw.model(Of Users).meId()
 
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             If id > 0 Then
                 item = model.one(id)
             Else
@@ -93,9 +93,15 @@ Public Class MyPasswordController
             fw.FERR("pwd2") = "NOTEQUAL"
         End If
 
+        'uncomment if project requires good password strength
+        'If result AndAlso item.ContainsKey("pwd") AndAlso model.scorePwd(item("pwd")) <= 60 Then
+        '    result = False
+        '    fw.FERR("pwd") = "BAD"
+        'End If
+
         If result Then
             Dim itemdb As Hashtable = model.one(id)
-            If itemdb("pwd") <> item("old_pwd") Then
+            If Not fw.model(Of Users).checkPwd(item("old_pwd"), itemdb("pwd")) Then
                 result = False
                 fw.FERR("old_pwd") = "WRONG"
             End If

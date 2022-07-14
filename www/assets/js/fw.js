@@ -5,7 +5,11 @@
 */
 
 window.fw={
-  HTML_LOADING : '<span class="spinner-border" role="status" aria-hidden="true"></span> Loading...',
+  HTML_LOADING : '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...',
+  ICON_INFO: '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-circle-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>',
+  ICON_QUEST: '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-question-circle-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.496 6.033a.237.237 0 0 1-.24-.247C5.35 4.091 6.737 3.5 8.005 3.5c1.396 0 2.672.73 2.672 2.24 0 1.08-.635 1.594-1.244 2.057-.737.559-1.01.768-1.01 1.486v.105a.25.25 0 0 1-.25.25h-.81a.25.25 0 0 1-.25-.246l-.004-.217c-.038-.927.495-1.498 1.168-1.987.59-.444.965-.736.965-1.371 0-.825-.628-1.168-1.314-1.168-.803 0-1.253.478-1.342 1.134-.018.137-.128.25-.266.25h-.825zm2.325 6.443c-.584 0-1.009-.394-1.009-.927 0-.552.425-.94 1.01-.94.609 0 1.028.388 1.028.94 0 .533-.42.927-1.029.927z"/></svg>',
+  ICON_SORT_ASC: '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-down" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>',
+  ICON_SORT_DESC: '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-up" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>',
 
   ok: function (str, options){
     options = $.extend({}, {theme: 'hint_green'}, options);
@@ -21,7 +25,7 @@ window.fw={
 
   // usage: fw.alert('Process completed','Worker');
   alert: function (content, title){
-    if (!title) title='<i class="glyphicon glyphicon-info-sign"></i> Alert';
+    if (!title) title=fw.ICON_INFO+' Alert';
     var $modal=$('#fw-modal-alert');
     if (!$modal.length){//add template to document
       $(document.body).append('<div class="modal fade" tabindex="-1" role="dialog" id="fw-modal-alert"><div class="modal-dialog modal-sm" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"></h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"><p></p></div><div class="modal-footer"><button type="button" class="btn btn-primary btn-block" data-dismiss="modal">OK</button></div></div></div></div>');
@@ -45,7 +49,7 @@ window.fw={
     }else{
       title=title_or_cb;
     }
-    if (!title) title='<i class="glyphicon glyphicon-question-sign"></i> Confirm';
+    if (!title) title=fw.ICON_QUEST+' Confirm';
     var $modal=$('#fw-modal-confirm');
     if (!$modal.length){//add template to document
       $(document.body).append('<div class="modal fade" tabindex="-1" role="dialog" id="fw-modal-confirm"><div class="modal-dialog modal-sm" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"></h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"><p></p></div><div class="modal-footer"><button type="button" class="btn btn-primary" data-dismiss="modal">OK</button><button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button></div></div></div></div>');
@@ -78,6 +82,9 @@ window.fw={
       } else {
           $el.show();
           $fis.val('1');
+          //show search tooltip
+          $.jGrowl("WORD to search for contains word<br>=WORD to search for equals word<br>!=WORD to search for NOT equals word<br>!WORD to search for NOT contains word",
+            {header: 'Search hints', theme: 'hint_info', sticky: true});
       }
     });
 
@@ -88,6 +95,7 @@ window.fw={
       if ($table_parent.hasClass('data-header')) {
         $table_parent.prev('table.list').find('input[name="' + $this.attr('name') + '"]').val($this.val());
       }
+      
       if (e.which == 13) {// on Enter press
         e.preventDefault();
         //on explicit search - could reset pagenum to 0
@@ -105,7 +113,7 @@ window.fw={
             //if search ON - add search fields to the form
             $f.find('.osafw-list-search').remove();
             var html=[];
-            $('table.list:first .search input').each(function (i, el) {
+            $('table.list:first .search :input').each(function (i, el) {
               if (el.value>''){
                 html.push( '<input class="osafw-list-search" type="hidden" name="'+el.name.replace(/"/g,'&quot;')+'" value="'+el.value.replace(/"/g,'&quot;')+'">');
               }
@@ -178,10 +186,46 @@ window.fw={
       }
     });
 
+
     //form screen init
     fw.setup_cancel_form_handlers();
     fw.setup_autosave_form_handlers();
     fw.process_form_errors();
+
+    $(document).on('change', '.on-refresh', function (e) {
+      var $f = $(this).closest('form');
+      $f.find('input[name=refresh]').val(1);
+      $f.submit();
+    });
+
+    $(document).on('keyup', '.on-multi-search', function (e) {
+      var $this = $(this);
+      var s = $this.val().replace(/"/g, '').toUpperCase();
+      var $div = $this.closest('.field-multi-value');
+      var $cb = $div.find('[data-s]');
+      if (s>''){
+          $cb.hide();
+          $cb.filter('[data-s*="'+s+'"]').show();
+      }else{
+          $cb.show();
+      }
+    });
+
+    //on click - confirm, then submit via POST
+    //ex: <button type="button" class="btn btn-default on-fw-submit" data-url="SUBMIT_URL?XSS=<~SESSION[XSS]>" data-title="CONFIRMATION TITLE"></button>
+    $(document).on('click', '.on-fw-submit', function (e) {
+        var $this=$(this);
+        var url = $this.data('url');
+        var title = $this.data('title');
+        if (!title) title='Are you sure?';
+        fw.confirm(title, function (e) {
+            $('#FTmpSubmit').remove();
+            $('body').append('<form id="FTmpSubmit" method="POST" action="'+url+'"></form>');
+            $('#FTmpSubmit').submit();
+        });
+    });
+
+
   },
 
   //for all forms with data-check-changes on a page - setup changes tracker, call in $(document).ready()
@@ -271,8 +315,12 @@ window.fw={
     });
 
     $('body').on('change', 'form[data-autosave]', function(e){
+      if ($(e.target).is('[data-noautosave]')) {
+        e.preventDefault();
+        return;
+      }
       var $f = $(this);
-      // console.log('on form change', $f, e);
+      //console.log('on form change', $f, e);
       $f.data('is-changed', true);
 
       set_status($f, 1);
@@ -297,7 +345,7 @@ window.fw={
     });
 
     // "*:not(.bs-searchbox)" - exclude search input in the bs selectpicker container
-    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not([data-noautosave])', function(e){
+    $('body').on('blur', 'form[data-autosave] *:not(.bs-searchbox) > :input:not(button,[data-noautosave])', function(e){
       var $f = $(this.form);
       // console.log('on form input blur', $f);
       if ($f.data('is-changed')===true){
@@ -419,7 +467,7 @@ window.fw={
         $.each(errors,function(key, errcode) {
           var $input = $f.find('[name="item['+key+']"],[name="'+key+'"]');
           if ($input.length){
-            $input.closest('.form-group').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
+            $input.closest('.form-group, .form-row').not('.noerr').addClass('has-danger'); //highlight whole row (unless .noerr exists)
             $input.addClass('is-invalid'); //mark input itself
             if (errcode!==true && errcode.length){
               var $p=$input.parent();
@@ -468,8 +516,8 @@ window.fw={
     var sortby=$sh.data('sortby');
     var sortdir=$sh.data('sortdir');
 
-    var sort_img= (sortdir=='desc') ? 'glyphicon-arrow-up' : 'glyphicon-arrow-down';
-    $sh.find('th[data-sort="'+sortby+'"]').addClass('active-sort').prepend('<span class="glyphicon '+sort_img+' float-right"></span>');
+    var sort_img= (sortdir=='desc') ? fw.ICON_SORT_DESC : fw.ICON_SORT_ASC;
+    $sh.find('th[data-sort="'+sortby+'"]').addClass('active-sort').append('<span class="ml-1">'+sort_img+'</span>');
 
     $sh.on('click', 'th[data-sort]', function() {
       var $td=$(this);
@@ -686,6 +734,71 @@ window.fw={
       e.preventDefault();
       onclick(this);
     });
+  },
+
+  // password stength indicator
+  // usage: $('#pwd').on('blur change keyup', fw.renderPwdBar);
+  renderPwdBar: function(e) {
+      var $this = $(this);
+      var pwd = $this.val();
+      var score = fw.scorePwd(pwd);
+      var wbar = parseInt(score*100/120); //over 120 is max
+      if (pwd.length>0 && wbar<10) wbar=10; //to show "bad"
+      if (wbar>100) wbar=100;
+
+      var $pr = $this.parent().find('.progress');
+      if (!$pr.length){
+          $pr = $('<div class="progress mt-1"><div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>').appendTo($this.parent());
+      }
+      var $bar = $pr.find('.progress-bar');
+      $bar.css('width', wbar+'%');
+      $bar.removeClass('bg-danger bg-warning bg-success bg-dark').addClass(fw.scorePwdClass(score))
+      $bar.text(fw.scorePwdText(score))
+      //console.log(pwd, score,'  ', wbar+'%');
+  },
+
+  scorePwd: function(pwd) {
+      var result = 0;
+      if (!pwd) return result;
+
+      // award every unique letter until 5 repetitions
+      var chars = {};
+      for (var i=0; i<pwd.length; i++) {
+          chars[pwd[i]] = (chars[pwd[i]] || 0) + 1;
+          result += 5.0 / chars[pwd[i]];
+      }
+
+      // bonus points for mixing it up
+      var vars = {
+          digits: /\d/.test(pwd),
+          lower: /[a-z]/.test(pwd),
+          upper: /[A-Z]/.test(pwd),
+          other: /\W/.test(pwd),
+      }
+      var ctr = 0;
+      for (var k in vars) {
+          ctr += (vars[k] == true) ? 1 : 0;
+      }
+      result += (ctr - 1) * 10;
+
+      //adjust for length
+      result = (Math.log(pwd.length) / Math.log(8))*result
+
+      return result;
+  },
+
+  scorePwdClass: function(score) {
+      if (score > 100) return "bg-dark";
+      if (score > 60) return "bg-success";
+      if (score >= 30) return "bg-warning";
+      return "bg-danger";
+  },
+
+  scorePwdText: function(score) {
+      if (score > 100) return "strong";
+      if (score > 60) return "good";
+      if (score >= 30) return "weak";
+      return "bad";
   }
 
 };

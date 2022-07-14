@@ -22,7 +22,7 @@ Public Class PasswordController
         Dim hf As Hashtable = New Hashtable
 
         Dim item As Hashtable = reqh("item")
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             'set defaults here
             item = New Hashtable
         Else
@@ -66,7 +66,7 @@ Public Class PasswordController
         End If
 
         Dim item = reqh("item")
-        If fw.cur_method = "GET" Then 'read from db
+        If isGet() Then 'read from db
             'set defaults here
             item = New Hashtable
         Else

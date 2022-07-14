@@ -23,4 +23,8 @@ Public NotInheritable Class FwHooks
         If fw.model(Of Users).meId() > 0 Then fw.model(Of Users).loadMenuItems()
     End Sub
 
+    'called from FW.run before fw.Finalize()
+    Public Shared Sub finalizeRequest(fw As FW)
+    End Sub
+
 End Class

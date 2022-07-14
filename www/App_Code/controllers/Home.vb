@@ -46,7 +46,7 @@ Public Class HomeController
         logger("in the TestAction")
         rw("here it is Test")
         rw("id=" & id)
-        rw("more_action_name=" & fw.cur_action_more)
+        rw("more_action_name=" & fw.route.action_more)
 
         'parser("/index", hf)
     End Sub

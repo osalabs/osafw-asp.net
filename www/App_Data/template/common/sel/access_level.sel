@@ -1,3 +1,5 @@
-0|User
-80|Content Editor
-100|Site Administrator
+0|`User`
+50|`Employee`
+80|`Manager`
+90|`Admin`
+100|`Site Administrator`

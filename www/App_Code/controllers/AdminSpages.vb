@@ -19,11 +19,11 @@ Public Class AdminSpagesController
         'initialization
         base_url = "/Admin/Spages"
         required_fields = "iname"
-        save_fields = "iname idesc idesc_left idesc_right head_att_id template prio meta_keywords meta_description custom_css custom_js"
+        save_fields = "iname idesc idesc_left idesc_right head_att_id template prio meta_keywords meta_description custom_css custom_js redirect_url layout"
 
         search_fields = "url iname idesc"
         list_sortdef = "iname asc"   'default sorting: name, asc|desc direction
-        list_sortmap = Utils.qh("id|id iname|iname pub_time|pub_time upd_time|upd_time status|status")
+        list_sortmap = Utils.qh("id|id iname|iname pub_time|pub_time upd_time|upd_time status|status url|url")
     End Sub
 
     Public Overrides Function IndexAction() As Hashtable
@@ -68,11 +68,7 @@ Public Class AdminSpagesController
             row("full_url") = model.getFullUrl(row("id"))
         Next
 
-        Dim ps As Hashtable = New Hashtable
-        ps("list_rows") = Me.list_rows
-        ps("count") = Me.list_count
-        ps("pager") = Me.list_pager
-        ps("f") = Me.list_filter
+        Dim ps = Me.setPS()
 
         Return ps
     End Function
@@ -103,6 +99,13 @@ Public Class AdminSpagesController
         If id > 0 Then
             ps("subpages") = model.listChildren(id)
         End If
+
+        ps("layouts_select") = New ArrayList()
+        For Each key As String In fw.config.Keys()
+            If key.IndexOf("PAGE_LAYOUT") = 0 Then
+                ps("layouts_select").Add(DB.h("id", fw.config(key), "iname", key))
+            End If
+        Next
 
         Return ps
     End Function
@@ -157,7 +160,7 @@ Public Class AdminSpagesController
             Me.setFormError(ex)
         End Try
 
-        Return Me.saveCheckResult(success, id, is_new)
+        Return Me.afterSave(success, id, is_new)
     End Function
 
     Public Overrides Sub Validate(id As Integer, item As Hashtable)

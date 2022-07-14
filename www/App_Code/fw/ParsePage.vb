@@ -8,7 +8,8 @@
 ' - <~tag if="var"> - var tested for true value (1, true, >"", but not "0")
 ' - CSRF shield - all vars escaped, if var shouldn't be escaped use "noescape" attr: <~raw_variable noescape>
 ' - 'attrs("select") can contain strings with separator ","(or custom defined) for multiple select
-'
+' - <~#commented_tag> - comment tags that doesn't need to be parsed (quickly replaced by empty string)
+
 '# Supported attributes:
 
 'var - tag is variable, no fileseek necessary
@@ -90,10 +91,10 @@
 'support modifiers:
 ' htmlescape
 ' date          - format as datetime, sample "d M yyyy HH:mm", see https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
-'       <~var date>         output "m/d/yyyy" - date only (TODO - should be formatted per user settings actually)
-'       <~var date="short"> output "m/d/yyyy hh:mm" - date and time short (to mins)
-'       <~var date="long">  output "m/d/yyyy hh:mm:ss" - date and time long
-'       <~var date="sql">   output "yyyy-mm-dd hh:mm:ss" - sql date and time
+'       <~var date>         output "M/d/yyyy" - date only (TODO - should be formatted per user settings actually)
+'       <~var date="short"> output "M/d/yyyy hh:mm" - date and time short (to mins)
+'       <~var date="long">  output "M/d/yyyy hh:mm:ss" - date and time long
+'       <~var date="sql">   output "yyyy-MM-dd hh:mm:ss" - sql date and time
 ' url           - add http:// to begin of string if absent
 ' number_format - FormatNumber(value, 2) => 12345.12
 ' truncate      - truncate with options <~tag truncate="80" trchar="..." trword="1" trend="1">
@@ -164,6 +165,8 @@ Public Class ParsePage
             load_lang()
         End If
         lang_evaluator = New MatchEvaluator(AddressOf Me.lang_replacer)
+
+        lang_update = Utils.f2bool(fw.config("is_lang_update"))
     End Sub
 
     Public Function parse_json(ByVal hf As Object) As String
@@ -220,7 +223,8 @@ Public Class ParsePage
                     attrs = New Hashtable
                     get_tag_attrs(tag, attrs)
 
-                    If _attr_if(attrs, hf) Then
+                    'skip # commented tags and tags that not pass if
+                    If tag(0) <> "#" AndAlso _attr_if(attrs, hf) Then
                         Dim inline_tpl As String = ""
 
                         If attrs.Count > 0 Then 'optimization, no need to check attrs if none passed
@@ -1057,11 +1061,37 @@ Public Class ParsePage
     Private Function lang_replacer(m As Match) As String
         Dim value = Trim(m.Groups(1).Value)
         'fw.logger("checking:", lang, value)
-        Dim result = LANG_CACHE(lang)(value)
-        If result = "" Then
-            'if no language - return original string
-            result = value
+        Return langMap(value)
+    End Function
+
+    '
+    ''' <summary>
+    ''' map input string (with optional context) into output accoring to the current lang
+    ''' </summary>
+    ''' <param name="str">input string in default language</param>
+    ''' <param name="context">optional context, for example "screename". Useful when same original string need to be translated differenly in different contexts</param>
+    ''' <returns>string in output languge</returns>
+    Public Function langMap(str As String, Optional context As String = "") As String
+        Dim input = str
+        If context > "" Then input &= "|" & context
+        Dim result = LANG_CACHE(lang)(input)
+        If String.IsNullOrEmpty(result) Then
+            'no translation found
+            If context > "" Then
+                'if no value with context - try without context
+                result = LANG_CACHE(lang)(str)
+                If String.IsNullOrEmpty(result) Then
+                    'if no such string in cache and we allowed to update lang file - add_lang
+                    If result Is Nothing AndAlso lang_update Then add_lang(str)
+                    'if still no translation - return original string
+                    result = str
+                End If
+            Else
+                'if no translation - return original string
+                result = str
+            End If
         End If
+        'fw.logger("in=[" & str & "], out=[" & result & "]")
         Return result
     End Function
 
@@ -1078,8 +1108,17 @@ Public Class ParsePage
             If String.IsNullOrEmpty(line) OrElse Not line.Contains("===") Then Continue For
             Dim pair = Split(line, "===", 2)
             'fw.logger("added to cache:", Trim(pair(0)))
-            LANG_CACHE(lang)(Trim(pair(0))) = pair(1)
+            LANG_CACHE(lang)(Trim(pair(0))) = LTrim(pair(1))
         Next
+    End Sub
+
+    'add new language string to the lang file (for futher translation)
+    Private Sub add_lang(str As String)
+        fw.logger(LogLevel.DEBUG, "ParsePage notice - updating lang [" & lang & "] with: " & str)
+        FW.set_file_content(TMPL_PATH & "\lang\" & lang & ".txt", str & " === " & vbCrLf, True)
+
+        'also add to lang cache
+        LANG_CACHE(lang)(Trim(str)) = ""
     End Sub
 
 End Class

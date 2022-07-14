@@ -1,11 +1,15 @@
+$('.bi-caret-down').hide();
+
 $(document).on('click', '.on-dropinfo', function (e) {
     var $this = $(this);
     var $alert = $this.closest('.dropinfo').find('.alert');
     if ( $alert.is(':visible') ){
         $alert.hide();
-        $this.find('.glyphicon').removeClass('glyphicon-menu-up').addClass('glyphicon-menu-down');
+        $this.find('.bi-caret-up').hide();
+        $this.find('.bi-caret-down').show();
     }else{
         $alert.show();
-        $this.find('.glyphicon').removeClass('glyphicon-menu-down').addClass('glyphicon-menu-up');
+        $this.find('.bi-caret-up').show();
+        $this.find('.bi-caret-down').hide();
     }
 });

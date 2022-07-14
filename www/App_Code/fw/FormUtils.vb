@@ -251,7 +251,7 @@ Public Class FormUtils
     Public Shared Sub filterNullable(itemdb As Hashtable, name As String)
         Dim anames = Utils.qw(name)
         For Each fld As String In anames
-            If itemdb.ContainsKey(fld) AndAlso (itemdb(fld) = "" OrElse itemdb(fld) = "0") Then
+            If itemdb.ContainsKey(fld) AndAlso itemdb(fld) = "" Then
                 itemdb(fld) = Nothing
             End If
         Next
@@ -334,7 +334,7 @@ Public Class FormUtils
     Public Shared Function intToTimeStr(i As Integer) As String
         Dim h As Integer = Math.Floor(i / 3600)
         Dim m As Integer = Math.Floor((i - h * 3600) / 60)
-        Return h & ":" & m
+        Return h.ToString().PadLeft(2, "0") & ":" & m.ToString().PadLeft(2, "0")
     End Function
 
     'input: HH:MM
